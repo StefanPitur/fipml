@@ -41,11 +41,10 @@ rule token = parse
   | "<=" { LEQ }
   | ">=" { GEQ }
   | "==" { EQUAL }
-  | "&&" { ANDOP }
-  | "||" { OROP }
+  | "&&" { AND }
+  | "||" { OR }
   | "->" { ARROW }
   | "()" { UNIT }
-  | "and" { AND }
   | "fst" { FST }
   | "snd" { SND }
   | "if" { IF }
