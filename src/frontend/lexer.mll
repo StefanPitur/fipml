@@ -38,6 +38,7 @@ rule token = parse
   | "=" { ASSIGN }
   | "<" { LT }
   | ">" { GT }
+  | "|" { BAR }
   | "<=" { LEQ }
   | ">=" { GEQ }
   | "==" { EQUAL }
@@ -55,6 +56,10 @@ rule token = parse
   | "in" { IN }
   | "begin" { BEGIN }
   | "end" { END }
+  | "type" { TYPE }
+  | "match" { MATCH }
+  | "match!" { DMATCH }
+  | "with" { WITH }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | id_regex_expression { IDENT (Lexing.lexeme lexbuf) }
   | "/*" { multi_line_comment lexbuf }
