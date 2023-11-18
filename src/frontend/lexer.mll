@@ -33,6 +33,7 @@ rule token = parse
   | "-" { SUB }
   | "*" { MUL }
   | "/" { DIV }
+  | "%" { MOD }
   | "~" { NOT }
   | "^" { BORROWED }
   | "=" { ASSIGN }
@@ -41,11 +42,13 @@ rule token = parse
   | "|" { BAR }
   | "<=" { LEQ }
   | ">=" { GEQ }
-  | "==" { EQUAL }
+  | "==" { EQ }
+  | "!=" { NEQ }
   | "&&" { AND }
   | "||" { OR }
   | "->" { ARROW }
   | "()" { UNIT }
+  | "of" { OF }
   | "fst" { FST }
   | "snd" { SND }
   | "if" { IF }
@@ -61,7 +64,7 @@ rule token = parse
   | "match!" { DMATCH }
   | "with" { WITH }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
-  | id_regex_expression { IDENT (Lexing.lexeme lexbuf) }
+  | id_regex_expression { ID (Lexing.lexeme lexbuf) }
   | "/*" { multi_line_comment lexbuf }
   | "//" { single_line_comment lexbuf }
   | newline_regex_expression { next_line lexbuf; token lexbuf }
