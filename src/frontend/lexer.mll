@@ -69,7 +69,7 @@ rule token = parse
   | "//" { single_line_comment lexbuf }
   | newline_regex_expression { next_line lexbuf; token lexbuf }
   | eof { EOF }
-  | _ { raise (LexerError ("Lexer Error")) }
+  | _ { raise (LexerError ("Unidentified token")) }
 
 and multi_line_comment = parse
   | "*/" { token lexbuf }
