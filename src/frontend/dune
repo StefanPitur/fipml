@@ -1,5 +1,6 @@
 (library
  (name frontend)
+ (modules lexer parser lex_and_parse)
 )
 (ocamllex lexer)
 (menhir

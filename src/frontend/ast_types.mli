@@ -25,9 +25,9 @@ type type_expr =
     | TEBool
 
 type param = 
-    | TParam of type_expr * Var_name.t * (borrowed option) list option
+    | TParam of type_expr * Var_name.t * borrowed option
 
-val get_params_types : param list -> type_expr list
+val get_params_type : param list -> type_expr list
 
 (* Unary operators *)
 type unary_op =
@@ -56,4 +56,4 @@ val string_of_loc : loc -> string
 val string_of_type : type_expr -> string
 val string_of_unary_op : unary_op -> string
 val string_of_binary_op : binary_oper -> string
-val string_of_borrowed : borrowed option -> string
+val string_of_borrowed_option : borrowed option -> string

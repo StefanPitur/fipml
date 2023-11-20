@@ -28,6 +28,7 @@ rule token = parse
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "," { COMMA }
+  | ":" { COLON }
   | ";" { SEMICOLON }
   | "+" { ADD }
   | "-" { SUB }
@@ -55,6 +56,7 @@ rule token = parse
   | "then" { THEN }
   | "else" { ELSE }
   | "let" { LET }
+  | "rec" { REC }
   | "fun" { FUN }
   | "in" { IN }
   | "begin" { BEGIN }
@@ -63,6 +65,11 @@ rule token = parse
   | "match" { MATCH }
   | "match!" { DMATCH }
   | "with" { WITH }
+  | "int" { TYPE_INT }
+  | "float" { TYPE_FLOAT }
+  | "char" { TYPE_CHAR }
+  | "bool" { TYPE_BOOL }
+  | "string" { TYPE_STRING }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | id_regex_expression { ID (Lexing.lexeme lexbuf) }
   | "/*" { multi_line_comment lexbuf }

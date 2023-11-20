@@ -1,5 +1,3 @@
-open Format
-
 type loc = Lexing.position
 
 module type ID = sig
@@ -29,6 +27,9 @@ type type_expr =
 
 (* Type for borrowed elements *)
 type borrowed = BORROWED
+
+type param = 
+  | TParam of type_expr * Var_name.t * borrowed option
 
 (* Unary operators *)
 type unary_op =
@@ -64,8 +65,17 @@ let string_of_loc loc =
   loc_string
 
 
-(* TODO *)
-(* let string_of_type type_expr = () *)
+let string_of_type = function
+  | TEVoid -> "Void"
+  | TEInt -> "Int"
+  | TEBool -> "Bool"
+  | TEString -> "String"
+
+let get_params_type (params : param list) = 
+  let get_param_type = function
+    | TParam(param_type_expr, _, _) -> param_type_expr
+  in
+  List.map get_param_type params
 
 let string_of_unary_op = function
   | UnOpNeg -> "-"
