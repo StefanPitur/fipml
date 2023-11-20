@@ -3,6 +3,11 @@ let source_code = "
     | C1
     | C2 of bool * int * my_second_type
 
+  // some comment to be ignored
+  /*Multi-line
+    comment
+  everywhere*/
+
   let fn1 = ()
   let fn2 = begin
     ()
