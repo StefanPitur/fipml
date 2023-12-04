@@ -15,6 +15,8 @@
 
 (documentation https://url/to/documentation)
 
+(using menhir 2.0)
+
 (package
  (name fipml)
  (synopsis "Fully In-Place Updates in Functional Programming")
