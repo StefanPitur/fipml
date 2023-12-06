@@ -87,17 +87,14 @@ type_constructor:
 // Type Definition Constructors' Arguments Production Rules
 type_constructor_arguments:
 | OF; separated_list(MUL, type_expr) { print_string "constructor arguments\n" }
-
-type_constructor_arguments_:
-| MUL; type_expr {}
 (* --------------------------------------------------------- *)
 
 
 /* Function Definition Production Rules */
 function_defn:
-| LET; option(REC); ID; list(params); ASSIGN; block_expr { print_string "function_defn\n\n" }
+| LET; option(REC); ID; list(function_param); ASSIGN; block_expr { print_string "function_defn\n\n" }
 
-params:
+function_param:
 | ID {}
 | LPAREN; ID; COLON; type_expr; RPAREN {}
 
