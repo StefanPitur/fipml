@@ -1,6 +1,5 @@
-/* Header for auxiliary code */
 %{
-  (* let get_position = Parsing.symbol_start_pos *)
+  (* Header for auxiliary code *)
 %}
 
 /* Tokens Definition */
@@ -22,6 +21,7 @@
 %token LT
 %token GT
 %token BAR
+%token UNDERSCORE
 %token LEQ
 %token GEQ
 %token EQ
@@ -36,6 +36,7 @@
 %token IF
 %token THEN
 %token ELSE
+%token ENDIF
 %token TRUE
 %token FALSE
 %token LET
@@ -47,6 +48,7 @@
 %token TYPE
 %token MATCH
 %token DMATCH
+%token ENDMATCH
 %token WITH
 %token EOF
 
@@ -58,17 +60,18 @@
 %token TYPE_STRING
 
 /* Precedence and associativity */
-
 %right FST SND
 %left ADD SUB
 %left MUL DIV
 
+/* Starting non-terminal, endpoint for calling the parser */
 %start <unit> program
 %%
 
 program:
-| list(type_defn); list(function_defn); option(main_expr); EOF { print_string "\n! Finished Parsing\n" }
+| list(type_defn); list(function_defn); option(expr); EOF { print_string "\n! Finished Parsing\n" }
 
+// Need to expand this to accepting types such as - int ref list option
 type_expr:
 | TYPE_INT {}
 | TYPE_FLOAT {}
@@ -101,12 +104,9 @@ function_param:
 | option(BORROWED); ID {}
 | LPAREN; option(BORROWED); ID; COLON; type_expr; RPAREN {}
 
-/* Main/Block Expression Definition Production Rules */
-main_expr:
-| UNIT { print_string "main_expr\n" }
-
+/* Block Expression Definition Production Rules */
 block_expr:
-| separated_list(SEMICOLON, expr) {}
+| separated_list(SEMICOLON, expr) {} // might want to remove this, as it is not really a block
 | BEGIN; separated_list(SEMICOLON, expr); END { print_string "block_expression\n" }
 
 expr:
@@ -115,10 +115,28 @@ expr:
 | TRUE {}
 | FALSE {}
 | ID {}
-| LPAREN; expr; RPAREN {}
-| LPAREN; expr; COMMA expr; RPAREN {}
 | unary_op; expr {}
 | expr; binary_op; expr {}
+| LPAREN; expr; RPAREN {}
+| LPAREN; expr; COMMA expr; RPAREN {}
+| LET; ID; ASSIGN; expr; IN {}
+
+/* Control Flow - IF statements */
+| IF; expr; THEN; expr; ENDIF {}
+| IF; expr; THEN; expr; ELSE expr; ENDIF {}
+
+/* Control Flow - MATCH / DMATCH statements */
+| MATCH; ID; WITH; match_expr+; ENDMATCH {}
+| DMATCH; ID; WITH; match_expr+; ENDMATCH {}
+
+match_expr:
+| BAR; match_constructor; ARROW; expr {}
+
+match_constructor:
+| ID {}
+| UNDERSCORE 
+| value {}
+| option(ID); LPAREN; separated_list(COMMA, match_constructor); RPAREN {}
 
 %inline unary_op:
 | SUB {}
@@ -140,3 +158,8 @@ expr:
 | NEQ {}
 | AND {}
 | OR {}
+
+%inline value:
+| INT {}
+| TRUE {}
+| FALSE {}
