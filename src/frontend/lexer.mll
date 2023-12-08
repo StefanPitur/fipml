@@ -41,6 +41,7 @@ rule token = parse
   | "<" { LT }
   | ">" { GT }
   | "|" { BAR }
+  | "_" { UNDERSCORE }
   | "<=" { LEQ }
   | ">=" { GEQ }
   | "==" { EQ }
@@ -55,6 +56,7 @@ rule token = parse
   | "if" { IF }
   | "then" { THEN }
   | "else" { ELSE }
+  | "endif" { ENDIF }
   | "true" { TRUE }
   | "false" { FALSE }
   | "let" { LET }
@@ -66,6 +68,7 @@ rule token = parse
   | "type" { TYPE }
   | "match" { MATCH }
   | "match!" { DMATCH }
+  | "endmatch" { ENDMATCH }
   | "with" { WITH }
   | "int" { TYPE_INT }
   | "float" { TYPE_FLOAT }
