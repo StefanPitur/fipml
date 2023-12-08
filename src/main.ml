@@ -8,12 +8,16 @@ let source_code = "
     comment
   everywhere*/
 
-  let fn1 = ()
-  let fn2 = begin
+  fun fn1 = ()
+  fun fn2 = begin
     ()
   end
-  let f3 x y z = ()
-  let f4 (x : int) (^y : my_first_type) = ()
+  fun rec f3 x y z = ()
+  fun f4 (x : int) (^y : my_first_type) = ()
+
+  fun rec f5 x1 ^y1 (x2 : int) (^y2 : my_type) = begin
+    (); fst (x1 + x2, ())
+  end
 "
 in
 Frontend.Lex_and_parse.parse_source_code (Lexing.from_string source_code);;

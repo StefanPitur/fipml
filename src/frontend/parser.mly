@@ -95,11 +95,11 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| LET; option(REC); ID; list(function_param); ASSIGN; block_expr { print_string "function_defn\n\n" }
+| FUN; option(REC); ID; list(function_param); ASSIGN; block_expr { print_string "function_defn\n\n" }
 
 function_param:
 | option(BORROWED); ID {}
-| LPAREN; b=option(BORROWED); ID; COLON; type_expr; RPAREN {}
+| LPAREN; option(BORROWED); ID; COLON; type_expr; RPAREN {}
 
 /* Main/Block Expression Definition Production Rules */
 main_expr:
@@ -116,6 +116,7 @@ expr:
 | FALSE {}
 | ID {}
 | LPAREN; expr; RPAREN {}
+| LPAREN; expr; COMMA expr; RPAREN {}
 | unary_op; expr {}
 | expr; binary_op; expr {}
 
