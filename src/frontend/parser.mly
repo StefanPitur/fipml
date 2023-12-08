@@ -84,15 +84,15 @@ type_expr:
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; ID; ASSIGN; type_constructor+ { print_string "type_defn\n\n" }
+| TYPE; ID; ASSIGN; nonempty_list(type_constructor) {}
 
 // Type Definition Constructors Production Rules
 type_constructor:
-| BAR; ID; option(type_constructor_arguments) { print_string "type_constructor\n" }
+| BAR; ID; option(type_constructor_arguments) {}
 
 // Type Definition Constructors' Arguments Production Rules
 type_constructor_arguments:
-| OF; separated_nonempty_list(MUL, type_expr) { print_string "constructor arguments\n" }
+| OF; separated_nonempty_list(MUL, type_expr) {}
 (* --------------------------------------------------------- *)
 
 
