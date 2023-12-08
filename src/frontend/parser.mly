@@ -60,9 +60,13 @@
 %token TYPE_STRING
 
 /* Precedence and associativity */
+%nonassoc LT GT LEQ GEQ EQ NEQ
 %right FST SND
+%left OR
+%left AND
+%right NOT
 %left ADD SUB
-%left MUL DIV
+%left MUL DIV MOD
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <unit> program
@@ -106,7 +110,6 @@ function_param:
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| separated_list(SEMICOLON, expr) {} // might want to remove this, as it is not really a block
 | BEGIN; separated_list(SEMICOLON, expr); END { print_string "block_expression\n" }
 
 expr:
@@ -136,7 +139,7 @@ match_constructor:
 | ID {}
 | UNDERSCORE 
 | value {}
-| option(ID); LPAREN; separated_list(COMMA, match_constructor); RPAREN {}
+| option(ID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
 
 %inline unary_op:
 | SUB {}
