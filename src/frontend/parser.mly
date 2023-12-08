@@ -58,6 +58,7 @@
 %token TYPE_CHAR
 %token TYPE_BOOL
 %token TYPE_STRING
+%token TYPE_UNIT
 
 /* Precedence and associativity */
 %nonassoc LT GT LEQ GEQ EQ NEQ
@@ -82,6 +83,7 @@ type_expr:
 | TYPE_CHAR {}
 | TYPE_BOOL {}
 | TYPE_STRING {}
+| TYPE_UNIT {}
 | ID {}
 
 
