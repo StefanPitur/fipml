@@ -35,7 +35,7 @@ rule token = parse
   | "*" { MUL }
   | "/" { DIV }
   | "%" { MOD }
-  | "~" { NOT }
+  | "!" { NOT }
   | "^" { BORROWED }
   | "=" { ASSIGN }
   | "<" { LT }
@@ -55,6 +55,8 @@ rule token = parse
   | "if" { IF }
   | "then" { THEN }
   | "else" { ELSE }
+  | "true" { TRUE }
+  | "false" { FALSE }
   | "let" { LET }
   | "rec" { REC }
   | "fun" { FUN }
