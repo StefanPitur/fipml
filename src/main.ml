@@ -16,7 +16,15 @@ let source_code = "
   fun f4 (x : int) (^y : my_first_type) = ()
 
   fun rec f5 x1 ^y1 (x2 : int) (^y2 : my_type) = begin
-    (); fst (x1 + x2, ())
+    (); fst (x1 + x2, ());
+    match x1 with
+    | x -> ()
+    | y -> ()
+    | C(x) -> ()
+    | (x, y) -> true
+    | 3 -> ()
+    | _ -> false
+    endmatch
   end
 "
 in
