@@ -13,7 +13,7 @@ let source_code = "
     ()
   end
   let f3 x y z = ()
-  let f4 (x : int) (y : my_first_type) = ()
+  let f4 (x : int) (^y : my_first_type) = ()
 "
 in
 Frontend.Lex_and_parse.parse_source_code (Lexing.from_string source_code);;

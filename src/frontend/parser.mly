@@ -36,6 +36,8 @@
 %token IF
 %token THEN
 %token ELSE
+%token TRUE
+%token FALSE
 %token LET
 %token REC
 %token FUN
@@ -57,10 +59,11 @@
 
 /* Precedence and associativity */
 
+%right FST SND
 %left ADD SUB
 %left MUL DIV
 
-%start <'a> program
+%start <unit> program
 %%
 
 program:
@@ -95,8 +98,8 @@ function_defn:
 | LET; option(REC); ID; list(function_param); ASSIGN; block_expr { print_string "function_defn\n\n" }
 
 function_param:
-| ID {}
-| LPAREN; ID; COLON; type_expr; RPAREN {}
+| option(BORROWED); ID {}
+| LPAREN; b=option(BORROWED); ID; COLON; type_expr; RPAREN {}
 
 /* Main/Block Expression Definition Production Rules */
 main_expr:
@@ -108,14 +111,31 @@ block_expr:
 
 expr:
 | UNIT {}
+| INT {}
+| TRUE {}
+| FALSE {}
+| ID {}
+| LPAREN; expr; RPAREN {}
+| unary_op; expr {}
+| expr; binary_op; expr {}
 
-// prog:
-// | EOF { None }
-// | expression
+%inline unary_op:
+| SUB {}
+| NOT {}
+| FST {}
+| SND {}
 
-// expression:
-// | INT { $1 }
-// | expression PLUS expression { $1 + $3 }
-// | expression MINUS expression { $1 - $3 }
-// | expression TIMES expression { $1 * $3 }
-// | expression DIVIDE expression { $1 / $3 }
+%inline binary_op:
+| ADD {}
+| SUB {}
+| MUL {}
+| DIV {}
+| MOD {}
+| LT {}
+| GT {}
+| LEQ {}
+| GEQ {}
+| EQ {}
+| NEQ {}
+| AND {}
+| OR {}
