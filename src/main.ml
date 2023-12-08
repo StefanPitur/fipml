@@ -8,12 +8,15 @@ let source_code = "
     comment
   everywhere*/
 
-  fun fn1 = ()
-  fun fn2 = begin
+  fun fn1 = begin
     ()
   end
-  fun rec f3 x y z = ()
-  fun f4 (x : int) (^y : my_first_type) = ()
+  fun rec f3 x y z = begin
+    ()
+  end
+  fun f4 (x : int) (^y : my_first_type) = begin
+    ()
+  end
 
   fun rec f5 x1 ^y1 (x2 : int) (^y2 : my_type) = begin
     (); fst (x1 + x2, ());
