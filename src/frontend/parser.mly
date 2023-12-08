@@ -74,7 +74,7 @@
 %%
 
 program:
-| list(type_defn); list(function_defn); option(expr); EOF { print_string "\n! Finished Parsing\n" }
+| list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n" }
 
 // Need to expand this to accepting types such as - int ref list option
 type_expr:
@@ -104,7 +104,7 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); ID; list(function_param); ASSIGN; block_expr { print_string "function_defn\n\n" }
+| FUN; option(REC); ID; list(function_param); ASSIGN; block_expr {}
 
 function_param:
 | option(BORROWED); ID {}
@@ -112,7 +112,7 @@ function_param:
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| BEGIN; separated_list(SEMICOLON, expr); END { print_string "block_expression\n" }
+| BEGIN; separated_list(SEMICOLON, expr); END {}
 
 expr:
 | UNIT {}
