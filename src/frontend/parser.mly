@@ -1,6 +1,7 @@
-/* Header for auxiliary code */
 %{
-  (* let get_position = Parsing.symbol_start_pos *)
+  (* Header for auxiliary code *)
+  (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
+  (* TODO: Could differentiate between UID and LID rather than general ID *)
 %}
 
 /* Tokens Definition */
@@ -22,6 +23,7 @@
 %token LT
 %token GT
 %token BAR
+%token UNDERSCORE
 %token LEQ
 %token GEQ
 %token EQ
@@ -36,6 +38,9 @@
 %token IF
 %token THEN
 %token ELSE
+%token ENDIF
+%token TRUE
+%token FALSE
 %token LET
 %token REC
 %token FUN
@@ -45,7 +50,10 @@
 %token TYPE
 %token MATCH
 %token DMATCH
+%token ENDMATCH
 %token WITH
+%token SOME
+%token NONE
 %token EOF
 
 /* Types Tokens */
@@ -54,17 +62,24 @@
 %token TYPE_CHAR
 %token TYPE_BOOL
 %token TYPE_STRING
+%token TYPE_UNIT
+%token TYPE_OPTION
 
 /* Precedence and associativity */
-
+%nonassoc LT GT LEQ GEQ EQ NEQ IN
+%right FST SND SOME
+%left OR
+%left AND
+%right NOT
 %left ADD SUB
-%left MUL DIV
+%left MUL DIV MOD
 
-%start <'a> program
+/* Starting non-terminal, endpoint for calling the parser */
+%start <unit> program
 %%
 
 program:
-| list(type_defn); list(function_defn); option(main_expr); EOF { print_string "\n! Finished Parsing\n" }
+| list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n" }
 
 type_expr:
 | TYPE_INT {}
@@ -72,53 +87,90 @@ type_expr:
 | TYPE_CHAR {}
 | TYPE_BOOL {}
 | TYPE_STRING {}
+| TYPE_UNIT {}
 | ID {}
+| type_expr; TYPE_OPTION {}
 
 
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; ID; ASSIGN; list(type_constructor) { print_string "type_defn\n\n" }
+| TYPE; ID; ASSIGN; nonempty_list(type_constructor) {}
 
 // Type Definition Constructors Production Rules
 type_constructor:
-| BAR; ID; option(type_constructor_arguments) { print_string "type_constructor\n" }
+| BAR; ID; option(type_constructor_arguments) {}
 
 // Type Definition Constructors' Arguments Production Rules
 type_constructor_arguments:
-| OF; separated_list(MUL, type_expr) { print_string "constructor arguments\n" }
-
-type_constructor_arguments_:
-| MUL; type_expr {}
+| OF; separated_nonempty_list(MUL, type_expr) {}
 (* --------------------------------------------------------- *)
 
 
 /* Function Definition Production Rules */
 function_defn:
-| LET; option(REC); ID; list(params); ASSIGN; block_expr { print_string "function_defn\n\n" }
+| FUN; option(REC); ID; list(function_param); ASSIGN; block_expr {}
 
-params:
-| ID {}
-| LPAREN; ID; COLON; type_expr; RPAREN {}
+function_param:
+| option(BORROWED); ID {}
+| LPAREN; option(BORROWED); ID; COLON; type_expr; RPAREN {}
 
-/* Main/Block Expression Definition Production Rules */
-main_expr:
-| UNIT { print_string "main_expr\n" }
-
+/* Block Expression Definition Production Rules */
 block_expr:
-| separated_list(SEMICOLON, expr) {}
-| BEGIN; separated_list(SEMICOLON, expr); END { print_string "block_expression\n" }
+| BEGIN; separated_list(SEMICOLON, expr); END {}
 
 expr:
 | UNIT {}
+| SOME; expr {}
+| value {}
+| ID {}
+| unary_op; expr {}
+| expr; binary_op; expr {}
+| LPAREN; expr; RPAREN {}
+| LPAREN; expr; COMMA expr; RPAREN {}
+| LET; ID; ASSIGN; expr; IN; expr {}
 
-// prog:
-// | EOF { None }
-// | expression
+/* Control Flow - IF statements */
+| IF; expr; THEN; expr; ENDIF {}
+| IF; expr; THEN; expr; ELSE expr; ENDIF {}
 
-// expression:
-// | INT { $1 }
-// | expression PLUS expression { $1 + $3 }
-// | expression MINUS expression { $1 - $3 }
-// | expression TIMES expression { $1 * $3 }
-// | expression DIVIDE expression { $1 / $3 }
+/* Control Flow - MATCH / DMATCH statements */
+| MATCH; ID; WITH; match_expr+; ENDMATCH {}
+| DMATCH; ID; WITH; match_expr+; ENDMATCH {}
+
+match_expr:
+| BAR; match_constructor; ARROW; expr {}
+
+match_constructor:
+| ID {}
+| UNDERSCORE 
+| value {}
+| SOME; match_constructor {}
+| option(ID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
+
+%inline unary_op:
+| SUB {}
+| NOT {}
+| FST {}
+| SND {}
+
+%inline binary_op:
+| ADD {}
+| SUB {}
+| MUL {}
+| DIV {}
+| MOD {}
+| LT {}
+| GT {}
+| LEQ {}
+| GEQ {}
+| EQ {}
+| NEQ {}
+| AND {}
+| OR {}
+
+%inline value:
+| INT {}
+| TRUE {}
+| FALSE {}
+| NONE {}
