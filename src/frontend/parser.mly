@@ -1,5 +1,7 @@
 %{
   (* Header for auxiliary code *)
+  (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
+  (* TODO: Could differentiate between UID and LID rather than general ID *)
 %}
 
 /* Tokens Definition */
@@ -50,6 +52,8 @@
 %token DMATCH
 %token ENDMATCH
 %token WITH
+%token SOME
+%token NONE
 %token EOF
 
 /* Types Tokens */
@@ -59,10 +63,11 @@
 %token TYPE_BOOL
 %token TYPE_STRING
 %token TYPE_UNIT
+%token TYPE_OPTION
 
 /* Precedence and associativity */
-%nonassoc LT GT LEQ GEQ EQ NEQ
-%right FST SND
+%nonassoc LT GT LEQ GEQ EQ NEQ IN
+%right FST SND SOME
 %left OR
 %left AND
 %right NOT
@@ -76,7 +81,6 @@
 program:
 | list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n" }
 
-// Need to expand this to accepting types such as - int ref list option
 type_expr:
 | TYPE_INT {}
 | TYPE_FLOAT {}
@@ -85,6 +89,7 @@ type_expr:
 | TYPE_STRING {}
 | TYPE_UNIT {}
 | ID {}
+| type_expr; TYPE_OPTION {}
 
 
 /* Type Definition Production Rules */
@@ -116,15 +121,14 @@ block_expr:
 
 expr:
 | UNIT {}
-| INT {}
-| TRUE {}
-| FALSE {}
+| SOME; expr {}
+| value {}
 | ID {}
 | unary_op; expr {}
 | expr; binary_op; expr {}
 | LPAREN; expr; RPAREN {}
 | LPAREN; expr; COMMA expr; RPAREN {}
-| LET; ID; ASSIGN; expr; IN {}
+| LET; ID; ASSIGN; expr; IN; expr {}
 
 /* Control Flow - IF statements */
 | IF; expr; THEN; expr; ENDIF {}
@@ -141,6 +145,7 @@ match_constructor:
 | ID {}
 | UNDERSCORE 
 | value {}
+| SOME; match_constructor {}
 | option(ID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
 
 %inline unary_op:
@@ -168,3 +173,4 @@ match_constructor:
 | INT {}
 | TRUE {}
 | FALSE {}
+| NONE {}

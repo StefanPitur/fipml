@@ -18,17 +18,23 @@ let source_code = "
     ()
   end
 
-  fun rec f5 x1 ^y1 (x2 : int) (^y2 : my_type) = begin
+  fun rec f5 x1 ^y1 (x2 : int) (^y2 : int option) = begin
     (); fst (x1 + x2, ());
     match x1 with
     | x -> ()
     | y -> ()
     | C(x) -> ()
     | (x, y) -> true
+    | Some (x, y) -> true
+    | None -> false
     | 3 -> ()
     | _ -> false
+    | Some _ -> true
     endmatch
   end
+
+  let x = Some (x, y) in
+  let y = None in ()
 "
 in
 Frontend.Lex_and_parse.parse_source_code (Lexing.from_string source_code);;

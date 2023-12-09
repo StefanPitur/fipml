@@ -70,6 +70,9 @@ rule token = parse
   | "match!" { DMATCH }
   | "endmatch" { ENDMATCH }
   | "with" { WITH }
+  | "Some" { SOME }
+  | "None" { NONE }
+  | "option" { TYPE_OPTION }
   | "int" { TYPE_INT }
   | "float" { TYPE_FLOAT }
   | "char" { TYPE_CHAR }
