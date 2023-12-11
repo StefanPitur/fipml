@@ -14,11 +14,14 @@
 
 (** Helper regexes for the Lexer *)
 let digit = ['0'-'9']
-let letter = ['a'-'z' 'A'-'Z']
+let lowercase = ['a'-'z']
+let uppercase = ['A'-'Z']
+let letter = lowercase | uppercase
 
 (** Regexes for finding tokens *)
 let integer_regex_expression = '-'? digit+
-let id_regex_expression = (letter) (letter | digit | '_')*
+let lid_regex_expression = lowercase (letter | digit | '_')*
+let uid_regex_expression = uppercase (letter | digit | '_')*
 let whitespace_regex_expression = [' ' '\t']+
 let newline_regex_expression = '\r' | '\n' | "\r\n"
 
@@ -80,7 +83,8 @@ rule token = parse
   | "string" { TYPE_STRING }
   | "unit" { TYPE_UNIT }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
-  | id_regex_expression { ID (Lexing.lexeme lexbuf) }
+  | lid_regex_expression { LID (Lexing.lexeme lexbuf) }
+  | uid_regex_expression { UID (Lexing.lexeme lexbuf) }
   | "/*" { multi_line_comment lexbuf }
   | "//" { single_line_comment lexbuf }
   | newline_regex_expression { next_line lexbuf; token lexbuf }
