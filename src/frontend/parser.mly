@@ -1,12 +1,12 @@
 %{
   (* Header for auxiliary code *)
   (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
-  (* TODO: Could differentiate between UID and LID rather than general ID *)
 %}
 
 /* Tokens Definition */
 %token<int> INT
-%token<string> ID
+%token<string> LID
+%token<string> UID
 %token LPAREN
 %token RPAREN
 %token COMMA
@@ -81,25 +81,28 @@
 program:
 | list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n" }
 
+
 type_expr:
+| LID {}
 | TYPE_INT {}
 | TYPE_FLOAT {}
 | TYPE_CHAR {}
 | TYPE_BOOL {}
 | TYPE_STRING {}
 | TYPE_UNIT {}
-| ID {}
 | type_expr; TYPE_OPTION {}
 
 
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; ID; ASSIGN; nonempty_list(type_constructor) {}
+| TYPE; LID; ASSIGN; nonempty_list(type_constructor) {}
+
 
 // Type Definition Constructors Production Rules
 type_constructor:
-| BAR; ID; option(type_constructor_arguments) {}
+| BAR; UID; option(type_constructor_arguments) {}
+
 
 // Type Definition Constructors' Arguments Production Rules
 type_constructor_arguments:
@@ -109,50 +112,72 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); ID; list(function_param); ASSIGN; block_expr {}
+| FUN; option(REC); LID; list(function_param); ASSIGN; block_expr {}
+
 
 function_param:
-| option(BORROWED); ID {}
-| LPAREN; option(BORROWED); ID; COLON; type_expr; RPAREN {}
+| option(BORROWED); LID {}
+| LPAREN; option(BORROWED); LID; COLON; type_expr; RPAREN {}
+
 
 /* Block Expression Definition Production Rules */
 block_expr:
 | BEGIN; separated_list(SEMICOLON, expr); END {}
 
+
 expr:
-| UNIT {}
-| SOME; expr {}
+/* Simple expression containing values, variables and applied constructors */
 | value {}
-| ID {}
+| SOME; expr {}
+| LID {}
+| constructor_expr {}
+
+/* Convoluted expressions */
 | unary_op; expr {}
 | expr; binary_op; expr {}
 | LPAREN; expr; RPAREN {}
 | LPAREN; expr; COMMA expr; RPAREN {}
-| LET; ID; ASSIGN; expr; IN; expr {}
+| LET; LID; ASSIGN; expr; IN; expr {}
 
 /* Control Flow - IF statements */
 | IF; expr; THEN; expr; ENDIF {}
 | IF; expr; THEN; expr; ELSE expr; ENDIF {}
 
 /* Control Flow - MATCH / DMATCH statements */
-| MATCH; ID; WITH; match_expr+; ENDMATCH {}
-| DMATCH; ID; WITH; match_expr+; ENDMATCH {}
+| MATCH; LID; WITH; match_expr+; ENDMATCH {}
+| DMATCH; LID; WITH; match_expr+; ENDMATCH {}
 
+/* Constructor expression */
+constructor_expr:
+| UID {}
+| UID; LPAREN; separated_nonempty_list(COMMA, constructor_params_expr); RPAREN {}
+
+
+constructor_params_expr:
+| value {}
+| LID {}
+| constructor_expr {}
+
+/* Matching expression */
 match_expr:
 | BAR; match_constructor; ARROW; expr {}
 
+
 match_constructor:
-| ID {}
+| LID {}
+| UID; {}
 | UNDERSCORE 
 | value {}
 | SOME; match_constructor {}
-| option(ID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
+| option(UID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
+
 
 %inline unary_op:
 | SUB {}
 | NOT {}
 | FST {}
 | SND {}
+
 
 %inline binary_op:
 | ADD {}
@@ -169,8 +194,10 @@ match_constructor:
 | AND {}
 | OR {}
 
+
 %inline value:
+| NONE {}
+| UNIT {}
 | INT {}
 | TRUE {}
 | FALSE {}
-| NONE {}
