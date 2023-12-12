@@ -37,7 +37,7 @@ type unary_op =
   | UnOpNeg
 
 (* Binary operators *)
-type binary_oper =
+type binary_op =
   | BinOpPlus
   | BinOpMinus
   | BinOpMult
