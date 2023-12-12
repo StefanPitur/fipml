@@ -1,5 +1,5 @@
 %{
-  (* Header for auxiliary code *)
+  (* Header for auxiliary code, such as opening Modules *)
   (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
 %}
 
