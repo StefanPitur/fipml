@@ -1,8 +1,4 @@
 (library
  (name frontend)
- (modules lexer parser lex_and_parse)
- (libraries core)
+ (libraries ast parsing)
 )
-(ocamllex lexer)
-(menhir
- (modules parser))

@@ -14,10 +14,10 @@ module Var_name : ID
 module Type_name : ID
 module Function_name : ID
 
-(* Type for borrowed elements *)
+(** Type for borrowed elements *)
 type borrowed = BORROWED
 
-(* Types of expressions in FipML *)
+(** Types of expressions in FipML *)
 type type_expr = 
     | TEInt
     | TEVoid
@@ -29,12 +29,12 @@ type param =
 
 val get_params_type : param list -> type_expr list
 
-(* Unary operators *)
+(** Unary operators *)
 type unary_op =
     | UnOpNot
     | UnOpNeg
 
-(* Binary operators *)
+(** Binary operators *)
 type binary_oper =
     | BinOpPlus
     | BinOpMinus
