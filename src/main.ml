@@ -37,4 +37,4 @@ let source_code = "
   let y = None in ()
 "
 in
-Frontend.Lex_and_parse.parse_source_code (Lexing.from_string source_code);;
+Frontend.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code);;
