@@ -6,7 +6,7 @@ let print_position outx lexbuf =
   fprintf outx "File: %s, Line: %d, Column: %d" pos.pos_fname
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
-let parse_source_code_with_error (lexbuf : lexbuf) = 
+let parse_source_code_with_error lexbuf = 
   try Parser.program Lexer.token lexbuf with
   | Lexer.LexerError msg -> 
     fprintf stderr "%a: %s\n" print_position lexbuf msg
