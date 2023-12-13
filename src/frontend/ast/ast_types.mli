@@ -27,7 +27,7 @@ type type_expr =
   | TECustom of string
 
 type param = 
-    | TParam of type_expr * Var_name.t * borrowed option
+  | TParam of type_expr * Var_name.t * borrowed option
 
 val get_params_type : param list -> type_expr list
 

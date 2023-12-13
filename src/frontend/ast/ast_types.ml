@@ -14,19 +14,21 @@ module StringID : ID = struct
   let ( = ) = String.equal
 end
 
-module Var_name : ID = StringID
 module Type_name : ID = StringID
+module Var_name : ID = StringID
+module Constructor_name : ID = StringID
 module Function_name : ID = StringID
+
+(* Type for borrowed elements *)
+type borrowed = Borrowed
 
 (* Types of expressions in FipML *)
 type type_expr = 
+  | TEUnit
   | TEInt
-  | TEVoid
-  | TEString
   | TEBool
-
-(* Type for borrowed elements *)
-type borrowed = BORROWED
+  | TEOption of type_expr
+  | TECustom of string
 
 type param = 
   | TParam of type_expr * Var_name.t * borrowed option
@@ -35,6 +37,8 @@ type param =
 type unary_op =
   | UnOpNot
   | UnOpNeg
+  | UnOpFst
+  | UnOpSnd
 
 (* Binary operators *)
 type binary_op =
@@ -44,16 +48,13 @@ type binary_op =
   | BinOpDiv
   | BinOpMod
   | BinOpLt
-  | BinOpLeq
   | BinOpGt
+  | BinOpLeq
   | BinOpGeq
   | BinOpEq
   | BinOpNeq
   | BinOpAnd
   | BinOpOr
-  | BinOpArrow
-
-
 
 
 (* Implementation of helper functions for printing AST *)
@@ -65,11 +66,13 @@ let string_of_loc loc =
   loc_string
 
 
-let string_of_type = function
-  | TEVoid -> "Void"
+let rec string_of_type = function
+  | TEUnit -> "Unit"
   | TEInt -> "Int"
   | TEBool -> "Bool"
-  | TEString -> "String"
+  | TEOption type_name -> (string_of_type type_name) ^ " option"
+  | TECustom custom_type_name -> custom_type_name
+  
 
 let get_params_type (params : param list) = 
   let get_param_type = function
@@ -80,6 +83,8 @@ let get_params_type (params : param list) =
 let string_of_unary_op = function
   | UnOpNeg -> "-"
   | UnOpNot -> "~"
+  | UnOpFst -> "Fst"
+  | UnOpSnd -> "Snd"
 
 let string_of_binary_op = function
   | BinOpPlus -> "+"
@@ -88,15 +93,14 @@ let string_of_binary_op = function
   | BinOpDiv -> "/"
   | BinOpMod -> "%"
   | BinOpLt -> "<"
-  | BinOpLeq -> "<="
   | BinOpGt -> ">"
+  | BinOpLeq -> "<="
   | BinOpGeq -> ">="
   | BinOpEq -> "=="
   | BinOpNeq -> "!="
   | BinOpAnd -> "&&"
   | BinOpOr -> "||"
-  | BinOpArrow -> "->"
 
 let string_of_borrowed_option = function
   | None -> ""
-  | Some _ -> "Borrowed "
+  | Some _ -> "Borrowed"
