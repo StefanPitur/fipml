@@ -19,10 +19,10 @@ type borrowed = BORROWED
 
 (** Types of expressions in FipML *)
 type type_expr = 
-    | TEInt
-    | TEVoid
-    | TEString
-    | TEBool
+  | TEInt
+  | TEVoid
+  | TEString
+  | TEBool
 
 type param = 
     | TParam of type_expr * Var_name.t * borrowed option
@@ -31,29 +31,30 @@ val get_params_type : param list -> type_expr list
 
 (** Unary operators *)
 type unary_op =
-    | UnOpNot
-    | UnOpNeg
+  | UnOpNot
+  | UnOpNeg
+  | UnOpFst
+  | UnOpSnd
 
 (** Binary operators *)
-type binary_oper =
-    | BinOpPlus
-    | BinOpMinus
-    | BinOpMult
-    | BinOpDiv
-    | BinOpMod
-    | BinOpLt
-    | BinOpLeq
-    | BinOpGt
-    | BinOpGeq
-    | BinOpEq
-    | BinOpNeq
-    | BinOpAnd
-    | BinOpOr
-    | BinOpArrow
+type binary_op =
+  | BinOpPlus
+  | BinOpMinus
+  | BinOpMult
+  | BinOpDiv
+  | BinOpMod
+  | BinOpLt
+  | BinOpGt
+  | BinOpLeq
+  | BinOpGeq
+  | BinOpEq
+  | BinOpNeq
+  | BinOpAnd
+  | BinOpOr
 
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string
 val string_of_type : type_expr -> string
 val string_of_unary_op : unary_op -> string
-val string_of_binary_op : binary_oper -> string
+val string_of_binary_op : binary_op -> string
 val string_of_borrowed_option : borrowed option -> string
