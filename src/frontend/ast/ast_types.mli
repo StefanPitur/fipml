@@ -5,13 +5,14 @@ type loc = Lexing.position
 module type ID = sig
   type t
   val of_string : string -> t
-  val to_string: t -> string
+  val to_string : t -> string
   val ( = ) : t -> t -> bool
 end
 
 (* Differentiate between different identifiers *)
-module Var_name : ID
 module Type_name : ID
+module Var_name : ID
+module Constructor_name : ID
 module Function_name : ID
 
 (** Type for borrowed elements *)
