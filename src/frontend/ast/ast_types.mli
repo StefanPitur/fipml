@@ -15,14 +15,15 @@ module Type_name : ID
 module Function_name : ID
 
 (** Type for borrowed elements *)
-type borrowed = BORROWED
+type borrowed = Borrowed
 
 (** Types of expressions in FipML *)
 type type_expr = 
+  | TEUnit
   | TEInt
-  | TEVoid
-  | TEString
   | TEBool
+  | TEOption of type_expr
+  | TECustom of string
 
 type param = 
     | TParam of type_expr * Var_name.t * borrowed option
