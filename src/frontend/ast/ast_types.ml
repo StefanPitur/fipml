@@ -103,4 +103,4 @@ let string_of_binary_op = function
 
 let string_of_borrowed_option = function
   | None -> ""
-  | Some _ -> "Borrowed"
+  | Some Borrowed -> "Borrowed"
