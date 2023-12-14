@@ -82,7 +82,7 @@ let get_params_type (params : param list) =
 
 let string_of_unary_op = function
   | UnOpNeg -> "-"
-  | UnOpNot -> "~"
+  | UnOpNot -> "!"
   | UnOpFst -> "Fst"
   | UnOpSnd -> "Snd"
 
