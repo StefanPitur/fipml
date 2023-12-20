@@ -79,15 +79,23 @@
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
 
-/* Types for Type Definitions */
 %type<type_expr> type_expr
+
+/* Types for Type Definitions */
 %type<type_defn> type_defn
 %type<type_constructor> type_constructor
 %type<type_expr list>type_constructor_arguments
+
+/* Types for Function Definitions */
+%type<function_defn> function_defn
+%type<param> function_param
 %%
 
 program:
-| type_defns=list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n"; TProg(type_defns) }
+| type_defns=list(type_defn); function_defns=list(function_defn); option(expr); EOF { 
+    print_string "Finished Parsing!\n";
+    TProg(type_defns, function_defns)
+  }
 
 
 type_expr:
@@ -124,17 +132,23 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); LID; list(function_param); ASSIGN; block_expr {}
+| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); ASSIGN; fun_body=block_expr {
+    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body)
+}
 
 
 function_param:
-| option(BORROWED); LID {}
-| LPAREN; option(BORROWED); LID; COLON; type_expr; RPAREN {}
+| LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
+    TParam(param_type, Var_name.of_string param_name, None)
+}
+| LPAREN; BORROWED; param_name=LID; COLON; param_type=type_expr; RPAREN {
+    TParam(param_type, Var_name.of_string param_name, Some Borrowed)
+}
 
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| BEGIN; separated_list(SEMICOLON, expr); END {}
+| BEGIN; separated_list(SEMICOLON, expr); END { Block($startpos) }
 
 
 expr:

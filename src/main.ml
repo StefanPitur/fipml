@@ -8,17 +8,11 @@ let source_code = "
     comment
   everywhere*/
 
-  fun fn1 = begin
-    ()
-  end
-  fun rec f3 x y z = begin
-    ()
-  end
   fun f4 (x : int) (^y : my_first_type) = begin
     ()
   end
 
-  fun rec f5 x1 ^y1 (x2 : int) (^y2 : int option) = begin
+  fun rec f5 (x1 : type1) (^y1 : type2) (x2 : int) (^y2 : int option) = begin
     (); fst (x1 + x2, ());
     match x1 with
     | x -> ()
