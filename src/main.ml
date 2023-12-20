@@ -34,7 +34,8 @@ let source_code = "
   end
 
   let x = Some (x, y) in
-  let y = None in ()
+  let y = None in 
+  fn1 [(1, 2), x, y]
 "
 in
 Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code);;

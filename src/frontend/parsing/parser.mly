@@ -1,5 +1,6 @@
 %{
-  (* Header for auxiliary code, such as opening Modules *)
+  open Ast.Ast_types
+  open Parser_ast
   (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
 %}
 
@@ -9,6 +10,10 @@
 %token<string> UID
 %token LPAREN
 %token RPAREN
+// These have been added to handle Function Application
+%token LPARENSQ
+%token RPARENSQ
+
 %token COMMA
 %token COLON
 %token SEMICOLON
@@ -58,10 +63,7 @@
 
 /* Types Tokens */
 %token TYPE_INT
-%token TYPE_FLOAT
-%token TYPE_CHAR
 %token TYPE_BOOL
-%token TYPE_STRING
 %token TYPE_UNIT
 %token TYPE_OPTION
 
@@ -75,38 +77,48 @@
 %left MUL DIV MOD
 
 /* Starting non-terminal, endpoint for calling the parser */
-%start <unit> program
+%start <program> program
+
+/* Types for Type Definitions */
+%type<type_expr> type_expr
+%type<type_defn> type_defn
+%type<type_constructor> type_constructor
+%type<type_expr list>type_constructor_arguments
 %%
 
 program:
-| list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n" }
+| type_defns=list(type_defn); list(function_defn); option(expr); EOF { print_string "Finished Parsing!\n"; TProg(type_defns) }
 
 
 type_expr:
-| LID {}
-| TYPE_INT {}
-| TYPE_FLOAT {}
-| TYPE_CHAR {}
-| TYPE_BOOL {}
-| TYPE_STRING {}
-| TYPE_UNIT {}
-| type_expr; TYPE_OPTION {}
+| TYPE_UNIT { TEUnit }
+| TYPE_INT { TEInt }
+| TYPE_BOOL { TEBool }
+| type_expr=type_expr; TYPE_OPTION { TEOption(type_expr) }
+| custom_type=LID { TECustom(custom_type) }
 
 
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; LID; ASSIGN; nonempty_list(type_constructor) {}
+| TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    TType($startpos, Type_name.of_string type_name, type_constructors) 
+  }
 
 
 // Type Definition Constructors Production Rules
 type_constructor:
-| BAR; UID; option(type_constructor_arguments) {}
+| BAR; type_constructor_name=UID { 
+    TTypeConstructor($startpos, Constructor_name.of_string type_constructor_name, []) 
+  }
+| BAR; type_constructor_name=UID; type_constructor_arguments=type_constructor_arguments { 
+    TTypeConstructor($startpos, Constructor_name.of_string type_constructor_name, type_constructor_arguments)
+  }
 
 
 // Type Definition Constructors' Arguments Production Rules
 type_constructor_arguments:
-| OF; separated_nonempty_list(MUL, type_expr) {}
+| OF; type_constructor_arguments=separated_nonempty_list(MUL, type_expr) { type_constructor_arguments }
 (* --------------------------------------------------------- *)
 
 
@@ -146,6 +158,9 @@ expr:
 /* Control Flow - MATCH / DMATCH statements */
 | MATCH; LID; WITH; match_expr+; ENDMATCH {}
 | DMATCH; LID; WITH; match_expr+; ENDMATCH {}
+
+/* Function application */
+| LID; LPARENSQ; separated_nonempty_list(COMMA, expr); RPARENSQ {}
 
 /* Constructor expression */
 constructor_expr:
