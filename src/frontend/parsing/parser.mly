@@ -171,8 +171,7 @@ expr:
 | expr_left=expr; binary_op=binary_op; expr_right=expr {
     BinaryOp($startpos, binary_op, expr_left, expr_right)
   }
-// Might remove this
-// | LPAREN; expr; RPAREN {}
+
 | LPAREN; fst_expr=expr; COMMA snd_expr=expr; RPAREN { 
     Tuple($startpos, fst_expr, snd_expr) 
   }
