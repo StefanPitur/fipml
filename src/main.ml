@@ -15,15 +15,14 @@ let source_code = "
   fun rec f5 (x1 : type1) (^y1 : type2) (x2 : int) (^y2 : int option) = begin
     (); fst (x1 + x2, ());
     match x1 with
-    | x -> ()
-    | y -> ()
-    | C(x) -> ()
-    | (x, y) -> true
-    | Some (x, y) -> true
-    | None -> false
-    | 3 -> ()
-    | _ -> false
-    | Some _ -> true
+    | x -> begin () end
+    | y -> begin () end
+    | C(x) -> begin () end
+    | (x, y) -> begin true end
+    | Some (x, y) -> begin true end
+    | None -> begin false end
+    | _ -> begin false end
+    | Some _ -> begin true end
     endmatch
   end
 

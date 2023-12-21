@@ -89,12 +89,24 @@
 /* Types for Function Definitions */
 %type<function_defn> function_defn
 %type<param> function_param
+
+/* Types for Expression Definitions */
+%type<block_expr> block_expr
+
+%type<expr> expr
+%type<expr> constructor_expr
+%type<pattern_expr> match_expr
+%type<matched_expr> match_constructor
+
+%type<unary_op> unary_op
+%type<binary_op> binary_op
+%type<expr> value
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); option(expr); EOF { 
+| type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
     print_string "Finished Parsing!\n";
-    TProg(type_defns, function_defns)
+    TProg(type_defns, function_defns, expr)
   }
 
 
@@ -134,99 +146,121 @@ type_constructor_arguments:
 function_defn:
 | FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); ASSIGN; fun_body=block_expr {
     TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body)
-}
+  }
 
 
 function_param:
 | LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
     TParam(param_type, Var_name.of_string param_name, None)
-}
+  }
 | LPAREN; BORROWED; param_name=LID; COLON; param_type=type_expr; RPAREN {
     TParam(param_type, Var_name.of_string param_name, Some Borrowed)
-}
+  }
 
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| BEGIN; separated_list(SEMICOLON, expr); END { Block($startpos) }
+| BEGIN; exprs=separated_list(SEMICOLON, expr); END { Block($startpos, exprs) }
 
 
 expr:
 /* Simple expression containing values, variables and applied constructors */
-| value {}
-| SOME; expr {}
-| LID {}
-| constructor_expr {}
+| value=value { value }
+| SOME; expr=expr { Option($startpos, Some expr) }
+| var_name=LID { Variable($startpos, Var_name.of_string var_name) }
+| constructor_expr=constructor_expr { constructor_expr }
 
 /* Convoluted expressions */
-| unary_op; expr {}
-| expr; binary_op; expr {}
-| LPAREN; expr; RPAREN {}
-| LPAREN; expr; COMMA expr; RPAREN {}
-| LET; LID; ASSIGN; expr; IN; expr {}
+| unary_op=unary_op; expr=expr { UnOp($startpos, unary_op, expr) }
+| expr_left=expr; binary_op=binary_op; expr_right=expr {
+    BinaryOp($startpos, binary_op, expr_left, expr_right)
+  }
+// Might remove this
+// | LPAREN; expr; RPAREN {}
+| LPAREN; fst_expr=expr; COMMA snd_expr=expr; RPAREN { 
+    Tuple($startpos, fst_expr, snd_expr) 
+  }
+| LET; var_name=LID; ASSIGN; var_expr=expr; IN; var_scope=expr {
+    Let($startpos, Var_name.of_string var_name, var_expr, var_scope)
+  }
 
 /* Control Flow - IF statements */
-| IF; expr; THEN; expr; ENDIF {}
-| IF; expr; THEN; expr; ELSE expr; ENDIF {}
+| IF; cond_expr=expr; THEN; then_expr=block_expr; ENDIF {
+    If($startpos, cond_expr, then_expr)
+  }
+| IF; cond_expr=expr; THEN; then_expr=block_expr; ELSE else_expr=block_expr; ENDIF {
+    IfElse($startpos, cond_expr, then_expr, else_expr)
+  }
 
 /* Control Flow - MATCH / DMATCH statements */
-| MATCH; LID; WITH; match_expr+; ENDMATCH {}
-| DMATCH; LID; WITH; match_expr+; ENDMATCH {}
+| MATCH; match_var_name=LID; WITH; pattern_exprs=nonempty_list(match_expr); ENDMATCH {
+    Match($startpos, Var_name.of_string match_var_name, pattern_exprs)
+  }
+| DMATCH; match_var_name=LID; WITH; pattern_exprs=nonempty_list(match_expr); ENDMATCH {
+    DMatch($startpos, Var_name.of_string match_var_name, pattern_exprs)
+  }
 
 /* Function application */
-| LID; LPARENSQ; separated_nonempty_list(COMMA, expr); RPARENSQ {}
+| fun_name=LID; LPARENSQ; fun_args=separated_nonempty_list(COMMA, expr); RPARENSQ {
+    FunApp($startpos, Function_name.of_string fun_name, fun_args)
+  }
 
 /* Constructor expression */
 constructor_expr:
-| UID {}
-| UID; LPAREN; separated_nonempty_list(COMMA, constructor_params_expr); RPAREN {}
-
-
-constructor_params_expr:
-| value {}
-| LID {}
-| constructor_expr {}
+| constructor_name=UID { Constructor($startpos, Constructor_name.of_string constructor_name, []) }
+| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, expr); RPAREN {
+    Constructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
+  }
 
 /* Matching expression */
 match_expr:
-| BAR; match_constructor; ARROW; expr {}
+| BAR; matched_expr=match_constructor; ARROW; block_expr=block_expr { 
+    MPattern($startpos, matched_expr, block_expr) 
+  }
 
 
 match_constructor:
-| LID {}
-| UID; {}
-| UNDERSCORE 
-| value {}
-| SOME; match_constructor {}
-| option(UID); LPAREN; separated_nonempty_list(COMMA, match_constructor); RPAREN {}
+| UNDERSCORE { MUnderscore($startpos) }
+| var_name=LID { MVariable($startpos, Var_name.of_string var_name) }
+| LPAREN; left_matched_expr=match_constructor; COMMA; right_matched_expr=match_constructor; RPAREN {
+    MTuple($startpos, left_matched_expr, right_matched_expr)
+  }
+| constructor_name=UID; { 
+    MConstructor($startpos, Constructor_name.of_string constructor_name, []) 
+  }
+| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, match_constructor); RPAREN {
+    MConstructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
+  }
+| NONE { MOption($startpos, None) }
+| SOME; matched_expr=match_constructor { MOption($startpos, Some matched_expr) }
 
 
 %inline unary_op:
-| SUB {}
-| NOT {}
-| FST {}
-| SND {}
+| SUB { UnOpNeg }
+| NOT { UnOpNot }
+| FST { UnOpFst }
+| SND { UnOpSnd }
 
 
 %inline binary_op:
-| ADD {}
-| SUB {}
-| MUL {}
-| DIV {}
-| MOD {}
-| LT {}
-| GT {}
-| LEQ {}
-| GEQ {}
-| EQ {}
-| NEQ {}
-| AND {}
-| OR {}
+| ADD { BinOpPlus }
+| SUB { BinOpMinus }
+| MUL { BinOpMult }
+| DIV { BinOpDiv }
+| MOD { BinOpMod }
+| LT { BinOpLt }
+| GT { BinOpGt }
+| LEQ { BinOpLeq }
+| GEQ { BinOpGeq }
+| EQ { BinOpEq }
+| NEQ { BinOpNeq }
+| AND { BinOpAnd }
+| OR { BinOpOr }
 
 
 %inline value:
-| NONE {}
-| UNIT {}
-| INT {}
-| TRUE {}
-| FALSE {}
+| NONE { Option($startpos, None) }
+| UNIT { Unit($startpos) }
+| n=INT { Integer($startpos, n) }
+| TRUE { Boolean($startpos, true) }
+| FALSE { Boolean($startpos, false) }
