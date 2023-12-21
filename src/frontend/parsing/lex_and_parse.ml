@@ -9,7 +9,8 @@ let print_position outx lexbuf =
 let parse_source_code_with_error lexbuf = 
   try Parser.program Lexer.token lexbuf with
   | Lexer.LexerError msg -> 
-    fprintf stderr "%a: %s\n" print_position lexbuf msg
+    fprintf stderr "%a: %s\n" print_position lexbuf msg;
+    exit(-1)
   | Parser.Error ->
     fprintf stderr "%a: Syntax Error\n" print_position lexbuf;
     exit(-1)

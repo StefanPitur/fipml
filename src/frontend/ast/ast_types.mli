@@ -5,55 +5,58 @@ type loc = Lexing.position
 module type ID = sig
   type t
   val of_string : string -> t
-  val to_string: t -> string
+  val to_string : t -> string
   val ( = ) : t -> t -> bool
 end
 
 (* Differentiate between different identifiers *)
-module Var_name : ID
 module Type_name : ID
+module Var_name : ID
+module Constructor_name : ID
 module Function_name : ID
 
-(* Type for borrowed elements *)
-type borrowed = BORROWED
+(** Type for borrowed elements *)
+type borrowed = Borrowed
 
-(* Types of expressions in FipML *)
+(** Types of expressions in FipML *)
 type type_expr = 
-    | TEInt
-    | TEVoid
-    | TEString
-    | TEBool
+  | TEUnit
+  | TEInt
+  | TEBool
+  | TEOption of type_expr
+  | TECustom of string
 
 type param = 
-    | TParam of type_expr * Var_name.t * borrowed option
+  | TParam of type_expr * Var_name.t * borrowed option
 
 val get_params_type : param list -> type_expr list
 
-(* Unary operators *)
+(** Unary operators *)
 type unary_op =
-    | UnOpNot
-    | UnOpNeg
+  | UnOpNot
+  | UnOpNeg
+  | UnOpFst
+  | UnOpSnd
 
-(* Binary operators *)
-type binary_oper =
-    | BinOpPlus
-    | BinOpMinus
-    | BinOpMult
-    | BinOpDiv
-    | BinOpMod
-    | BinOpLt
-    | BinOpLeq
-    | BinOpGt
-    | BinOpGeq
-    | BinOpEq
-    | BinOpNeq
-    | BinOpAnd
-    | BinOpOr
-    | BinOpArrow
+(** Binary operators *)
+type binary_op =
+  | BinOpPlus
+  | BinOpMinus
+  | BinOpMult
+  | BinOpDiv
+  | BinOpMod
+  | BinOpLt
+  | BinOpGt
+  | BinOpLeq
+  | BinOpGeq
+  | BinOpEq
+  | BinOpNeq
+  | BinOpAnd
+  | BinOpOr
 
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string
 val string_of_type : type_expr -> string
 val string_of_unary_op : unary_op -> string
-val string_of_binary_op : binary_oper -> string
+val string_of_binary_op : binary_op -> string
 val string_of_borrowed_option : borrowed option -> string

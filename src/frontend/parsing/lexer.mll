@@ -77,10 +77,7 @@ rule token = parse
   | "None" { NONE }
   | "option" { TYPE_OPTION }
   | "int" { TYPE_INT }
-  | "float" { TYPE_FLOAT }
-  | "char" { TYPE_CHAR }
   | "bool" { TYPE_BOOL }
-  | "string" { TYPE_STRING }
   | "unit" { TYPE_UNIT }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | lid_regex_expression { LID (Lexing.lexeme lexbuf) }
