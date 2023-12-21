@@ -10,10 +10,6 @@
 %token<string> UID
 %token LPAREN
 %token RPAREN
-// These have been added to handle Function Application
-%token LPARENSQ
-%token RPARENSQ
-
 %token COMMA
 %token COLON
 %token SEMICOLON
@@ -201,7 +197,7 @@ expr:
   }
 
 /* Function application */
-| fun_name=LID; LPARENSQ; fun_args=separated_nonempty_list(COMMA, expr); RPARENSQ {
+| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, expr); RPAREN {
     FunApp($startpos, Function_name.of_string fun_name, fun_args)
   }
 
