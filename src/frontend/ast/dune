@@ -1,4 +1,5 @@
 (library
  (name ast)
- (modules ast_types)
+ (modules ast_types pprint_ast_types)
+ (libraries fmt)
 )
