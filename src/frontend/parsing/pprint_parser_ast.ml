@@ -4,6 +4,7 @@ open Parser_ast
 
 let indent_tab = "    "
 
+(* Pretty-printing Expression *)
 let rec pprint_expr ppf ~indent expr =
   let print_expr = Fmt.pf ppf "%sExpr: %s@." indent in
   let sub_expr_indent = indent_tab ^ indent in
@@ -126,7 +127,23 @@ and pprint_matched_expr ppf ~indent matched_expr =
           pprint_matched_expr ppf ~indent:sub_expr_indent matched_expr
     )
 
-and pprint_program ppf (TProg (_, _, expr_option)) = 
+(* Pretty-printing Type Definition *)
+and pprint_type_defn ppf ~indent (TType (_, type_name, type_constructors)) = 
+  let sub_expr_indent = indent ^ indent_tab in
+  Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
+  Fmt.pf ppf "%sType Constructors:@." indent;
+  List.iter (pprint_type_constructor ppf ~indent:sub_expr_indent) type_constructors
+
+and pprint_type_constructor ppf ~indent (TTypeConstructor (_, constructor_name, type_exprs)) =
+  let sub_expr_indent = indent ^ indent_tab in
+  Fmt.pf ppf "%sType Constructor Name: %s@." indent (Constructor_name.to_string constructor_name);
+  List.iter (pprint_type_expr ppf ~indent:sub_expr_indent) type_exprs
+
+(* Pretty-printing Program *)
+and pprint_program ppf (TProg (type_defns, _, expr_option)) = 
+  Fmt.pf ppf "TypeDefns@.";
+  List.iter (pprint_type_defn ppf ~indent:"") type_defns;
+
   match expr_option with
   | None -> ()
   | Some expr -> pprint_expr ppf ~indent:"" expr
