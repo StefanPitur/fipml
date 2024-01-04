@@ -139,10 +139,21 @@ and pprint_type_constructor ppf ~indent (TTypeConstructor (_, constructor_name, 
   Fmt.pf ppf "%sType Constructor Name: %s@." indent (Constructor_name.to_string constructor_name);
   List.iter (pprint_type_expr ppf ~indent:sub_expr_indent) type_exprs
 
+(* Pretty-printing Function Definition *)
+and pprint_function_defn ppf ~indent  (TFun (_, function_name, params, body_expr)) = 
+  let sub_expr_indent = indent ^ indent_tab in
+  Fmt.pf ppf "%sFunction Name: %s@." indent (Function_name.to_string function_name);
+  Fmt.pf ppf "%sParam List:@." indent;
+  pprint_params ppf ~indent:sub_expr_indent params;
+  pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Function Body" body_expr
+
 (* Pretty-printing Program *)
-and pprint_program ppf (TProg (type_defns, _, expr_option)) = 
-  Fmt.pf ppf "TypeDefns@.";
+and pprint_program ppf (TProg (type_defns, function_defns, expr_option)) = 
+  Fmt.pf ppf "=> TypeDefns:\n@.";
   List.iter (pprint_type_defn ppf ~indent:"") type_defns;
+
+  Fmt.pf ppf "\n=> FunctionDefns\n@.";
+  List.iter (pprint_function_defn ppf ~indent:"") function_defns;
 
   match expr_option with
   | None -> ()
