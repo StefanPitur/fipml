@@ -96,7 +96,7 @@ and pprint_block_expr ppf ~indent ~block_name (Block (_, exprs)) =
   List.iter (pprint_expr ppf ~indent:sub_expr_indent) exprs
 
 and pprint_pattern_exprs ppf ~indent = function
-  | [] -> () (* This shouldn't be possible, raise error if happens *)
+  | [] -> raise (Invalid_argument "Match/DMatch expressions should have at least one pattern matching")
   | pattern_exprs ->
     let sub_expr_indent = indent ^ indent_tab in 
     List.iter (
