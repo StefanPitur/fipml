@@ -101,7 +101,6 @@
 
 program:
 | type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
-    print_string "Finished Parsing!\n";
     TProg(type_defns, function_defns, expr)
   }
 
