@@ -10,7 +10,7 @@ let%expect_test "function definition with borrowed parameters" =
         Function Name: function_name
         Param List:
             Type Expr: Int
-            Param: x
+            BorrowedParam: x
             Type Expr: Bool
             BorrowedParam: y
             Function Body Block
