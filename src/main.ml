@@ -26,9 +26,15 @@ let source_code = "
     endmatch
   end
 
-  let x = Some (x, y) in
+  /*let x = Some (x, y) in
   let y = None in 
-  fn1 ((1, 2), x, y)
+  fn1 ((1, 2), x, y, true, ())*/
+  match x with
+  | C -> begin () end
+  | x -> begin x; () end
+  | _ -> begin () end
+  endmatch
 "
 in
-Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code);;
+let program = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in
+Parsing.Pprint_parser_ast.pprint_program Fmt.stdout program
