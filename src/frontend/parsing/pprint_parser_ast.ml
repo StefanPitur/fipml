@@ -149,12 +149,9 @@ and pprint_function_defn ppf ~indent  (TFun (_, function_name, params, body_expr
 
 (* Pretty-printing Program *)
 and pprint_program ppf (TProg (type_defns, function_defns, expr_option)) = 
-  Fmt.pf ppf "=> TypeDefns:\n@.";
-  List.iter (pprint_type_defn ppf ~indent:"") type_defns;
-
-  Fmt.pf ppf "\n=> FunctionDefns\n@.";
-  List.iter (pprint_function_defn ppf ~indent:"") function_defns;
-
+  Fmt.pf ppf "Program@.";
+  List.iter (pprint_type_defn ppf ~indent:indent_tab) type_defns;
+  List.iter (pprint_function_defn ppf ~indent:indent_tab) function_defns;
   match expr_option with
   | None -> ()
-  | Some expr -> pprint_expr ppf ~indent:"" expr
+  | Some expr -> pprint_expr ppf ~indent:indent_tab expr
