@@ -83,8 +83,8 @@ let get_params_type (params : param list) =
 let string_of_unary_op = function
   | UnOpNeg -> "-"
   | UnOpNot -> "!"
-  | UnOpFst -> "Fst"
-  | UnOpSnd -> "Snd"
+  | UnOpFst -> "fst"
+  | UnOpSnd -> "snd"
 
 let string_of_binary_op = function
   | BinOpPlus -> "+"
