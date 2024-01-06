@@ -107,7 +107,7 @@ and pprint_pattern_exprs ppf ~indent = function
     ) pattern_exprs
 
 and pprint_matched_expr ppf ~indent matched_expr =
-  let print_matched_expr = Fmt.pf ppf "%s%s@." indent in
+  let print_matched_expr = Fmt.pf ppf "%sMatchedExpr: %s@." indent in
   let sub_expr_indent = indent ^ indent_tab in
   match matched_expr with
   | MUnderscore _ -> print_matched_expr "Underscore"
