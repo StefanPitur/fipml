@@ -107,7 +107,7 @@ and pprint_pattern_exprs ppf ~indent = function
     ) pattern_exprs
 
 and pprint_matched_expr ppf ~indent matched_expr =
-  let print_matched_expr = Fmt.pf ppf "%s%s@." indent in
+  let print_matched_expr = Fmt.pf ppf "%sMatchedExpr: %s@." indent in
   let sub_expr_indent = indent ^ indent_tab in
   match matched_expr with
   | MUnderscore _ -> print_matched_expr "Underscore"
@@ -149,12 +149,9 @@ and pprint_function_defn ppf ~indent  (TFun (_, function_name, params, body_expr
 
 (* Pretty-printing Program *)
 and pprint_program ppf (TProg (type_defns, function_defns, expr_option)) = 
-  Fmt.pf ppf "=> TypeDefns:\n@.";
-  List.iter (pprint_type_defn ppf ~indent:"") type_defns;
-
-  Fmt.pf ppf "\n=> FunctionDefns\n@.";
-  List.iter (pprint_function_defn ppf ~indent:"") function_defns;
-
+  Fmt.pf ppf "Program@.";
+  List.iter (pprint_type_defn ppf ~indent:indent_tab) type_defns;
+  List.iter (pprint_function_defn ppf ~indent:indent_tab) function_defns;
   match expr_option with
   | None -> ()
-  | Some expr -> pprint_expr ppf ~indent:"" expr
+  | Some expr -> pprint_expr ppf ~indent:indent_tab expr
