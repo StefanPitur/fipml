@@ -1,0 +1,4 @@
+(library
+ (name typing)
+ (modules typed_ast)
+ (libraries core ast parsing))
