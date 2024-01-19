@@ -140,9 +140,10 @@ and pprint_type_constructor ppf ~indent (TTypeConstructor (_, constructor_name, 
   List.iter (pprint_type_expr ppf ~indent:sub_expr_indent) type_exprs
 
 (* Pretty-printing Function Definition *)
-and pprint_function_defn ppf ~indent  (TFun (_, function_name, params, body_expr)) = 
+and pprint_function_defn ppf ~indent  (TFun (_, function_name, params, body_expr, return_type)) = 
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sFunction Name: %s@." indent (Function_name.to_string function_name);
+  Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type return_type);
   Fmt.pf ppf "%sParam List:@." indent;
   pprint_params ppf ~indent:sub_expr_indent params;
   pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Function Body" body_expr

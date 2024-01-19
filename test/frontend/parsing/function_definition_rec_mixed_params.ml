@@ -1,6 +1,6 @@
 let%expect_test "recursive function definition" = 
   let source_code = "
-    fun rec function_name (x : int) (^y : bool) = begin
+    fun rec function_name (x : int) (^y : bool) : unit = begin
       ()
     end
   " in
@@ -8,6 +8,7 @@ let%expect_test "recursive function definition" =
   [%expect {|
     Program
         Function Name: function_name
+        Return Type: Unit
         Param List:
             Type Expr: Int
             Param: x

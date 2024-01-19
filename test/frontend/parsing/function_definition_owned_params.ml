@@ -1,6 +1,6 @@
 let%expect_test "function definition with owned parameters" = 
   let source_code = "
-    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type option) = begin
+    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type option) : unit = begin
       ()
     end
   " in
@@ -8,6 +8,7 @@ let%expect_test "function definition with owned parameters" =
   [%expect {|
     Program
         Function Name: function_name
+        Return Type: Unit
         Param List:
             Type Expr: Int
             Param: x

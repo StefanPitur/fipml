@@ -139,8 +139,8 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); ASSIGN; fun_body=block_expr {
-    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body)
+| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
 
 
