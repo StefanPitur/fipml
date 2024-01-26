@@ -71,8 +71,8 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
+%right ARROW
 %left TYPE_OPTION
-%left ARROW
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
