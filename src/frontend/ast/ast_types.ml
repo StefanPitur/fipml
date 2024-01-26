@@ -29,6 +29,7 @@ type type_expr =
   | TEBool
   | TEOption of type_expr
   | TECustom of string
+  | TEArrow of type_expr * type_expr
 
 type param = 
   | TParam of type_expr * Var_name.t * borrowed option
@@ -72,6 +73,10 @@ let rec string_of_type = function
   | TEBool -> "Bool"
   | TEOption type_name -> (string_of_type type_name) ^ " option"
   | TECustom custom_type_name -> custom_type_name
+  | TEArrow (in_type, out_type) -> 
+      let in_type_string = string_of_type in_type in
+      let out_type_string = string_of_type out_type in
+      Fmt.str "(%s -> %s)" in_type_string out_type_string
   
 
 let get_params_type (params : param list) = 

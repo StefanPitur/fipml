@@ -25,6 +25,7 @@ type type_expr =
   | TEBool
   | TEOption of type_expr
   | TECustom of string
+  | TEArrow of type_expr * type_expr
 
 type param = 
   | TParam of type_expr * Var_name.t * borrowed option

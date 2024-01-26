@@ -1,4 +1,4 @@
-let source_code = "
+(* let source_code = "
   type my_first_type = 
     | C1
     | C2 of bool * int * my_second_type
@@ -34,6 +34,12 @@ let source_code = "
   | x -> begin x; () end
   | _ -> begin () end
   endmatch
+" *)
+let source_code = "
+  type my_type = 
+  | Constructor1 of int -> int
+  | Constructor2 of (int -> int) option
+  | Constructor3 of int -> int option
 "
 in
 let program = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in

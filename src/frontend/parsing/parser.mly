@@ -71,6 +71,8 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
+%left TYPE_OPTION
+%left ARROW
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -111,6 +113,8 @@ type_expr:
 | TYPE_BOOL { TEBool }
 | type_expr=type_expr; TYPE_OPTION { TEOption(type_expr) }
 | custom_type=LID { TECustom(custom_type) }
+| in_type=type_expr; ARROW; out_type=type_expr { TEArrow(in_type, out_type) }
+| LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow(in_type, out_type) }
 
 
 /* Type Definition Production Rules */
@@ -227,7 +231,7 @@ match_constructor:
   }
 | NONE { MOption($startpos, None) }
 | SOME; matched_expr=match_constructor { MOption($startpos, Some matched_expr) }
-
+(* maybe collapse None Some with Constructors *)
 
 %inline unary_op:
 | SUB { UnOpNeg }
