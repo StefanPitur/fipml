@@ -1,3 +1,5 @@
+open Core;;
+
 (* let source_code = "
   type my_first_type = 
     | C1
@@ -37,10 +39,20 @@
 " *)
 let source_code = "
   type my_type = 
-  | Constructor1 of int -> int
-  | Constructor2 of (int -> int) option
+  | Constructor1 of int -> int -> int
+  | Constructor2 of int -> (int -> int -> int) -> int option
   | Constructor3 of int -> int option
+
+  type custom_simple_type = 
+    | SimpleConstructor1
+
+  type my_type =
+  | ComplexConstructor1 of custom_simple_type
+  | ComplexConstructor2 of int * bool * unit * custom_simple_type
 "
 in
-let program = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in
-Parsing.Pprint_parser_ast.pprint_program Fmt.stdout program
+let ast = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in
+match Typing.Typecheck_program.typecheck_program ast with
+| Ok _ -> ()
+| Error error -> Error.raise error
+(* Parsing.Pprint_parser_ast.pprint_program Fmt.stdout ast *)

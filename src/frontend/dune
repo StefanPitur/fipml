@@ -1,4 +1,4 @@
 (library
  (name frontend)
- (libraries ast parsing)
+ (libraries ast parsing typing)
 )
