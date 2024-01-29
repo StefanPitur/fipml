@@ -1,11 +1,11 @@
 open Ast
 open Core
 
-exception TypeNotFound of string
-exception TypeAlreadyExists of string
+exception TypeNotFound
+exception TypeAlreadyExists
 
-exception ConstructorNotFound of string
-exception ConstructorAlreadyExists of string
+exception ConstructorNotFound
+exception ConstructorAlreadyExists
 
 type constructor_env_entry =
   | ConstructorEnvEntry of Ast_types.type_expr * Ast_types.Constructor_name.t * Ast_types.type_expr list
