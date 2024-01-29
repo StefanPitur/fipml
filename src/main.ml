@@ -46,7 +46,7 @@ let source_code = "
   type custom_simple_type = 
     | SimpleConstructor1
 
-  type my_type =
+  type custom_complex_type =
   | ComplexConstructor1 of custom_simple_type
   | ComplexConstructor2 of int * bool * unit * custom_simple_type
 "

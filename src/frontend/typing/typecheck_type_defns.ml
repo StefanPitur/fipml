@@ -24,12 +24,8 @@ open Core
   () *)
 
 let typecheck_type_defn (type_env : Ast_types.Type_name.t list) (TType(_, type_name, _) : Parsing.Parser_ast.type_defn) : unit Or_error.t =
-  custom_type_not_in_type_env type_name type_env
-  
-   
-(* let typecheck_type_defns (type_defns : Parser_ast.type_defn list) : (Typed_ast.type_defn list) Or_error.t = 
-  let open Result in
-  all_unit (List.iter type_defns ~f:(typecheck_type_defn [])) *)
+  assert_custom_type_not_in_types_env type_name type_env
+
 
 let rec typecheck_type_defns (type_env : Ast_types.Type_name.t list) (type_defns : Parser_ast.type_defn list) : (Typed_ast.type_defn list) Or_error.t =
   match type_defns with
