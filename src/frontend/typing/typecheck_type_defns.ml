@@ -1,11 +1,11 @@
-open Parsing
 open Ast
-open Type_envs
 open Core
+open Parsing
+open Type_envs
 
 
 let rec typecheck_type_constructor_arg
-    (types_env : Ast_types.Type_name.t list)
+    (types_env : types_env)
     (constructor_arg : Ast_types.type_expr)
   : unit Or_error.t =
   
@@ -22,7 +22,7 @@ let rec typecheck_type_constructor_arg
 
 
 let rec typecheck_type_constructor_args
-    (types_env : Ast_types.Type_name.t list)
+    (types_env : types_env)
     (constructor_args : Ast_types.type_expr list)
   : unit Or_error.t =
   
@@ -35,11 +35,11 @@ let rec typecheck_type_constructor_args
 
 
 let typecheck_type_constructor
-    (types_env : Ast_types.Type_name.t list)
-    (constructors_env : constructor_env_entry list)
+    (types_env : types_env)
+    (constructors_env : constructors_env)
     (constructor_type : Ast_types.Type_name.t)
     ((TTypeConstructor(_, constructor_name, constructor_args)) : Parser_ast.type_constructor)
-  : constructor_env_entry list Or_error.t =
+  : constructors_env Or_error.t =
   
   let open Result in
   assert_constructor_not_in_constructors_env constructor_name constructors_env
@@ -50,11 +50,11 @@ let typecheck_type_constructor
 
 
 let rec typecheck_type_constructors 
-    (types_env : Ast_types.Type_name.t list)
-    (constructors_env : constructor_env_entry list) 
+    (types_env : types_env)
+    (constructors_env : constructors_env) 
     (constructors_type : Ast_types.Type_name.t)
     (type_constructors : Parser_ast.type_constructor list) 
-  : constructor_env_entry list Or_error.t =
+  : constructors_env Or_error.t =
 
   match type_constructors with
   | [] -> Ok constructors_env
@@ -65,10 +65,10 @@ let rec typecheck_type_constructors
 
 
 let typecheck_type_defn
-    (types_env : Ast_types.Type_name.t list)
-    (constructors_env : constructor_env_entry list)
+    (types_env : types_env)
+    (constructors_env : constructors_env)
     (TType(_, type_name, type_constructors) : Parsing.Parser_ast.type_defn)
-  : (Ast_types.Type_name.t list * constructor_env_entry list) Or_error.t =
+  : (types_env * constructors_env) Or_error.t =
 
   let extended_types_env = type_name :: types_env in
   let open Result in
@@ -78,10 +78,10 @@ let typecheck_type_defn
 
 
 let rec typecheck_type_defns 
-    (types_env : Ast_types.Type_name.t list)
-    (constructors_env : constructor_env_entry list)
+    (types_env : types_env)
+    (constructors_env : constructors_env)
     (type_defns : Parser_ast.type_defn list)
-  : (Ast_types.Type_name.t list * constructor_env_entry list * Typed_ast.type_defn list) Or_error.t =
+  : (types_env * constructors_env * Typed_ast.type_defn list) Or_error.t =
 
   match type_defns with
   | [] -> Ok (types_env, constructors_env, [])

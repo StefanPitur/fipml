@@ -1,9 +1,8 @@
-open Ast
 open Core
 
 (** Type-checks custom type definitions, returns if successful *)
 val typecheck_type_defns : 
-  Ast_types.Type_name.t list
-  -> Type_envs.constructor_env_entry list
+  Type_envs.types_env
+  -> Type_envs.constructors_env
   -> Parsing.Parser_ast.type_defn list
-  -> (Ast_types.Type_name.t list * Type_envs.constructor_env_entry list * Typed_ast.type_defn list) Or_error.t
+  -> (Type_envs.types_env * Type_envs.constructors_env * Typed_ast.type_defn list) Or_error.t
