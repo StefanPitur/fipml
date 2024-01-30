@@ -6,6 +6,7 @@ exception TypeAlreadyExists
 
 exception ConstructorNotFound
 exception ConstructorAlreadyExists
+exception ConstructorMultipleInstancesFound
 
 type constructor_env_entry =
   | ConstructorEnvEntry of Ast_types.type_expr * Ast_types.Constructor_name.t * Ast_types.type_expr list
