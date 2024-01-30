@@ -9,7 +9,7 @@ exception ConstructorAlreadyExists
 exception ConstructorMultipleInstancesFound
 
 type constructor_env_entry =
-  | ConstructorEnvEntry of Ast_types.type_expr * Ast_types.Constructor_name.t * Ast_types.type_expr list
+  | ConstructorEnvEntry of Ast_types.Type_name.t * Ast_types.Constructor_name.t * Ast_types.type_expr list
 
 val assert_custom_type_in_types_env : Ast_types.Type_name.t -> Ast_types.Type_name.t list -> unit Or_error.t;;
 val assert_custom_type_not_in_types_env : Ast_types.Type_name.t -> Ast_types.Type_name.t list -> unit Or_error.t;;

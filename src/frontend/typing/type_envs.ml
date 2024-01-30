@@ -9,7 +9,7 @@ exception ConstructorAlreadyExists
 exception ConstructorMultipleInstancesFound
 
 type constructor_env_entry =
-  | ConstructorEnvEntry of type_expr * Constructor_name.t * type_expr list
+  | ConstructorEnvEntry of Type_name.t * Constructor_name.t * type_expr list
 
 let assert_custom_type_in_types_env (type_name : Type_name.t) (types_env : Type_name.t list) : unit Or_error.t = 
   let open Result in
