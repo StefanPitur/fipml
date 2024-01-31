@@ -108,13 +108,13 @@ program:
 
 
 type_expr:
-| TYPE_UNIT { TEUnit }
-| TYPE_INT { TEInt }
-| TYPE_BOOL { TEBool }
-| type_expr=type_expr; TYPE_OPTION { TEOption(type_expr) }
-| custom_type=LID { TECustom(custom_type) }
-| in_type=type_expr; ARROW; out_type=type_expr { TEArrow(in_type, out_type) }
-| LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow(in_type, out_type) }
+| TYPE_UNIT { TEUnit($startpos) }
+| TYPE_INT { TEInt($startpos) }
+| TYPE_BOOL { TEBool($startpos) }
+| type_expr=type_expr; TYPE_OPTION { TEOption($startpos, type_expr) }
+| custom_type=LID { TECustom($startpos, custom_type) }
+| in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
+| LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 
 /* Type Definition Production Rules */
