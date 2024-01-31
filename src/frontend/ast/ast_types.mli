@@ -20,12 +20,12 @@ type borrowed = Borrowed
 
 (** Types of expressions in FipML *)
 type type_expr = 
-  | TEUnit
-  | TEInt
-  | TEBool
-  | TEOption of type_expr
-  | TECustom of string
-  | TEArrow of type_expr * type_expr
+  | TEUnit of loc
+  | TEInt of loc
+  | TEBool of loc
+  | TEOption of loc * type_expr
+  | TECustom of loc * string
+  | TEArrow of loc * type_expr * type_expr
 
 type param = 
   | TParam of type_expr * Var_name.t * borrowed option

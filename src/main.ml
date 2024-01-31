@@ -44,7 +44,7 @@ let source_code = "
   | Constructor3 of int -> int option
 
   type custom_simple_type = 
-    | sSimpleConstructor1
+    | SimpleConstructor1
 
   type custom_complex_type =
   | ComplexConstructor1 of custom_simple_type
@@ -55,4 +55,3 @@ let ast = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string
 match Typing.Typecheck_program.typecheck_program ast with
 | Ok _ -> ()
 | Error error -> Error.raise error
-(* Parsing.Pprint_parser_ast.pprint_program Fmt.stdout ast *)

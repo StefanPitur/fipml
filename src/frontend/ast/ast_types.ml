@@ -24,12 +24,12 @@ type borrowed = Borrowed
 
 (* Types of expressions in FipML *)
 type type_expr = 
-  | TEUnit
-  | TEInt
-  | TEBool
-  | TEOption of type_expr
-  | TECustom of string
-  | TEArrow of type_expr * type_expr
+  | TEUnit of loc
+  | TEInt of loc
+  | TEBool of loc
+  | TEOption of loc * type_expr
+  | TECustom of loc * string
+  | TEArrow of loc * type_expr * type_expr
 
 type param = 
   | TParam of type_expr * Var_name.t * borrowed option
@@ -69,12 +69,12 @@ let string_of_loc loc =
 
 
 let rec string_of_type = function
-  | TEUnit -> "Unit"
-  | TEInt -> "Int"
-  | TEBool -> "Bool"
-  | TEOption type_name -> (string_of_type type_name) ^ " option"
-  | TECustom custom_type_name -> custom_type_name
-  | TEArrow (in_type, out_type) -> 
+  | TEUnit _ -> "Unit"
+  | TEInt _ -> "Int"
+  | TEBool _ -> "Bool"
+  | TEOption (_, type_name) -> (string_of_type type_name) ^ " option"
+  | TECustom (_, custom_type_name) -> custom_type_name
+  | TEArrow (_, in_type, out_type) -> 
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in
       Fmt.str "(%s -> %s)" in_type_string out_type_string
