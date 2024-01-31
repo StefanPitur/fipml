@@ -1,16 +1,14 @@
-open Lexing
 open Core
+open Pprint_lexbuf_position
 
-let print_position outx lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  fprintf outx "File: %s, Line: %d, Column: %d" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
-let parse_source_code_with_error lexbuf = 
+let parse_source_code_with_error (lexbuf : Lexing.lexbuf) = 
   try Parser.program Lexer.token lexbuf with
-  | Lexer.LexerError msg -> 
-    fprintf stderr "%a: %s\n" print_position lexbuf msg;
+  | Lexer.LexerError lexer_error -> 
+    Fmt.pf Fmt.stderr "%s@." lexer_error;
+    pprint_lexbuf_position Fmt.stderr lexbuf;
     exit(-1)
   | Parser.Error ->
-    fprintf stderr "%a: Syntax Error\n" print_position lexbuf;
+    Fmt.pf Fmt.stderr "Syntax Error@.";
+    pprint_lexbuf_position Fmt.stderr lexbuf;
     exit(-1)
