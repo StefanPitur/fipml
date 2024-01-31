@@ -10,8 +10,8 @@ let rec typecheck_type_constructor_arg
   : unit Or_error.t =
   
   match constructor_arg with
-  | Ast_types.TECustom (_, custom_arg_type) -> 
-      assert_custom_type_in_types_env (Ast_types.Type_name.of_string custom_arg_type) types_env
+  | Ast_types.TECustom (loc, custom_arg_type) -> 
+      assert_custom_type_in_types_env loc (Ast_types.Type_name.of_string custom_arg_type) types_env
   | Ast_types.TEOption (_, option_arg_type) ->
       typecheck_type_constructor_arg types_env option_arg_type
   | Ast_types.TEArrow (_, input_type, output_type) ->
@@ -38,11 +38,11 @@ let typecheck_type_constructor
     (types_env : types_env)
     (constructors_env : constructors_env)
     (constructor_type : Ast_types.Type_name.t)
-    ((TTypeConstructor(_, constructor_name, constructor_args)) : Parser_ast.type_constructor)
+    ((TTypeConstructor(loc, constructor_name, constructor_args)) : Parser_ast.type_constructor)
   : constructors_env Or_error.t =
   
   let open Result in
-  assert_constructor_not_in_constructors_env constructor_name constructors_env
+  assert_constructor_not_in_constructors_env loc constructor_name constructors_env
   >>= fun () -> typecheck_type_constructor_args types_env constructor_args
   >>= fun () ->
         let constructor_env_entry = ConstructorEnvEntry(constructor_type, constructor_name, constructor_args) in
@@ -67,12 +67,12 @@ let rec typecheck_type_constructors
 let typecheck_type_defn
     (types_env : types_env)
     (constructors_env : constructors_env)
-    (TType(_, type_name, type_constructors) : Parsing.Parser_ast.type_defn)
+    (TType(loc, type_name, type_constructors) : Parsing.Parser_ast.type_defn)
   : (types_env * constructors_env) Or_error.t =
 
   let extended_types_env = type_name :: types_env in
   let open Result in
-  assert_custom_type_not_in_types_env type_name types_env
+  assert_custom_type_not_in_types_env loc type_name types_env
   >>= fun () -> typecheck_type_constructors extended_types_env constructors_env type_name type_constructors
   >>= fun constructors_env -> Ok (extended_types_env, constructors_env)
 
