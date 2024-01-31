@@ -60,10 +60,11 @@ type binary_op =
 
 (* Implementation of helper functions for printing AST *)
 let string_of_loc loc = 
+  let loc_file = loc.Lexing.pos_fname in
   let loc_line = string_of_int loc.Lexing.pos_lnum in
-  let loc_position = 
+  let loc_column = 
     string_of_int (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1) in
-  let loc_string = "Line: " ^ loc_line ^ " / Position: " ^ loc_position in
+  let loc_string = "File: " ^ loc_file ^" - Line: " ^ loc_line ^ " - Column: " ^ loc_column in
   loc_string
 
 

@@ -44,7 +44,7 @@ let source_code = "
   | Constructor3 of int -> int option
 
   type custom_simple_type = 
-    | SimpleConstructor1
+    | sSimpleConstructor1
 
   type custom_complex_type =
   | ComplexConstructor1 of custom_simple_type
