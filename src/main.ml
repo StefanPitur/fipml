@@ -53,5 +53,5 @@ let source_code = "
 in
 let ast = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in
 match Typing.Typecheck_program.typecheck_program ast with
-| Ok _ -> ()
+| Ok typed_program -> Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program
 | Error error -> Error.raise error
