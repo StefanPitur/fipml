@@ -25,11 +25,10 @@ let pprint_types_env_entry
 
 let typecheck_program (Parser_ast.TProg (type_defns, _, _)) :  (Typed_ast.program Or_error.t) = 
   let open Result in
-  Typecheck_type_defns.typecheck_type_defns [] [] type_defns
-  >>= fun (types_env, constructors_env, _) -> 
+  Typecheck_type_defns.typecheck_type_defns [] [] [] type_defns
+  >>= fun (types_env, constructors_env, typed_ast_type_defns) -> 
     List.iter types_env ~f:(fun types_env_entry -> pprint_types_env_entry Fmt.stdout types_env_entry);
     Fmt.pf Fmt.stdout "\n\n";
     List.iter constructors_env ~f:(fun constructors_env_entry -> pprint_constructors_env_entry Fmt.stdout constructors_env_entry);
-    Ok (Typed_ast.TProg([], [], None))
-
-let pprint_typed_ast _ _ = ()
+    Fmt.pf Fmt.stdout "><><><><><><><><><><><><><><><><><><><><><><\n\n";
+    Ok (Typed_ast.TProg(typed_ast_type_defns, [], None))
