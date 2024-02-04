@@ -11,7 +11,7 @@ let rec typecheck_type_constructor_arg
   
   match constructor_arg with
   | Ast_types.TECustom (loc, custom_arg_type) -> 
-      assert_custom_type_in_types_env loc (Ast_types.Type_name.of_string custom_arg_type) types_env
+      assert_custom_type_in_types_env loc custom_arg_type types_env
   | Ast_types.TEOption (_, option_arg_type) ->
       typecheck_type_constructor_arg types_env option_arg_type
   | Ast_types.TEArrow (_, input_type, output_type) ->
