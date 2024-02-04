@@ -28,7 +28,7 @@ type type_expr =
   | TEInt of loc
   | TEBool of loc
   | TEOption of loc * type_expr
-  | TECustom of loc * string
+  | TECustom of loc * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
 type param = 
@@ -73,7 +73,7 @@ let rec string_of_type = function
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
   | TEOption (_, type_name) -> (string_of_type type_name) ^ " option"
-  | TECustom (_, custom_type_name) -> custom_type_name
+  | TECustom (_, custom_type_name) -> Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) -> 
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in
