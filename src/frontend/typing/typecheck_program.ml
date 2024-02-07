@@ -4,10 +4,10 @@ open Parsing
 
 let pprint_constructors_env_entry 
     (ppf : Format.formatter)
-    (constructor_env_entry : Type_envs.constructor_env_entry)
+    (constructor_env_entry : Type_defns_env.constructor_env_entry)
   : unit = 
 
-  let Type_envs.ConstructorEnvEntry(constructor_type, constructor_name, constructor_args) = constructor_env_entry in
+  let Type_defns_env.ConstructorEnvEntry(constructor_type, constructor_name, constructor_args) = constructor_env_entry in
   Fmt.pf ppf "Constructor Type - %s@." (Ast.Ast_types.Type_name.to_string constructor_type);
   Fmt.pf ppf "Constructor Name - %s@." (Ast.Ast_types.Constructor_name.to_string constructor_name);
   List.iter 

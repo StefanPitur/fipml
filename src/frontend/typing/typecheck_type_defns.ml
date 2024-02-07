@@ -1,7 +1,7 @@
 open Ast
 open Core
 open Parsing
-open Type_envs
+open Type_defns_env
 
 
 let rec typecheck_type_constructor_arg
