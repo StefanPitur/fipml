@@ -36,11 +36,7 @@ type type_expr =
 type param = TParam of type_expr * Var_name.t * borrowed option
 
 (* Unary operators *)
-type unary_op =
-  | UnOpNot
-  | UnOpNeg
-  | UnOpFst
-  | UnOpSnd
+type unary_op = UnOpNot | UnOpNeg | UnOpFst | UnOpSnd
 
 (* Binary operators *)
 type binary_op =
@@ -62,12 +58,13 @@ type binary_op =
 let string_of_loc loc =
   let loc_file = loc.Lexing.pos_fname in
   let loc_line = string_of_int loc.Lexing.pos_lnum in
-  let loc_column = string_of_int (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1) in
+  let loc_column =
+    string_of_int (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
+  in
   let loc_string =
     "File: " ^ loc_file ^ " - Line: " ^ loc_line ^ " - Column: " ^ loc_column
   in
   loc_string
-;;
 
 let rec string_of_type = function
   | TEUnit _ -> "Unit"
@@ -76,24 +73,21 @@ let rec string_of_type = function
   | TEOption (_, type_name) -> string_of_type type_name ^ " option"
   | TECustom (_, custom_type_name) -> Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) ->
-    let in_type_string = string_of_type in_type in
-    let out_type_string = string_of_type out_type in
-    Fmt.str "(%s -> %s)" in_type_string out_type_string
-;;
+      let in_type_string = string_of_type in_type in
+      let out_type_string = string_of_type out_type in
+      Fmt.str "(%s -> %s)" in_type_string out_type_string
 
 let get_params_type (params : param list) =
   let get_param_type = function
     | TParam (param_type_expr, _, _) -> param_type_expr
   in
   List.map get_param_type params
-;;
 
 let string_of_unary_op = function
   | UnOpNeg -> "-"
   | UnOpNot -> "!"
   | UnOpFst -> "fst"
   | UnOpSnd -> "snd"
-;;
 
 let string_of_binary_op = function
   | BinOpPlus -> "+"
@@ -109,9 +103,7 @@ let string_of_binary_op = function
   | BinOpNeq -> "!="
   | BinOpAnd -> "&&"
   | BinOpOr -> "||"
-;;
 
 let string_of_borrowed_option = function
   | None -> ""
   | Some Borrowed -> "Borrowed"
-;;

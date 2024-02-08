@@ -8,7 +8,6 @@ let%expect_test "expression: If" =
             Expr: Var: cond_var
             Then Block
                 Expr: Var: then_expr |}]
-;;
 
 let%expect_test "expression: IfElse" =
   let source_code =
@@ -34,4 +33,3 @@ let%expect_test "expression: IfElse" =
                 Expr: Var: then_expr
             Else Block
                 Expr: Var: else_expr |}]
-;;

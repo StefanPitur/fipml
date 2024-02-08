@@ -24,4 +24,3 @@ let%expect_test "multiple type definitions" =
                 Type Expr: Bool
                 Type Expr: Unit
                 Type Expr: custom_simple_type |}]
-;;

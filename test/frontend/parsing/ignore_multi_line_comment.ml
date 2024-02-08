@@ -10,4 +10,3 @@ let%expect_test "ignore_multi_line_comment" =
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect {| Program |}]
-;;

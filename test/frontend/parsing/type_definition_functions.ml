@@ -19,4 +19,3 @@ let%expect_test "custom type with function params" =
                 Type Expr: (Int option -> (Unit -> Int option))
             Type Constructor Name: Constructor3
                 Type Expr: (Int -> Unit) option |}]
-;;

@@ -33,11 +33,7 @@ type param = TParam of type_expr * Var_name.t * borrowed option
 val get_params_type : param list -> type_expr list
 
 (** Unary operators *)
-type unary_op =
-  | UnOpNot
-  | UnOpNeg
-  | UnOpFst
-  | UnOpSnd
+type unary_op = UnOpNot | UnOpNeg | UnOpFst | UnOpSnd
 
 (** Binary operators *)
 type binary_op =

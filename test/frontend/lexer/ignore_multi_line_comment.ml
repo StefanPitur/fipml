@@ -9,6 +9,6 @@ let%expect_test "ignore_multi_line_comment" =
     \  "
   in
   let lexbuf = Lexing.from_string source_code in
-  Parsing.Pprint_lexer_token.pprint_lexer_token Fmt.stdout (Parsing.Lexer.token lexbuf);
+  Parsing.Pprint_lexer_token.pprint_lexer_token Fmt.stdout
+    (Parsing.Lexer.token lexbuf);
   [%expect {| eof |}]
-;;

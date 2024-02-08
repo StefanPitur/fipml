@@ -61,20 +61,15 @@ open Ast.Ast_types
 (* open Core *)
 open Typing.Type_context_env
 
-type mock_position =
-  { fname : string
-  ; lnum : int
-  ; bol : int
-  ; cnum : int
-  }
+type mock_position = { fname : string; lnum : int; bol : int; cnum : int }
 
 let mock_lexing_position (mp : mock_position) : Lexing.position =
-  { Lexing.pos_fname = mp.fname
-  ; pos_lnum = mp.lnum
-  ; pos_bol = mp.bol
-  ; pos_cnum = mp.cnum
+  {
+    Lexing.pos_fname = mp.fname;
+    pos_lnum = mp.lnum;
+    pos_bol = mp.bol;
+    pos_cnum = mp.cnum;
   }
-;;
 
 (* Example usage *)
 let mock_position =
@@ -84,22 +79,23 @@ let mock_position =
 (* Use the mock position in your code or testing *)
 
 let typing_context =
-  [ TypingContextEntry (Var_name.of_string "x2", TEBool mock_position)
-  ; TypingContextEntry
-      (Var_name.of_string "x3", TEOption (mock_position, TEInt mock_position))
-  ; TypingContextEntry
-      ( Var_name.of_string "x4"
-      , TECustom (mock_position, Type_name.of_string "custom_type") )
-  ; TypingContextEntry (Var_name.of_string "x5", TEUnit mock_position)
-  ; TypingContextEntry
-      ( Var_name.of_string "x6"
-      , TEArrow (mock_position, TEInt mock_position, TEInt mock_position) )
-  ; TypingContextEntry
-      ( Var_name.of_string "x7"
-      , TEArrow
-          ( mock_position
-          , TEArrow (mock_position, TEInt mock_position, TEInt mock_position)
-          , TEInt mock_position ) )
+  [
+    TypingContextEntry (Var_name.of_string "x2", TEBool mock_position);
+    TypingContextEntry
+      (Var_name.of_string "x3", TEOption (mock_position, TEInt mock_position));
+    TypingContextEntry
+      ( Var_name.of_string "x4",
+        TECustom (mock_position, Type_name.of_string "custom_type") );
+    TypingContextEntry (Var_name.of_string "x5", TEUnit mock_position);
+    TypingContextEntry
+      ( Var_name.of_string "x6",
+        TEArrow (mock_position, TEInt mock_position, TEInt mock_position) );
+    TypingContextEntry
+      ( Var_name.of_string "x7",
+        TEArrow
+          ( mock_position,
+            TEArrow (mock_position, TEInt mock_position, TEInt mock_position),
+            TEInt mock_position ) );
   ]
 in
 pprint_typing_context Fmt.stdout typing_context

@@ -15,4 +15,3 @@ let%expect_test "expression: constructor" =
             ConstructorArg
                 Expr: Constructor: OtherConstructorName
                     () |}]
-;;

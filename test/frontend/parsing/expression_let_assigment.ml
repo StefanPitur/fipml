@@ -7,4 +7,3 @@ let%expect_test "expression: let assigment" =
         Expr: Let var: x =
             Expr: Var: expr1
             Expr: Var: expr2 |}]
-;;

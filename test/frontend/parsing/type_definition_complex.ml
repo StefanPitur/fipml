@@ -19,4 +19,3 @@ let%expect_test "complex type definition" =
             Type Constructor Name: Constructor3
                 Type Expr: Int
                 Type Expr: some_custom_type |}]
-;;

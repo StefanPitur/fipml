@@ -50,10 +50,11 @@ let%expect_test "expression: match" =
                     MatchedExpr: Underscore
                 PatternBlockExpr Block
                     Expr: Unit |}]
-;;
 
 let%expect_test "expression: destructive match" =
-  let source_code = "\n    match! x with\n    | _ -> begin () end\n    endmatch\n  " in
+  let source_code =
+    "\n    match! x with\n    | _ -> begin () end\n    endmatch\n  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
@@ -64,4 +65,3 @@ let%expect_test "expression: destructive match" =
                 MatchedExpr: Underscore
                 PatternBlockExpr Block
                     Expr: Unit |}]
-;;

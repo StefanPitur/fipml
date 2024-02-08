@@ -4,4 +4,3 @@ let%expect_test "expression: variable" =
   [%expect {|
     Program
         Expr: Var: variable_name |}]
-;;

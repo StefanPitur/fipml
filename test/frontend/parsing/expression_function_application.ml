@@ -11,4 +11,3 @@ let%expect_test "expression: function application" =
             FunctionArg
                 Expr: Option - Some
                     Expr: Var: parameter2 |}]
-;;

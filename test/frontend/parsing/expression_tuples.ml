@@ -9,4 +9,3 @@ let%expect_test "expression: tuples" =
             Expr: Var: expr1
             Snd
             Expr: Var: expr2 |}]
-;;

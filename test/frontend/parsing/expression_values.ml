@@ -13,4 +13,3 @@ let%expect_test "expression: value" =
         Expr: Bool: true
     Program
         Expr: Bool: false |}]
-;;

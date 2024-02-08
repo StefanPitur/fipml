@@ -2,19 +2,20 @@ open Ast.Ast_types
 
 let%expect_test "expression: binary operators" =
   let binary_operators =
-    [ BinOpPlus
-    ; BinOpMinus
-    ; BinOpMult
-    ; BinOpDiv
-    ; BinOpMod
-    ; BinOpLt
-    ; BinOpGt
-    ; BinOpLeq
-    ; BinOpGeq
-    ; BinOpEq
-    ; BinOpNeq
-    ; BinOpAnd
-    ; BinOpOr
+    [
+      BinOpPlus;
+      BinOpMinus;
+      BinOpMult;
+      BinOpDiv;
+      BinOpMod;
+      BinOpLt;
+      BinOpGt;
+      BinOpLeq;
+      BinOpGeq;
+      BinOpEq;
+      BinOpNeq;
+      BinOpAnd;
+      BinOpOr;
     ]
   in
   let source_codes =
@@ -103,4 +104,3 @@ let%expect_test "expression: binary operators" =
             Expr: Var: expr1
             RightExpr
             Expr: Var: expr2 |}]
-;;

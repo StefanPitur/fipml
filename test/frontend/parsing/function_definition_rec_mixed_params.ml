@@ -19,4 +19,3 @@ let%expect_test "recursive function definition" =
             BorrowedParam: y
             Function Body Block
                 Expr: Unit |}]
-;;
