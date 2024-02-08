@@ -32,7 +32,6 @@ let get_var_type (typing_context : typing_context) (var : Var_name.t) : type_exp
   | _ -> Or_error.of_exn(ShadowingNotSupported)
 
 let pprint_typing_context ppf (typing_context : typing_context) : unit =
-  Fmt.pf ppf "Pretty-printing Typing Context@.";
   List.iter
   typing_context
     ~f: (fun (TypingContextEntry(var, var_type)) -> 

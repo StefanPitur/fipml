@@ -57,7 +57,7 @@ match Typing.Typecheck_program.typecheck_program ast with
 | Error error -> Error.raise error *)
 
 open Ast.Ast_types
-open Core
+(* open Core *)
 open Typing.Type_context_env
 
 type mock_position = {
