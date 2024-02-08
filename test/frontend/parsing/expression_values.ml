@@ -1,13 +1,8 @@
-let%expect_test "expression: value" = 
-  let source_codes = [
-    "None";
-    "()";
-    "1";
-    "true";
-    "false"
-  ] in
+let%expect_test "expression: value" =
+  let source_codes = [ "None"; "()"; "1"; "true"; "false" ] in
   List.iter Pprint_parser_ast.pprint_parser_ast source_codes;
-  [%expect {|
+  [%expect
+    {|
     Program
         Expr: Option - None
     Program
@@ -18,3 +13,4 @@ let%expect_test "expression: value" =
         Expr: Bool: true
     Program
         Expr: Bool: false |}]
+;;

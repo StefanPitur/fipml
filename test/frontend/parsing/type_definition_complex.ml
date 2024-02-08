@@ -1,12 +1,15 @@
-let%expect_test "complex type definition" = 
-  let source_code = "
-    type custom_complex_type = 
-    | Constructor1
-    | Constructor2 of some_custom_type
-    | Constructor3 of int * some_custom_type
-  " in
+let%expect_test "complex type definition" =
+  let source_code =
+    "\n\
+    \    type custom_complex_type = \n\
+    \    | Constructor1\n\
+    \    | Constructor2 of some_custom_type\n\
+    \    | Constructor3 of int * some_custom_type\n\
+    \  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Type Name: custom_complex_type
         Type Constructors:
@@ -16,3 +19,4 @@ let%expect_test "complex type definition" =
             Type Constructor Name: Constructor3
                 Type Expr: Int
                 Type Expr: some_custom_type |}]
+;;

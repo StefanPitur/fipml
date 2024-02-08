@@ -2,6 +2,7 @@ type loc = Lexing.position
 
 module type ID = sig
   type t
+
   val of_string : string -> t
   val to_string : t -> string
   val ( = ) : t -> t -> bool
@@ -9,6 +10,7 @@ end
 
 module StringID : ID = struct
   type t = string
+
   let of_string x = x
   let to_string x = x
   let ( = ) = String.equal
@@ -23,7 +25,7 @@ module Function_name : ID = StringID
 type borrowed = Borrowed
 
 (* Types of expressions in FipML *)
-type type_expr = 
+type type_expr =
   | TEUnit of loc
   | TEInt of loc
   | TEBool of loc
@@ -31,8 +33,7 @@ type type_expr =
   | TECustom of loc * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
-type param = 
-  | TParam of type_expr * Var_name.t * borrowed option
+type param = TParam of type_expr * Var_name.t * borrowed option
 
 (* Unary operators *)
 type unary_op =
@@ -57,40 +58,42 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
-
 (* Implementation of helper functions for printing AST *)
-let string_of_loc loc = 
+let string_of_loc loc =
   let loc_file = loc.Lexing.pos_fname in
   let loc_line = string_of_int loc.Lexing.pos_lnum in
-  let loc_column = 
-    string_of_int (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1) in
-  let loc_string = "File: " ^ loc_file ^" - Line: " ^ loc_line ^ " - Column: " ^ loc_column in
+  let loc_column = string_of_int (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1) in
+  let loc_string =
+    "File: " ^ loc_file ^ " - Line: " ^ loc_line ^ " - Column: " ^ loc_column
+  in
   loc_string
-
+;;
 
 let rec string_of_type = function
   | TEUnit _ -> "Unit"
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
-  | TEOption (_, type_name) -> (string_of_type type_name) ^ " option"
+  | TEOption (_, type_name) -> string_of_type type_name ^ " option"
   | TECustom (_, custom_type_name) -> Type_name.to_string custom_type_name
-  | TEArrow (_, in_type, out_type) -> 
-      let in_type_string = string_of_type in_type in
-      let out_type_string = string_of_type out_type in
-      Fmt.str "(%s -> %s)" in_type_string out_type_string
-  
+  | TEArrow (_, in_type, out_type) ->
+    let in_type_string = string_of_type in_type in
+    let out_type_string = string_of_type out_type in
+    Fmt.str "(%s -> %s)" in_type_string out_type_string
+;;
 
-let get_params_type (params : param list) = 
+let get_params_type (params : param list) =
   let get_param_type = function
-    | TParam(param_type_expr, _, _) -> param_type_expr
+    | TParam (param_type_expr, _, _) -> param_type_expr
   in
   List.map get_param_type params
+;;
 
 let string_of_unary_op = function
   | UnOpNeg -> "-"
   | UnOpNot -> "!"
   | UnOpFst -> "fst"
   | UnOpSnd -> "snd"
+;;
 
 let string_of_binary_op = function
   | BinOpPlus -> "+"
@@ -106,7 +109,9 @@ let string_of_binary_op = function
   | BinOpNeq -> "!="
   | BinOpAnd -> "&&"
   | BinOpOr -> "||"
+;;
 
 let string_of_borrowed_option = function
   | None -> ""
   | Some Borrowed -> "Borrowed"
+;;

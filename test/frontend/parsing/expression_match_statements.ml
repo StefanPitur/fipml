@@ -1,17 +1,20 @@
-let%expect_test "expression: match" = 
-  let source_code = "
-    match x with
-    | _ -> begin () end
-    | y -> begin () end
-    | (y, z) -> begin () end
-    | Constructor1 -> begin () end
-    | Constructor2 (_) -> begin () end
-    | None -> begin () end
-    | Some _ -> begin () end
-    endmatch
-  " in
+let%expect_test "expression: match" =
+  let source_code =
+    "\n\
+    \    match x with\n\
+    \    | _ -> begin () end\n\
+    \    | y -> begin () end\n\
+    \    | (y, z) -> begin () end\n\
+    \    | Constructor1 -> begin () end\n\
+    \    | Constructor2 (_) -> begin () end\n\
+    \    | None -> begin () end\n\
+    \    | Some _ -> begin () end\n\
+    \    endmatch\n\
+    \  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Expr: Match
             Match Var: x
@@ -47,15 +50,13 @@ let%expect_test "expression: match" =
                     MatchedExpr: Underscore
                 PatternBlockExpr Block
                     Expr: Unit |}]
+;;
 
-let%expect_test "expression: destructive match" = 
-  let source_code = "
-    match! x with
-    | _ -> begin () end
-    endmatch
-  " in
+let%expect_test "expression: destructive match" =
+  let source_code = "\n    match! x with\n    | _ -> begin () end\n    endmatch\n  " in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Expr: DMatch
             DMatch Var: x
@@ -63,3 +64,4 @@ let%expect_test "expression: destructive match" =
                 MatchedExpr: Underscore
                 PatternBlockExpr Block
                     Expr: Unit |}]
+;;
