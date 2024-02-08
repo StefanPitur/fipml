@@ -98,7 +98,9 @@ let typing_context =
             TEInt mock_position ) );
   ]
 in
-pprint_typing_context Fmt.stdout typing_context
+typing_context
+(* in
+   pprint_typing_context Fmt.stdout typing_context *)
 
 (* match
    let open Result in
