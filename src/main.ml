@@ -1,4 +1,4 @@
-open Core;;
+(* open Core;;
 
 (* let source_code = "
   type my_first_type = 
@@ -54,4 +54,57 @@ in
 let ast = Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_string source_code) in
 match Typing.Typecheck_program.typecheck_program ast with
 | Ok typed_program -> Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program
-| Error error -> Error.raise error
+| Error error -> Error.raise error *)
+
+open Ast.Ast_types
+open Core
+open Typing.Type_context_env
+
+type mock_position = {
+  fname : string;
+  lnum : int;
+  bol : int;
+  cnum : int;
+}
+
+let mock_lexing_position (mp : mock_position) : Lexing.position =
+  {
+    Lexing.pos_fname = mp.fname;
+    pos_lnum = mp.lnum;
+    pos_bol = mp.bol;
+    pos_cnum = mp.cnum;
+  };;
+
+(* Example usage *)
+let mock_position = mock_lexing_position {fname="mock_file"; lnum=42; bol=0; cnum=100};;
+
+(* Use the mock position in your code or testing *)
+
+let typing_context = [
+  TypingContextEntry(Var_name.of_string "x2", TEBool(mock_position));
+  TypingContextEntry(Var_name.of_string "x3", TEOption(mock_position, TEInt(mock_position)));
+  TypingContextEntry(Var_name.of_string "x4", TECustom(mock_position, Type_name.of_string "custom_type"));
+  TypingContextEntry(Var_name.of_string "x5", TEUnit(mock_position));
+  TypingContextEntry(Var_name.of_string "x6", TEArrow(mock_position, TEInt(mock_position), TEInt(mock_position)));
+  TypingContextEntry(Var_name.of_string "x7", TEArrow(mock_position, TEArrow(mock_position,TEInt(mock_position), TEInt(mock_position)), TEInt(mock_position)));
+] in
+pprint_typing_context Fmt.stdout typing_context;
+
+(* match 
+let open Result in
+extend_typing_context typing_context (Var_name.of_string "x1") (TEInt(mock_position))
+>>= fun typing_context -> extend_typing_context typing_context (Var_name.of_string "x1") (TEInt(mock_position))
+>>= fun typing_context -> Ok (pprint_typing_context Fmt.stdout typing_context)
+with
+| Error err -> Error.raise err
+| Ok _ -> () *)
+
+(* let open Result in
+get_var_type typing_context (Var_name.of_string "x2")
+>>= fun type_expr -> Ok (print_string (string_of_type type_expr)) *)
+
+(* match
+  get_var_type typing_context (Var_name.of_string "x2")
+with
+| Error err -> Error.raise err
+| Ok type_expr -> print_string (string_of_type type_expr) *)

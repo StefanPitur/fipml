@@ -1,4 +1,4 @@
 (library
  (name typing)
- (modules typed_ast typecheck_program typecheck_type_defns typecheck_functions type_defns_env pprint_typed_ast)
+ (modules typed_ast typecheck_program typecheck_type_defns typecheck_functions type_defns_env pprint_typed_ast type_context_env)
  (libraries core ast parsing))
