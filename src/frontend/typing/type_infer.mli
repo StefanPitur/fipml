@@ -11,10 +11,8 @@ type ty =
   | TyOption of ty
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
-[@@deriving show]
 
 type constr = ty * ty
-[@@deriving show]
 
 val type_infer :
   Type_defns_env.types_env ->
