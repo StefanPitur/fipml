@@ -85,7 +85,7 @@ let typecheck_type_defn
     )
 
 
-let rec typecheck_type_defns 
+let rec typecheck_type_defns_wrapper 
     (types_env : types_env)
     (constructors_env : constructors_env)
     (typed_ast_type_defns : Typed_ast.type_defn list)
@@ -98,7 +98,12 @@ let rec typecheck_type_defns
     let open Result in
       typecheck_type_defn types_env constructors_env type_defn
       >>= fun (types_env, constructors_env, typed_ast_type_defn) -> 
-        typecheck_type_defns types_env constructors_env (typed_ast_type_defn :: typed_ast_type_defns) type_defns
+        typecheck_type_defns_wrapper types_env constructors_env (typed_ast_type_defn :: typed_ast_type_defns) type_defns
+
+let typecheck_type_defns
+    (type_defns : Parser_ast.type_defn list)
+  : (types_env * constructors_env * Typed_ast.type_defn list) Or_error.t =
+  typecheck_type_defns_wrapper [] [] [] type_defns
 
 let rec pprint_types_env (ppf : Format.formatter) (types_env : types_env) : unit =
   match types_env with
