@@ -27,4 +27,4 @@ let%expect_test "typing type defn: used type before actual definition" =
   | Ok _ -> ()
   | Error err -> print_string (Error.to_string_hum err)
   ;
-  [%expect {| ("Typing.Type_envs.TypeNotFound(\"File: mock - Line: 0 - Column: 1. Type custom_type_2 not defined\")") |}]
+  [%expect {| ("Typing.Type_defns_env.TypeNotFound(\"File: mock - Line: 0 - Column: 1. Type custom_type_2 not defined\")") |}]

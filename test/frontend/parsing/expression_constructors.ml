@@ -1,9 +1,10 @@
 let%expect_test "expression: constructor" =
-  let source_code = "
-    ConstructorName(expr1, Some expr2, OtherConstructorName)
-  " in
+  let source_code =
+    "\n    ConstructorName(expr1, Some expr2, OtherConstructorName)\n  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Expr: Constructor: ConstructorName
             ConstructorArg

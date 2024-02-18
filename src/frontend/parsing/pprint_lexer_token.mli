@@ -1,1 +1,1 @@
-val pprint_lexer_token: Format.formatter -> Parser.token -> unit
+val pprint_lexer_token : Format.formatter -> Parser.token -> unit

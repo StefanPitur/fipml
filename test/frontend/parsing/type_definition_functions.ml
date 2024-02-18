@@ -1,12 +1,15 @@
-let%expect_test "custom type with function params" = 
-  let source_code = "
-    type custom_simple_type = 
-    | Constructor1 of my_custom_type -> int -> unit
-    | Constructor2 of int option -> unit -> int option
-    | Constructor3 of (int -> unit) option
-  " in
+let%expect_test "custom type with function params" =
+  let source_code =
+    "\n\
+    \    type custom_simple_type = \n\
+    \    | Constructor1 of my_custom_type -> int -> unit\n\
+    \    | Constructor2 of int option -> unit -> int option\n\
+    \    | Constructor3 of (int -> unit) option\n\
+    \  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Type Name: custom_simple_type
         Type Constructors:

@@ -26,4 +26,4 @@ let%expect_test "typing type defn: duplicated custom type definition" =
   | Ok _ -> ()
   | Error err -> print_string (Error.to_string_hum err)
   ;
-  [%expect {| ("Typing.Type_envs.TypeAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of type custom_type\")") |}]
+  [%expect {| ("Typing.Type_defns_env.TypeAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of type custom_type\")") |}]

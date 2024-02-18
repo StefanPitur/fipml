@@ -21,7 +21,7 @@ let%expect_test "typing type defn: duplicated constructor definition in the same
   | Ok _ -> ()
   | Error err -> print_string (Error.to_string_hum err)
   ;
-  [%expect {| ("Typing.Type_envs.ConstructorAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of constructor C1\")") |}]
+  [%expect {| ("Typing.Type_defns_env.ConstructorAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of constructor C1\")") |}]
 
 
 let%expect_test "typing type defn: duplicated constructor definition across different types" = 
@@ -39,4 +39,4 @@ let%expect_test "typing type defn: duplicated constructor definition across diff
   | Ok _ -> ()
   | Error err -> print_string (Error.to_string_hum err)
   ;
-  [%expect {| ("Typing.Type_envs.ConstructorAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of constructor C1\")") |}]
+  [%expect {| ("Typing.Type_defns_env.ConstructorAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of constructor C1\")") |}]

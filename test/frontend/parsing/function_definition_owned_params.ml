@@ -1,11 +1,15 @@
-let%expect_test "function definition with owned parameters" = 
-  let source_code = "
-    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type option) : unit = begin
-      ()
-    end
-  " in
+let%expect_test "function definition with owned parameters" =
+  let source_code =
+    "\n\
+    \    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type \
+     option) : unit = begin\n\
+    \      ()\n\
+    \    end\n\
+    \  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Function Name: function_name
         Return Type: Unit
