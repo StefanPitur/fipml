@@ -12,7 +12,7 @@ let mock_loc : Lexing.position = {
 
 let%expect_test "typing type defn: duplicated custom type definition" = 
   let custom_type = 
-    TType(mock_loc, Type_name.of_string "custom_type1", [
+    TType(mock_loc, Type_name.of_string "custom_type", [
       TTypeConstructor(mock_loc, Constructor_name.of_string "C1", [])
     ])
   in
