@@ -76,9 +76,7 @@ let typecheck_type_defn (types_env : types_env)
       constructors_env,
       Typed_ast.TType (loc, type_name, typed_ast_type_constructors) )
 
-
-let rec typecheck_type_defns_wrapper 
-    (types_env : types_env)
+let rec typecheck_type_defns_wrapper (types_env : types_env)
     (constructors_env : constructors_env)
     (typed_ast_type_defns : Typed_ast.type_defn list)
     (type_defns : Parser_ast.type_defn list) :
@@ -88,32 +86,36 @@ let rec typecheck_type_defns_wrapper
   | type_defn :: type_defns ->
       let open Result in
       typecheck_type_defn types_env constructors_env type_defn
-      >>= fun (types_env, constructors_env, typed_ast_type_defn) -> 
-        typecheck_type_defns_wrapper types_env constructors_env (typed_ast_type_defn :: typed_ast_type_defns) type_defns
+      >>= fun (types_env, constructors_env, typed_ast_type_defn) ->
+      typecheck_type_defns_wrapper types_env constructors_env
+        (typed_ast_type_defn :: typed_ast_type_defns)
+        type_defns
 
-let typecheck_type_defns
-    (type_defns : Parser_ast.type_defn list)
-  : (types_env * constructors_env * Typed_ast.type_defn list) Or_error.t =
+let typecheck_type_defns (type_defns : Parser_ast.type_defn list) :
+    (types_env * constructors_env * Typed_ast.type_defn list) Or_error.t =
   typecheck_type_defns_wrapper [] [] [] type_defns
 
-let rec pprint_types_env (ppf : Format.formatter) (types_env : types_env) : unit =
+let rec pprint_types_env (ppf : Format.formatter) (types_env : types_env) : unit
+    =
   match types_env with
   | [] -> ()
   | _type :: types_env ->
-    Fmt.pf ppf "%s@." (Ast_types.Type_name.to_string _type);
-    pprint_types_env ppf types_env
+      Fmt.pf ppf "%s@." (Ast_types.Type_name.to_string _type);
+      pprint_types_env ppf types_env
 
-let rec pprint_constructors_env (ppf : Format.formatter) (constructors_env : constructors_env) : unit =
-  let mock_loc : Lexing.position = {
-    pos_fname = "mock";
-    pos_lnum = 0;
-    pos_bol = 0;
-    pos_cnum = 0;
-  } in
+let rec pprint_constructors_env (ppf : Format.formatter)
+    (constructors_env : constructors_env) : unit =
+  let mock_loc : Lexing.position =
+    { pos_fname = "mock"; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
+  in
   let indent = "    " in
   match constructors_env with
   | [] -> ()
-  | (ConstructorEnvEntry(type_name, constructor_name, constructor_params)) :: constructors_env ->
-    Fmt.pf ppf "Constructor Type : %s@." (Ast_types.Type_name.to_string type_name);
-    Pprint_parser_ast.pprint_type_constructor ppf ~indent:indent (Parser_ast.TTypeConstructor (mock_loc, constructor_name, constructor_params));
-    pprint_constructors_env ppf constructors_env
+  | ConstructorEnvEntry (type_name, constructor_name, constructor_params)
+    :: constructors_env ->
+      Fmt.pf ppf "Constructor Type : %s@."
+        (Ast_types.Type_name.to_string type_name);
+      Pprint_parser_ast.pprint_type_constructor ppf ~indent
+        (Parser_ast.TTypeConstructor
+           (mock_loc, constructor_name, constructor_params));
+      pprint_constructors_env ppf constructors_env
