@@ -44,14 +44,33 @@ let rec combine_lists (list1 : 'a list) (list2 : 'b list) :
       let open Result in
       combine_lists xs ys >>= fun combined_list -> Ok ((x, y) :: combined_list)
 
-(* TODO *)
-let generate_constrs_block_expr (_ : Type_defns_env.types_env)
-    (_ : Type_defns_env.constructors_env) (typing_context : typing_context)
-    (Block (_, _) : block_expr) : (typing_context * ty * constr list) Or_error.t
-    =
-  Ok (typing_context, TyUnit, [])
+let rec pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
+  let reversed_lst = List.rev lst in
+  match reversed_lst with
+  | [] -> Or_error.error_string "Unable to pop last element from empty list"
+  | x :: xs -> Ok (x, List.rev xs)
 
-let rec generate_constraints (types_env : Type_defns_env.types_env)
+let rec generate_constrs_block_expr (types_env : Type_defns_env.types_env)
+    (constructors_env : Type_defns_env.constructors_env)
+    (functions_env : Functions_env.functions_env)
+    (typing_context : typing_context) (Block (_, exprs) : block_expr) :
+    (typing_context * ty * constr list) Or_error.t =
+  let open Result in
+  pop_last_element_from_list exprs >>= fun (last_expr, exprs) ->
+  Ok
+    (List.fold_left exprs ~init:[] ~f:(fun acc expr ->
+         Or_error.ok_exn
+           ( generate_constraints types_env constructors_env functions_env
+               typing_context expr
+           >>= fun (_, expr_type, expr_constraints) ->
+             Ok (((expr_type, TyUnit) :: expr_constraints) @ acc) )))
+  >>= fun block_expr_constraints ->
+  generate_constraints types_env constructors_env functions_env typing_context
+    last_expr
+  >>= fun (_, block_type, last_expr_constraints) ->
+  Ok (typing_context, block_type, last_expr_constraints @ block_expr_constraints)
+
+and generate_constraints (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (expr : expr) :
@@ -111,8 +130,8 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
       generate_constraints types_env constructors_env functions_env
         typing_context expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-      generate_constrs_block_expr types_env constructors_env typing_context
-        expr_then
+      generate_constrs_block_expr types_env constructors_env functions_env
+        typing_context expr_then
       >>= fun (_, expr_then_type, expr_then_constrs) ->
       Ok
         ( typing_context,
@@ -124,11 +143,11 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
       generate_constraints types_env constructors_env functions_env
         typing_context expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-      generate_constrs_block_expr types_env constructors_env typing_context
-        expr_then
+      generate_constrs_block_expr types_env constructors_env functions_env
+        typing_context expr_then
       >>= fun (_, expr_then_type, expr_then_constrs) ->
-      generate_constrs_block_expr types_env constructors_env typing_context
-        expr_else
+      generate_constrs_block_expr types_env constructors_env functions_env
+        typing_context expr_else
       >>= fun (_, expr_else_type, expr_else_constrs) ->
       Ok
         ( typing_context,
