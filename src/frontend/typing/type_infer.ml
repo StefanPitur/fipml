@@ -59,7 +59,7 @@ let pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
   | x :: xs -> Ok (x, List.rev xs)
 
 (*TODO: pass the typing context forward*)
-let rec generate_constrs_block_expr (types_env : Type_defns_env.types_env)
+let rec generate_constrs_block_expr
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (Block (_, exprs) : block_expr) :
@@ -69,18 +69,16 @@ let rec generate_constrs_block_expr (types_env : Type_defns_env.types_env)
   Ok
     (List.fold_left exprs ~init:[] ~f:(fun acc expr ->
          Or_error.ok_exn
-           ( generate_constraints types_env constructors_env functions_env
-               typing_context expr
+           ( generate_constraints constructors_env functions_env typing_context
+               expr
            >>= fun (_, expr_type, expr_constraints) ->
              Ok (((expr_type, TyUnit) :: expr_constraints) @ acc) )))
   >>= fun block_expr_constraints ->
-  generate_constraints types_env constructors_env functions_env typing_context
-    last_expr
+  generate_constraints constructors_env functions_env typing_context last_expr
   >>= fun (_, block_type, last_expr_constraints) ->
   Ok (typing_context, block_type, last_expr_constraints @ block_expr_constraints)
 
-and generate_constraints (types_env : Type_defns_env.types_env)
-    (constructors_env : Type_defns_env.constructors_env)
+and generate_constraints (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (expr : expr) :
     (typing_context * ty * constr list) Or_error.t =
@@ -94,8 +92,8 @@ and generate_constraints (types_env : Type_defns_env.types_env)
       match expr with
       | None -> Ok (typing_context, t, [])
       | Some expr ->
-          generate_constraints types_env constructors_env functions_env
-            typing_context expr
+          generate_constraints constructors_env functions_env typing_context
+            expr
           >>= fun (_, expr_type, expr_constrs) ->
           Ok (typing_context, t, (t, TyOption expr_type) :: expr_constrs))
   | Variable (_, var) ->
@@ -111,7 +109,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
       >>| List.fold_left ~init:[]
             ~f:(fun acc (constructor_expr, constructor_param_type) ->
               Or_error.ok_exn
-                ( generate_constraints types_env constructors_env functions_env
+                ( generate_constraints constructors_env functions_env
                     typing_context constructor_expr
                 >>= fun (_, param_type, param_constraints) ->
                   Ok
@@ -125,22 +123,22 @@ and generate_constraints (types_env : Type_defns_env.types_env)
   (* Note that we do not care about Polymorphic - Let, as we only allow top-level functions *)
   | Let (_, var_name, var_expr, expr) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env functions_env
-        typing_context var_expr
+      generate_constraints constructors_env functions_env typing_context
+        var_expr
       >>= fun (_, var_type, var_constrs) ->
       Type_context_env.extend_typing_context typing_context var_name var_type
       >>= fun extended_typing_context ->
-      generate_constraints types_env constructors_env functions_env
+      generate_constraints constructors_env functions_env
         extended_typing_context expr
       >>= fun (_, expr_type, expr_constrs) ->
       Ok (typing_context, t, ((t, expr_type) :: expr_constrs) @ var_constrs)
   | If (_, expr_cond, expr_then) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env functions_env
-        typing_context expr_cond
+      generate_constraints constructors_env functions_env typing_context
+        expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-      generate_constrs_block_expr types_env constructors_env functions_env
-        typing_context expr_then
+      generate_constrs_block_expr constructors_env functions_env typing_context
+        expr_then
       >>= fun (_, expr_then_type, expr_then_constrs) ->
       Ok
         ( typing_context,
@@ -149,14 +147,14 @@ and generate_constraints (types_env : Type_defns_env.types_env)
           @ expr_cond_constrs @ expr_then_constrs )
   | IfElse (_, expr_cond, expr_then, expr_else) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env functions_env
-        typing_context expr_cond
+      generate_constraints constructors_env functions_env typing_context
+        expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-      generate_constrs_block_expr types_env constructors_env functions_env
-        typing_context expr_then
+      generate_constrs_block_expr constructors_env functions_env typing_context
+        expr_then
       >>= fun (_, expr_then_type, expr_then_constrs) ->
-      generate_constrs_block_expr types_env constructors_env functions_env
-        typing_context expr_else
+      generate_constrs_block_expr constructors_env functions_env typing_context
+        expr_else
       >>= fun (_, expr_else_type, expr_else_constrs) ->
       Ok
         ( typing_context,
@@ -164,8 +162,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
           [ (expr_cond_type, TyBool); (t, expr_then_type); (t, expr_else_type) ]
           @ expr_cond_constrs @ expr_then_constrs @ expr_else_constrs )
   | UnOp (_, unary_op, expr) -> (
-      generate_constraints types_env constructors_env functions_env
-        typing_context expr
+      generate_constraints constructors_env functions_env typing_context expr
       >>= fun (_, expr_type, expr_constrs) ->
       match unary_op with
       | UnOpNeg ->
@@ -175,11 +172,9 @@ and generate_constraints (types_env : Type_defns_env.types_env)
       (* TODO: Implement after Tuple *)
       | UnOpFst | UnOpSnd -> Ok (typing_context, TyUnit, []))
   | BinaryOp (_, binary_op, expr1, expr2) -> (
-      generate_constraints types_env constructors_env functions_env
-        typing_context expr1
+      generate_constraints constructors_env functions_env typing_context expr1
       >>= fun (_, expr1_type, expr1_constrs) ->
-      generate_constraints types_env constructors_env functions_env
-        typing_context expr2
+      generate_constraints constructors_env functions_env typing_context expr2
       >>= fun (_, expr2_type, expr2_constrs) ->
       match binary_op with
       | BinOpPlus | BinOpMinus | BinOpMult | BinOpDiv | BinOpMod ->
@@ -214,7 +209,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
       >>| List.fold_left ~init:[]
             ~f:(fun acc (function_arg_type, function_param) ->
               Or_error.ok_exn
-                ( generate_constraints types_env constructors_env functions_env
+                ( generate_constraints constructors_env functions_env
                     typing_context function_param
                 >>= fun (_, function_param_type, function_param_constraints) ->
                   Ok
@@ -235,7 +230,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
         (List.fold_left pattern_exprs ~init:[]
            ~f:(fun acc (MPattern (_, matched_expr, block_expr)) ->
              Or_error.ok_exn
-               ( generate_constraints_matched_expr types_env constructors_env []
+               ( generate_constraints_matched_expr constructors_env []
                    matched_expr
                >>= fun ( matched_typing_context,
                          matched_expr_type,
@@ -243,8 +238,8 @@ and generate_constraints (types_env : Type_defns_env.types_env)
                  Type_context_env.union_disjoint_typing_contexts typing_context
                    matched_typing_context
                  >>= fun union_typing_contexts ->
-                 generate_constrs_block_expr types_env constructors_env
-                   functions_env union_typing_contexts block_expr
+                 generate_constrs_block_expr constructors_env functions_env
+                   union_typing_contexts block_expr
                  >>= fun (_, block_expr_type, block_expr_constraints) ->
                  Ok
                    ((matched_var_type, matched_expr_type)
@@ -252,7 +247,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
                    @ block_expr_constraints @ acc) )))
       >>= fun _ -> Ok (typing_context, TyUnit, [])
 
-and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
+and generate_constraints_matched_expr
     (constructors_env : Type_defns_env.constructors_env)
     (matched_typing_context : typing_context) (matched_expr : matched_expr) :
     (typing_context * ty * constr list) Or_error.t =
@@ -269,13 +264,13 @@ and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
   | MTuple (_, matched_expr_fst, matched_expr_snd) ->
       let t = fresh () in
       let open Result in
-      generate_constraints_matched_expr types_env constructors_env
-        matched_typing_context matched_expr_fst
+      generate_constraints_matched_expr constructors_env matched_typing_context
+        matched_expr_fst
       >>= fun ( matched_typing_context_fst,
                 matched_expr_fst_type,
                 matched_expr_fst_contraints ) ->
-      generate_constraints_matched_expr types_env constructors_env
-        matched_typing_context matched_expr_snd
+      generate_constraints_matched_expr constructors_env matched_typing_context
+        matched_expr_snd
       >>= fun ( matched_typing_context_snd,
                 matched_expr_snd_type,
                 matched_expr_snd_contraints ) ->
@@ -303,7 +298,7 @@ and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
                (matched_expr, matched_expr_type)
              ->
              Or_error.ok_exn
-               ( generate_constraints_matched_expr types_env constructors_env
+               ( generate_constraints_matched_expr constructors_env
                    acc_matched_typing_context matched_expr
                >>= fun ( matched_typing_context,
                          matched_expr_ty,
@@ -327,7 +322,7 @@ and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
       | None -> Ok (matched_typing_context, t, [])
       | Some matched_expr ->
           let open Result in
-          generate_constraints_matched_expr types_env constructors_env
+          generate_constraints_matched_expr constructors_env
             matched_typing_context matched_expr
           >>= fun ( matched_typing_context,
                     match_expr_type,
@@ -337,7 +332,7 @@ and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
               t,
               (t, TyOption match_expr_type) :: match_expr_constraints ))
 
-let type_infer (types_env : Type_defns_env.types_env)
+let type_infer (_ : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (Block (_, exprs) : block_expr) : unit Or_error.t =
@@ -345,5 +340,5 @@ let type_infer (types_env : Type_defns_env.types_env)
   | [] -> Ok ()
   | expr :: _ ->
       let open Result in
-      generate_constraints types_env constructors_env functions_env [] expr
-      >>= fun _ -> Ok ()
+      generate_constraints constructors_env functions_env [] expr >>= fun _ ->
+      Ok ()
