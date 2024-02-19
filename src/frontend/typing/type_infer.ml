@@ -53,6 +53,7 @@ let generate_constrs_block_expr (_ : Type_defns_env.types_env)
 
 let rec generate_constraints (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
+    (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (expr : expr) :
     (typing_context * ty * constr list) Or_error.t =
   let open Result in
@@ -65,7 +66,7 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
       match expr with
       | None -> Ok (typing_context, t, [])
       | Some expr ->
-          generate_constraints types_env constructors_env typing_context expr
+          generate_constraints types_env constructors_env functions_env typing_context expr
           >>= fun (_, expr_type, expr_constrs) ->
           Ok (typing_context, t, (t, TyOption expr_type) :: expr_constrs))
   | Variable (_, var) ->
@@ -81,7 +82,7 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
       >>| List.fold_left ~init:[]
             ~f:(fun acc (constructor_expr, constructor_param_type) ->
               Or_error.ok_exn
-                ( generate_constraints types_env constructors_env typing_context
+                ( generate_constraints types_env constructors_env functions_env typing_context
                     constructor_expr
                 >>= fun (_, param_type, param_constraints) ->
                   Ok
@@ -95,17 +96,17 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
   (* Note that we do not care about Polymorphic - Let, as we only allow top-level functions *)
   | Let (_, var_name, var_expr, expr) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env typing_context var_expr
+      generate_constraints types_env constructors_env functions_env typing_context var_expr
       >>= fun (_, var_type, var_constrs) ->
       Type_context_env.extend_typing_context typing_context var_name var_type
       >>= fun extended_typing_context ->
-      generate_constraints types_env constructors_env extended_typing_context
+      generate_constraints types_env constructors_env functions_env extended_typing_context
         expr
       >>= fun (_, expr_type, expr_constrs) ->
       Ok (typing_context, t, ((t, expr_type) :: expr_constrs) @ var_constrs)
   | If (_, expr_cond, expr_then) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env typing_context expr_cond
+      generate_constraints types_env constructors_env functions_env typing_context expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
       generate_constrs_block_expr types_env constructors_env typing_context
         expr_then
@@ -117,7 +118,7 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
           @ expr_cond_constrs @ expr_then_constrs )
   | IfElse (_, expr_cond, expr_then, expr_else) ->
       let t = fresh () in
-      generate_constraints types_env constructors_env typing_context expr_cond
+      generate_constraints types_env constructors_env functions_env typing_context expr_cond
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
       generate_constrs_block_expr types_env constructors_env typing_context
         expr_then
@@ -131,7 +132,7 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
           [ (expr_cond_type, TyBool); (t, expr_then_type); (t, expr_else_type) ]
           @ expr_cond_constrs @ expr_then_constrs @ expr_else_constrs )
   | UnOp (_, unary_op, expr) -> (
-      generate_constraints types_env constructors_env typing_context expr
+      generate_constraints types_env constructors_env functions_env typing_context expr
       >>= fun (_, expr_type, expr_constrs) ->
       match unary_op with
       | UnOpNeg ->
@@ -141,9 +142,9 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
       (* TODO: Implement after Tuple *)
       | UnOpFst | UnOpSnd -> Ok (typing_context, TyUnit, []))
   | BinaryOp (_, binary_op, expr1, expr2) -> (
-      generate_constraints types_env constructors_env typing_context expr1
+      generate_constraints types_env constructors_env functions_env typing_context expr1
       >>= fun (_, expr1_type, expr1_constrs) ->
-      generate_constraints types_env constructors_env typing_context expr2
+      generate_constraints types_env constructors_env functions_env typing_context expr2
       >>= fun (_, expr2_type, expr2_constrs) ->
       match binary_op with
       | BinOpPlus | BinOpMinus | BinOpMult | BinOpDiv | BinOpMod ->
@@ -169,13 +170,33 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
               TyBool,
               ((expr1_type, TyBool) :: (expr2_type, TyBool) :: expr1_constrs)
               @ expr2_constrs ))
+  | FunApp (_, function_name, function_params) ->
+    let open Result in
+    Functions_env.get_function_by_name function_name functions_env
+    >>= fun (_, function_args_types, function_return_type) ->
+    combine_lists function_args_types function_params
+    >>| List.fold_left ~init:[]
+          ~f:(fun acc (function_arg_type, function_param) ->
+            Or_error.ok_exn (
+              generate_constraints types_env constructors_env functions_env typing_context function_param
+              >>= fun (_, function_param_type, function_param_constraints) ->
+              Ok ((convert_ast_type_to_ty function_arg_type, function_param_type) :: function_param_constraints @ acc)
+            )
+          )
+    >>= fun function_args_constraints -> 
+      Ok (typing_context, convert_ast_type_to_ty function_return_type, function_args_constraints)
+
+  (*
+  | DMatch(_, var_name, patterns_expr) -> Ok (typing_context, TyUnit, [])
+  | Match(_, var_name, patterns_expr) -> Ok (typing_context, TyUnit, []) *)
   | _ -> Ok (typing_context, TyUnit, [])
 
 let type_infer (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
+    (functions_env : Functions_env.functions_env)
     (Block (_, exprs) : block_expr) : unit Or_error.t =
   match exprs with
   | [] -> Ok ()
   | expr :: _ ->
       let open Result in
-      generate_constraints types_env constructors_env [] expr >>= fun _ -> Ok ()
+      generate_constraints types_env constructors_env functions_env [] expr >>= fun _ -> Ok ()
