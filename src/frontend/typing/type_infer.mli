@@ -14,6 +14,7 @@ type ty =
   | TyTuple of ty * ty
 
 type constr = ty * ty
+type typing_context = ty Type_context_env.typing_context
 
 val type_infer :
   Type_defns_env.types_env ->
@@ -22,3 +23,11 @@ val type_infer :
   Parsing.Parser_ast.block_expr ->
   unit Or_error.t
 (** Type Inference for functions and main expression *)
+
+val generate_constraints :
+  Type_defns_env.constructors_env ->
+  Functions_env.functions_env ->
+  typing_context ->
+  Parsing.Parser_ast.expr ->
+  (typing_context * ty * constr list) Or_error.t
+(** Call constraints generation on expression *)
