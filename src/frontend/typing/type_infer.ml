@@ -170,9 +170,9 @@ let rec generate_constraints (types_env : Type_defns_env.types_env)
               TyBool,
               ((expr1_type, TyBool) :: (expr2_type, TyBool) :: expr1_constrs)
               @ expr2_constrs ))
-  | FunApp (_, function_name, function_params) ->
+  | FunApp (loc, function_name, function_params) ->
     let open Result in
-    Functions_env.get_function_by_name function_name functions_env
+    Functions_env.get_function_by_name loc function_name functions_env
     >>= fun (_, function_args_types, function_return_type) ->
     combine_lists function_args_types function_params
     >>| List.fold_left ~init:[]
