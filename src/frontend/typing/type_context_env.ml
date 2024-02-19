@@ -1,8 +1,9 @@
 open Ast.Ast_types
 open Core
 
-exception VariableNotFound of Var_name.t
+exception ContextsNotDisjoint
 exception ShadowingNotSupported
+exception VariableNotFound of Var_name.t
 
 type 'a typing_context_entry = TypingContextEntry of Var_name.t * 'a
 type 'a typing_context = 'a typing_context_entry list
@@ -31,7 +32,20 @@ let get_var_type (typing_context : 'a typing_context) (var : Var_name.t) :
   | [ TypingContextEntry (_, var_type) ] -> Ok var_type
   | _ -> Or_error.of_exn ShadowingNotSupported
 
-(* let pprint_typing_context ppf (typing_context : 'a typing_context) : unit =
-   List.iter typing_context ~f:(fun (TypingContextEntry (var, var_type)) ->
-       Fmt.pf ppf "var name: %s, var type: %s@." (Var_name.to_string var)
-         (string_of_type var_type)) *)
+let rec union_disjoint_typing_contexts (typing_context_left : 'a typing_context)
+    (typing_context_right : 'a typing_context) : 'a typing_context Or_error.t =
+  match typing_context_left with
+  | [] -> Ok typing_context_right
+  | x :: xs ->
+      let is_member =
+        List.mem typing_context_right x
+          ~equal:(fun
+              (TypingContextEntry (var_name_left, _))
+              (TypingContextEntry (var_name_right, _))
+            -> Var_name.( = ) var_name_left var_name_right)
+      in
+      if is_member then Or_error.of_exn ContextsNotDisjoint
+      else
+        let open Result in
+        union_disjoint_typing_contexts xs typing_context_right
+        >>= fun union_typing_contexts -> Ok (x :: union_typing_contexts)

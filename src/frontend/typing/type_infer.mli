@@ -11,6 +11,7 @@ type ty =
   | TyOption of ty
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
+  | TyTuple of ty * ty
 
 type constr = ty * ty
 

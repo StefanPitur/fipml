@@ -14,5 +14,6 @@ val extend_typing_context :
 val get_var_type : 'a typing_context -> Var_name.t -> 'a Or_error.t
 (** Get type for variable in typing context *)
 
-(* val pprint_typing_context : Format.formatter -> 'a typing_context -> unit *)
-(** Pretty-print typing context *)
+val union_disjoint_typing_contexts :
+  'a typing_context -> 'a typing_context -> 'a typing_context Or_error.t
+(** Union of two disjoint typing contexts *)

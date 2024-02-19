@@ -5,6 +5,13 @@ open Parsing.Parser_ast
 exception UnableToUnify
 exception ListsOfDifferentLengths
 
+(*
+  Implementation notes:
+  - currently match patterns do not allow shadowing of variables
+  - nothing on tuples actually works, need to implement tuples   
+  - a function doesn't check that it receives the correct amount of params yet
+*)
+
 type ty =
   | TyVar of string
   | TyUnit
@@ -13,6 +20,7 @@ type ty =
   | TyOption of ty
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
+  | TyTuple of ty * ty
 
 type constr = ty * ty
 type typing_context = ty Type_context_env.typing_context
@@ -44,12 +52,13 @@ let rec combine_lists (list1 : 'a list) (list2 : 'b list) :
       let open Result in
       combine_lists xs ys >>= fun combined_list -> Ok ((x, y) :: combined_list)
 
-let rec pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
+let pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
   let reversed_lst = List.rev lst in
   match reversed_lst with
   | [] -> Or_error.error_string "Unable to pop last element from empty list"
   | x :: xs -> Ok (x, List.rev xs)
 
+(*TODO: pass the typing context forward*)
 let rec generate_constrs_block_expr (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
@@ -196,6 +205,7 @@ and generate_constraints (types_env : Type_defns_env.types_env)
               TyBool,
               ((expr1_type, TyBool) :: (expr2_type, TyBool) :: expr1_constrs)
               @ expr2_constrs ))
+  (*Check that arity matches with number of parameters*)
   | FunApp (loc, function_name, function_params) ->
       let open Result in
       Functions_env.get_function_by_name loc function_name functions_env
@@ -217,10 +227,112 @@ and generate_constraints (types_env : Type_defns_env.types_env)
         ( typing_context,
           convert_ast_type_to_ty function_return_type,
           function_args_constraints )
-  (*
-  | DMatch(_, var_name, patterns_expr) -> Ok (typing_context, TyUnit, [])
-  | Match(_, var_name, patterns_expr) -> Ok (typing_context, TyUnit, []) *)
-  | _ -> Ok (typing_context, TyUnit, [])
+  | Match(_, var_name, pattern_exprs)
+  | DMatch (_, var_name, pattern_exprs) ->
+      let t = fresh () in
+      Type_context_env.get_var_type typing_context var_name
+      >>= fun matched_var_type ->
+      Ok
+        (List.fold_left pattern_exprs ~init:[]
+           ~f:(fun acc (MPattern(_, matched_expr, block_expr)) ->
+             Or_error.ok_exn
+              ( 
+                generate_constraints_matched_expr types_env constructors_env [] matched_expr
+                >>= fun (matched_typing_context, matched_expr_type, match_expr_constraints) -> 
+                Type_context_env.union_disjoint_typing_contexts typing_context matched_typing_context
+                >>= fun union_typing_contexts ->
+                generate_constrs_block_expr types_env constructors_env functions_env union_typing_contexts block_expr
+                >>= fun (_, block_expr_type, block_expr_constraints) ->
+                Ok ((matched_var_type, matched_expr_type) :: (t, block_expr_type) :: match_expr_constraints @ block_expr_constraints @ acc)
+              )
+            )
+        )
+      >>= fun _ -> Ok (typing_context, TyUnit, [])
+
+and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
+    (constructors_env : Type_defns_env.constructors_env)
+    (matched_typing_context : typing_context) (matched_expr : matched_expr) :
+    (typing_context * ty * constr list) Or_error.t =
+  match matched_expr with
+  | MUnderscore _ ->
+      let t = fresh () in
+      Ok ([], t, [])
+  | MVariable (_, matched_var_name) ->
+      let t = fresh () in
+      let open Result in
+      Type_context_env.extend_typing_context matched_typing_context
+        matched_var_name t
+      >>= fun extended_typing_context -> Ok (extended_typing_context, t, [])
+  | MTuple (_, matched_expr_fst, matched_expr_snd) ->
+      let t = fresh () in
+      let open Result in
+      generate_constraints_matched_expr types_env constructors_env
+        matched_typing_context matched_expr_fst
+      >>= fun ( matched_typing_context_fst,
+                matched_expr_fst_type,
+                matched_expr_fst_contraints ) ->
+      generate_constraints_matched_expr types_env constructors_env
+        matched_typing_context matched_expr_snd
+      >>= fun ( matched_typing_context_snd,
+                matched_expr_snd_type,
+                matched_expr_snd_contraints ) ->
+      Type_context_env.union_disjoint_typing_contexts matched_typing_context_fst
+        matched_typing_context_snd
+      >>= fun union_matched_typing_context ->
+      Ok
+        ( union_matched_typing_context,
+          t,
+          (t, TyTuple (matched_expr_fst_type, matched_expr_snd_type))
+          :: matched_expr_fst_contraints
+          @ matched_expr_snd_contraints )
+  | MConstructor (loc, constructor_name, matched_exprs) ->
+      let open Result in
+      Type_defns_env.get_constructor_by_name loc constructor_name
+        constructors_env
+      >>= fun (Type_defns_env.ConstructorEnvEntry
+                (constructor_type_name, _, constructor_arg_types)) ->
+      combine_lists matched_exprs constructor_arg_types
+      >>= fun matched_expr_types ->
+      Ok
+        (List.fold_left matched_expr_types ~init:(matched_typing_context, [])
+           ~f:(fun
+               (acc_matched_typing_context, acc_matched_expr_constraints)
+               (matched_expr, matched_expr_type)
+             ->
+             Or_error.ok_exn
+               ( generate_constraints_matched_expr types_env constructors_env
+                   acc_matched_typing_context matched_expr
+               >>= fun ( matched_typing_context,
+                         matched_expr_ty,
+                         matched_expr_constraints ) ->
+                 Type_context_env.union_disjoint_typing_contexts
+                   matched_typing_context acc_matched_typing_context
+                 >>= fun union_matched_typing_context ->
+                 Ok
+                   ( union_matched_typing_context,
+                     (matched_expr_ty, convert_ast_type_to_ty matched_expr_type)
+                     :: matched_expr_constraints
+                     @ acc_matched_expr_constraints ) )))
+      >>= fun (matched_typing_context, matched_expr_constraints) ->
+      Ok
+        ( matched_typing_context,
+          TyCustom constructor_type_name,
+          matched_expr_constraints )
+  | MOption (_, matched_expr) -> (
+      let t = fresh () in
+      match matched_expr with
+      | None -> Ok (matched_typing_context, t, [])
+      | Some matched_expr ->
+          let open Result in
+          generate_constraints_matched_expr types_env constructors_env
+            matched_typing_context matched_expr
+          >>= fun ( matched_typing_context,
+                    match_expr_type,
+                    match_expr_constraints ) ->
+          Ok
+            ( matched_typing_context,
+              t,
+              (t, TyOption match_expr_type) :: match_expr_constraints ))
 
 let type_infer (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
