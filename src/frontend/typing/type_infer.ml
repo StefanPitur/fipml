@@ -227,26 +227,29 @@ and generate_constraints (types_env : Type_defns_env.types_env)
         ( typing_context,
           convert_ast_type_to_ty function_return_type,
           function_args_constraints )
-  | Match(_, var_name, pattern_exprs)
-  | DMatch (_, var_name, pattern_exprs) ->
+  | Match (_, var_name, pattern_exprs) | DMatch (_, var_name, pattern_exprs) ->
       let t = fresh () in
       Type_context_env.get_var_type typing_context var_name
       >>= fun matched_var_type ->
       Ok
         (List.fold_left pattern_exprs ~init:[]
-           ~f:(fun acc (MPattern(_, matched_expr, block_expr)) ->
+           ~f:(fun acc (MPattern (_, matched_expr, block_expr)) ->
              Or_error.ok_exn
-              ( 
-                generate_constraints_matched_expr types_env constructors_env [] matched_expr
-                >>= fun (matched_typing_context, matched_expr_type, match_expr_constraints) -> 
-                Type_context_env.union_disjoint_typing_contexts typing_context matched_typing_context
-                >>= fun union_typing_contexts ->
-                generate_constrs_block_expr types_env constructors_env functions_env union_typing_contexts block_expr
-                >>= fun (_, block_expr_type, block_expr_constraints) ->
-                Ok ((matched_var_type, matched_expr_type) :: (t, block_expr_type) :: match_expr_constraints @ block_expr_constraints @ acc)
-              )
-            )
-        )
+               ( generate_constraints_matched_expr types_env constructors_env []
+                   matched_expr
+               >>= fun ( matched_typing_context,
+                         matched_expr_type,
+                         match_expr_constraints ) ->
+                 Type_context_env.union_disjoint_typing_contexts typing_context
+                   matched_typing_context
+                 >>= fun union_typing_contexts ->
+                 generate_constrs_block_expr types_env constructors_env
+                   functions_env union_typing_contexts block_expr
+                 >>= fun (_, block_expr_type, block_expr_constraints) ->
+                 Ok
+                   ((matched_var_type, matched_expr_type)
+                    :: (t, block_expr_type) :: match_expr_constraints
+                   @ block_expr_constraints @ acc) )))
       >>= fun _ -> Ok (typing_context, TyUnit, [])
 
 and generate_constraints_matched_expr (types_env : Type_defns_env.types_env)
