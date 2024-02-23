@@ -10,6 +10,7 @@
   type_context_env
   type_infer
   type_infer_types
+  type_infer_constraints_generator
   functions_env
   pprint_type_infer)
  (libraries core ast parsing))
