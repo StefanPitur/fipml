@@ -9,6 +9,7 @@
   pprint_typed_ast
   type_context_env
   type_infer
+  type_infer_types
   functions_env
   pprint_type_infer)
  (libraries core ast parsing))

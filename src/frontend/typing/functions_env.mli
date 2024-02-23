@@ -5,7 +5,9 @@ exception FunctionNotFound of string
 exception FunctionAlreadyExists of string
 exception FunctionMultipleInstancesFound
 
-type function_env_entry = Function_name.t * type_expr list * type_expr
+type function_env_entry =
+  | FunctionEnvEntry of Function_name.t * type_expr list * type_expr
+
 type functions_env = function_env_entry list
 
 val assert_function_in_functions_env :
