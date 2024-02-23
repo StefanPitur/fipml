@@ -1,8 +1,6 @@
 open Core
 open Type_infer_types
 
-exception UnableToUnify
-
 val type_infer :
   Type_defns_env.types_env ->
   Type_defns_env.constructors_env ->

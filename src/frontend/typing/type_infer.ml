@@ -3,48 +3,12 @@ open Core
 open Type_infer_types
 open Parsing.Parser_ast
 
-exception UnableToUnify
-exception ListsOfDifferentLengths
-
 (*
   Implementation notes:
   - currently match patterns do not allow shadowing of variables => can be solved by having a context that searches for first occurrence of var instead of it being unique as well
   - nothing on tuples actually works, need to implement tuples   
   - a function doesn't check that it receives the correct amount of params yet
 *)
-
-let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
-  match type_expr with
-  | TEUnit _ -> TyUnit
-  | TEInt _ -> TyInt
-  | TEBool _ -> TyBool
-  | TEOption (_, type_expr) -> TyOption (convert_ast_type_to_ty type_expr)
-  | TECustom (_, custom_type_name) -> TyCustom custom_type_name
-  | TEArrow (_, input_type_expr, output_type_expr) ->
-      TyArrow
-        ( convert_ast_type_to_ty input_type_expr,
-          convert_ast_type_to_ty output_type_expr )
-
-let fresh =
-  let index = ref 0 in
-  fun () ->
-    index := !index + 1;
-    TyVar ("t" ^ string_of_int !index)
-
-let rec combine_lists (list1 : 'a list) (list2 : 'b list) :
-    ('a * 'b) list Or_error.t =
-  match (list1, list2) with
-  | [], [] -> Ok []
-  | [], _ | _, [] -> Or_error.of_exn ListsOfDifferentLengths
-  | x :: xs, y :: ys ->
-      let open Result in
-      combine_lists xs ys >>= fun combined_list -> Ok ((x, y) :: combined_list)
-
-let pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
-  let reversed_lst = List.rev lst in
-  match reversed_lst with
-  | [] -> Or_error.error_string "Unable to pop last element from empty list"
-  | x :: xs -> Ok (x, List.rev xs)
 
 (*TODO: pass the typing context forward*)
 let rec generate_constrs_block_expr
@@ -98,7 +62,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
         constructors_env
       >>= fun (ConstructorEnvEntry
                 (constructor_type, _, constructor_param_types)) ->
-      combine_lists constructor_exprs constructor_param_types
+      zip_lists constructor_exprs constructor_param_types
       >>| List.fold_left ~init:[]
             ~f:(fun acc (constructor_expr, constructor_param_type) ->
               Or_error.ok_exn
@@ -202,7 +166,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry (_, function_args_types, function_return_type))
         ->
-      combine_lists function_args_types function_params
+      zip_lists function_args_types function_params
       >>| List.fold_left ~init:[]
             ~f:(fun acc (function_arg_type, function_param) ->
               Or_error.ok_exn
@@ -291,7 +255,7 @@ and generate_constraints_matched_expr
         constructors_env
       >>= fun (Type_defns_env.ConstructorEnvEntry
                 (constructor_type_name, _, constructor_arg_types)) ->
-      combine_lists matched_exprs constructor_arg_types
+      zip_lists matched_exprs constructor_arg_types
       >>= fun matched_expr_types ->
       Ok
         (List.fold_left matched_expr_types ~init:(matched_typing_context, [])
