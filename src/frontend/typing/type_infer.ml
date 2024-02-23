@@ -5,11 +5,10 @@ open Parsing.Parser_ast
 
 (*
   Implementation notes:
-  - currently match patterns do not allow shadowing of variables => can be solved by having a context that searches for first occurrence of var instead of it being unique as well
-  - nothing on tuples actually works, need to implement tuples   
+  - nothing on tuples actually works, need to implement tuples  
+  - typing context is not passed between successive expressions in block_expr 
 *)
 
-(*TODO: pass the typing context forward*)
 let rec generate_constrs_block_expr
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
@@ -160,7 +159,6 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
               TyBool,
               ((expr1_type, TyBool) :: (expr2_type, TyBool) :: expr1_constrs)
               @ expr2_constrs ))
-  (*Check that arity matches with number of parameters*)
   | FunApp (loc, function_name, function_params) ->
       let open Result in
       Functions_env.get_function_by_name loc function_name functions_env
