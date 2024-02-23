@@ -7,7 +7,6 @@ open Parsing.Parser_ast
   Implementation notes:
   - currently match patterns do not allow shadowing of variables => can be solved by having a context that searches for first occurrence of var instead of it being unique as well
   - nothing on tuples actually works, need to implement tuples   
-  - a function doesn't check that it receives the correct amount of params yet
 *)
 
 (*TODO: pass the typing context forward*)
