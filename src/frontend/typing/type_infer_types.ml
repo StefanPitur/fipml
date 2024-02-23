@@ -3,6 +3,7 @@ open Core
 
 exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
+exception PartialFunctionApplicationNotAllowed
 
 type ty =
   | TyVar of string

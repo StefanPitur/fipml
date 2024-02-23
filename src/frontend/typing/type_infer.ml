@@ -166,6 +166,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry (_, function_args_types, function_return_type))
         ->
+      if List.length function_args_types <> List.length function_params then Or_error.of_exn (PartialFunctionApplicationNotAllowed) else
       zip_lists function_args_types function_params
       >>| List.fold_left ~init:[]
             ~f:(fun acc (function_arg_type, function_param) ->
