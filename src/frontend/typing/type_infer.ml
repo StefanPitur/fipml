@@ -82,8 +82,9 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       generate_constraints constructors_env functions_env typing_context
         var_expr ~verbose
       >>= fun (_, var_type, var_constrs) ->
-      Type_context_env.extend_typing_context typing_context var_name var_type
-      >>= fun extended_typing_context ->
+      let extended_typing_context =
+        Type_context_env.extend_typing_context typing_context var_name var_type
+      in
       generate_constraints constructors_env functions_env
         extended_typing_context expr ~verbose
       >>= fun (_, expr_type, expr_constrs) ->
@@ -165,24 +166,27 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry (_, function_args_types, function_return_type))
         ->
-      if List.length function_args_types <> List.length function_params then Or_error.of_exn (PartialFunctionApplicationNotAllowed) else
-      zip_lists function_args_types function_params
-      >>| List.fold_left ~init:[]
-            ~f:(fun acc (function_arg_type, function_param) ->
-              Or_error.ok_exn
-                ( generate_constraints constructors_env functions_env
-                    typing_context function_param ~verbose
-                >>= fun (_, function_param_type, function_param_constraints) ->
-                  Ok
-                    (( convert_ast_type_to_ty function_arg_type,
-                       function_param_type )
-                     :: function_param_constraints
-                    @ acc) ))
-      >>= fun function_args_constraints ->
-      Ok
-        ( typing_context,
-          convert_ast_type_to_ty function_return_type,
-          function_args_constraints )
+      if List.length function_args_types <> List.length function_params then
+        Or_error.of_exn PartialFunctionApplicationNotAllowed
+      else
+        zip_lists function_args_types function_params
+        >>| List.fold_left ~init:[]
+              ~f:(fun acc (function_arg_type, function_param) ->
+                Or_error.ok_exn
+                  ( generate_constraints constructors_env functions_env
+                      typing_context function_param ~verbose
+                  >>= fun (_, function_param_type, function_param_constraints)
+                    ->
+                    Ok
+                      (( convert_ast_type_to_ty function_arg_type,
+                         function_param_type )
+                       :: function_param_constraints
+                      @ acc) ))
+        >>= fun function_args_constraints ->
+        Ok
+          ( typing_context,
+            convert_ast_type_to_ty function_return_type,
+            function_args_constraints )
   | Match (_, var_name, pattern_exprs) | DMatch (_, var_name, pattern_exprs) ->
       let t = fresh () in
       Type_context_env.get_var_type typing_context var_name
@@ -196,9 +200,10 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
                >>= fun ( matched_typing_context,
                          matched_expr_type,
                          match_expr_constraints ) ->
-                 Type_context_env.union_disjoint_typing_contexts typing_context
-                   matched_typing_context
-                 >>= fun union_typing_contexts ->
+                 let union_typing_contexts =
+                   Type_context_env.prepend_typing_contexts
+                     matched_typing_context typing_context
+                 in
                  generate_constrs_block_expr constructors_env functions_env
                    union_typing_contexts block_expr ~verbose
                  >>= fun (_, block_expr_type, block_expr_constraints) ->
@@ -224,9 +229,11 @@ and generate_constraints_matched_expr
   | MVariable (_, matched_var_name) ->
       let t = fresh () in
       let open Result in
-      Type_context_env.extend_typing_context matched_typing_context
-        matched_var_name t
-      >>= fun extended_typing_context -> Ok (extended_typing_context, t, [])
+      let extended_typing_context =
+        Type_context_env.extend_typing_context matched_typing_context
+          matched_var_name t
+      in
+      Ok (extended_typing_context, t, [])
   | MTuple (_, matched_expr_fst, matched_expr_snd) ->
       let t = fresh () in
       let open Result in
@@ -240,9 +247,10 @@ and generate_constraints_matched_expr
       >>= fun ( matched_typing_context_snd,
                 matched_expr_snd_type,
                 matched_expr_snd_contraints ) ->
-      Type_context_env.union_disjoint_typing_contexts matched_typing_context_fst
-        matched_typing_context_snd
-      >>= fun union_matched_typing_context ->
+      let union_matched_typing_context =
+        Type_context_env.prepend_typing_contexts matched_typing_context_fst
+          matched_typing_context_snd
+      in
       Ok
         ( union_matched_typing_context,
           t,
@@ -269,9 +277,10 @@ and generate_constraints_matched_expr
                >>= fun ( matched_typing_context,
                          matched_expr_ty,
                          matched_expr_constraints ) ->
-                 Type_context_env.union_disjoint_typing_contexts
-                   matched_typing_context acc_matched_typing_context
-                 >>= fun union_matched_typing_context ->
+                 let union_matched_typing_context =
+                   Type_context_env.prepend_typing_contexts
+                     acc_matched_typing_context matched_typing_context
+                 in
                  Ok
                    ( union_matched_typing_context,
                      (matched_expr_ty, convert_ast_type_to_ty matched_expr_type)

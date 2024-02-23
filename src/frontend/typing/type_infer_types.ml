@@ -48,5 +48,5 @@ let rec zip_lists (list1 : 'a list) (list2 : 'b list) :
 let pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
   let reversed_lst = List.rev lst in
   match reversed_lst with
-  | [] -> Or_error.of_exn (UnableToRemoveLastElementFromEmptyList)
+  | [] -> Or_error.of_exn UnableToRemoveLastElementFromEmptyList
   | x :: xs -> Ok (x, List.rev xs)

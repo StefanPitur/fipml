@@ -782,33 +782,44 @@ let%expect_test "Constraints Generation: FunApp Expr" =
     ------------------------- |}]
 
 let%expect_test "Constraints Generation: Match & DMatch Expr" =
-  let expr_optional = Match (mock_loc, Var_name.of_string "x", [
-    Parsing.Parser_ast.MPattern (
-      mock_loc, 
-      MOption (mock_loc, Some (Parsing.Parser_ast.MVariable (mock_loc, Var_name.of_string "y"))),
-      Block (mock_loc, [Variable (mock_loc, Var_name.of_string "y")]));
-    Parsing.Parser_ast.MPattern (
-      mock_loc,
-      MOption (mock_loc, None),
-      Block (mock_loc, [Unit mock_loc; Boolean (mock_loc, true)])
-    )
-  ])
+  let expr_optional =
+    Match
+      ( mock_loc,
+        Var_name.of_string "x",
+        [
+          Parsing.Parser_ast.MPattern
+            ( mock_loc,
+              MOption
+                ( mock_loc,
+                  Some
+                    (Parsing.Parser_ast.MVariable
+                       (mock_loc, Var_name.of_string "y")) ),
+              Block (mock_loc, [ Variable (mock_loc, Var_name.of_string "y") ])
+            );
+          Parsing.Parser_ast.MPattern
+            ( mock_loc,
+              MOption (mock_loc, None),
+              Block (mock_loc, [ Unit mock_loc; Boolean (mock_loc, true) ]) );
+        ] )
   in
-  let typing_context : Type_infer_types.typing_context = 
+  let typing_context : Type_infer_types.typing_context =
     [
       Type_context_env.TypingContextEntry
         ( Var_name.of_string "x",
-          Type_infer_types.TyOption (Type_infer_types.TyBool))
+          Type_infer_types.TyOption Type_infer_types.TyBool );
     ]
   in
-  ignore (Type_infer.generate_constraints [] [] typing_context expr_optional ~verbose:true);
-  [%expect {|
+  ignore
+    (Type_infer.generate_constraints [] [] typing_context expr_optional
+       ~verbose:true);
+  [%expect
+    {|
     Actual expr:
     Expr: Var: y
 
     => Typing Context:
-    x : TyOption TyBool
     y : TyVar t10
+    x : TyOption TyBool
     => Expr Ty:
     TyVar t10
     => Expr Constraints:
@@ -819,8 +830,8 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
         Expr: Var: y
 
     => Typing Context:
-    x : TyOption TyBool
     y : TyVar t10
+    x : TyOption TyBool
     => Block Expr Ty:
     TyVar t10
     => Block Expr Constraints:
@@ -911,7 +922,7 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
               Block (mock_loc, [ Unit mock_loc; Integer (mock_loc, 0) ]) );
           Parsing.Parser_ast.MPattern
             ( mock_loc,
-              Parsing.Parser_ast.MVariable (mock_loc, Var_name.of_string "y"),
+              Parsing.Parser_ast.MVariable (mock_loc, Var_name.of_string "x"),
               Block (mock_loc, [ Unit mock_loc; Integer (mock_loc, 1) ]) );
           Parsing.Parser_ast.MPattern
             ( mock_loc,
@@ -920,11 +931,11 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
                   Constructor_name.of_string "C1",
                   [
                     Parsing.Parser_ast.MVariable
-                      (mock_loc, Var_name.of_string "y");
+                      (mock_loc, Var_name.of_string "x");
                   ] ),
               Block
                 ( mock_loc,
-                  [ Unit mock_loc; Variable (mock_loc, Var_name.of_string "y") ]
+                  [ Unit mock_loc; Variable (mock_loc, Var_name.of_string "x") ]
                 ) );
         ] )
   in
@@ -933,144 +944,144 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
        match_expr ~verbose:true);
   [%expect
     {|
-     Actual expr:
-     Expr: Unit
+    Actual expr:
+    Expr: Unit
 
-     => Typing Context:
-     x : TyCustom custom_type
-     => Expr Ty:
-     TyUnit
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyUnit
+    => Expr Constraints:
+    -------------------------
 
-     Actual expr:
-     Expr: Int: 0
+    Actual expr:
+    Expr: Int: 0
 
-     => Typing Context:
-     x : TyCustom custom_type
-     => Expr Ty:
-     TyInt
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyInt
+    => Expr Constraints:
+    -------------------------
 
-     Block expr:
-      Block
-         Expr: Unit
-         Expr: Int: 0
+    Block expr:
+     Block
+        Expr: Unit
+        Expr: Int: 0
 
-     => Typing Context:
-     x : TyCustom custom_type
-     => Block Expr Ty:
-     TyInt
-     => Block Expr Constraints:
-     (TyUnit, TyUnit)
-     -------------------------
+    => Typing Context:
+    x : TyCustom custom_type
+    => Block Expr Ty:
+    TyInt
+    => Block Expr Constraints:
+    (TyUnit, TyUnit)
+    -------------------------
 
-     Actual expr:
-     Expr: Unit
+    Actual expr:
+    Expr: Unit
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t14
-     => Expr Ty:
-     TyUnit
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyVar t14
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyUnit
+    => Expr Constraints:
+    -------------------------
 
-     Actual expr:
-     Expr: Int: 1
+    Actual expr:
+    Expr: Int: 1
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t14
-     => Expr Ty:
-     TyInt
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyVar t14
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyInt
+    => Expr Constraints:
+    -------------------------
 
-     Block expr:
-      Block
-         Expr: Unit
-         Expr: Int: 1
+    Block expr:
+     Block
+        Expr: Unit
+        Expr: Int: 1
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t14
-     => Block Expr Ty:
-     TyInt
-     => Block Expr Constraints:
-     (TyUnit, TyUnit)
-     -------------------------
+    => Typing Context:
+    x : TyVar t14
+    x : TyCustom custom_type
+    => Block Expr Ty:
+    TyInt
+    => Block Expr Constraints:
+    (TyUnit, TyUnit)
+    -------------------------
 
-     Actual expr:
-     Expr: Unit
+    Actual expr:
+    Expr: Unit
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t15
-     => Expr Ty:
-     TyUnit
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyVar t15
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyUnit
+    => Expr Constraints:
+    -------------------------
 
-     Actual expr:
-     Expr: Var: y
+    Actual expr:
+    Expr: Var: x
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t15
-     => Expr Ty:
-     TyVar t15
-     => Expr Constraints:
-     -------------------------
+    => Typing Context:
+    x : TyVar t15
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyVar t15
+    => Expr Constraints:
+    -------------------------
 
-     Block expr:
-      Block
-         Expr: Unit
-         Expr: Var: y
+    Block expr:
+     Block
+        Expr: Unit
+        Expr: Var: x
 
-     => Typing Context:
-     x : TyCustom custom_type
-     y : TyVar t15
-     => Block Expr Ty:
-     TyVar t15
-     => Block Expr Constraints:
-     (TyUnit, TyUnit)
-     -------------------------
+    => Typing Context:
+    x : TyVar t15
+    x : TyCustom custom_type
+    => Block Expr Ty:
+    TyVar t15
+    => Block Expr Constraints:
+    (TyUnit, TyUnit)
+    -------------------------
 
-     Actual expr:
-     Expr: Match
-         Match Var: x
-         PatternExpr
-             MatchedExpr: Underscore
-             PatternBlockExpr Block
-                 Expr: Unit
-                 Expr: Int: 0
-         PatternExpr
-             MatchedExpr: Var - y
-             PatternBlockExpr Block
-                 Expr: Unit
-                 Expr: Int: 1
-         PatternExpr
-             MatchedExpr: Constructor - C1
-                 MatchedExpr: Var - y
-             PatternBlockExpr Block
-                 Expr: Unit
-                 Expr: Var: y
+    Actual expr:
+    Expr: Match
+        Match Var: x
+        PatternExpr
+            MatchedExpr: Underscore
+            PatternBlockExpr Block
+                Expr: Unit
+                Expr: Int: 0
+        PatternExpr
+            MatchedExpr: Var - x
+            PatternBlockExpr Block
+                Expr: Unit
+                Expr: Int: 1
+        PatternExpr
+            MatchedExpr: Constructor - C1
+                MatchedExpr: Var - x
+            PatternBlockExpr Block
+                Expr: Unit
+                Expr: Var: x
 
-     => Typing Context:
-     x : TyCustom custom_type
-     => Expr Ty:
-     TyVar t12
-     => Expr Constraints:
-     (TyCustom custom_type, TyCustom custom_type)
-     (TyVar t12, TyVar t15)
-     (TyVar t15, TyInt)
-     (TyUnit, TyUnit)
-     (TyCustom custom_type, TyVar t14)
-     (TyVar t12, TyInt)
-     (TyUnit, TyUnit)
-     (TyCustom custom_type, TyVar t13)
-     (TyVar t12, TyInt)
-     (TyUnit, TyUnit)
-     ------------------------- |}]
+    => Typing Context:
+    x : TyCustom custom_type
+    => Expr Ty:
+    TyVar t12
+    => Expr Constraints:
+    (TyCustom custom_type, TyCustom custom_type)
+    (TyVar t12, TyVar t15)
+    (TyVar t15, TyInt)
+    (TyUnit, TyUnit)
+    (TyCustom custom_type, TyVar t14)
+    (TyVar t12, TyInt)
+    (TyUnit, TyUnit)
+    (TyCustom custom_type, TyVar t13)
+    (TyVar t12, TyInt)
+    (TyUnit, TyUnit)
+    ------------------------- |}]
