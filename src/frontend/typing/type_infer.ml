@@ -242,7 +242,8 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
                    ((matched_var_type, matched_expr_type)
                     :: (t, block_expr_type) :: match_expr_constraints
                    @ block_expr_constraints @ acc) )))
-      >>= fun _ -> Ok (typing_context, TyUnit, []))
+      >>= fun match_expr_constraints ->
+      Ok (typing_context, t, match_expr_constraints))
   >>= fun (typing_context, expr_ty, expr_constraints) ->
   Pprint_type_infer.pprint_type_infer_expr_verbose Fmt.stdout ~verbose expr
     typing_context expr_ty expr_constraints;
