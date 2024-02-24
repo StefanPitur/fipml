@@ -1,4 +1,5 @@
 open Ast.Ast_types
+open Core
 open Type_infer_types
 
 let rec string_of_ty (ty : ty) : string =
@@ -36,7 +37,7 @@ let rec pprint_constraints (ppf : Format.formatter) (constraints : constr list)
 let pprint_type_infer_expr_verbose (ppf : Format.formatter) ~(verbose : bool)
     (expr : Parsing.Parser_ast.expr) (typing_context : typing_context)
     (expr_ty : ty) (expr_constraints : constr list) : unit =
-  if verbose = false then ()
+  if not verbose then ()
   else (
     Fmt.pf ppf "Actual expr:@.";
     Parsing.Pprint_parser_ast.pprint_expr ppf ~indent:"" expr;
@@ -52,7 +53,7 @@ let pprint_type_infer_block_expr_verbose (ppf : Format.formatter)
     ~(verbose : bool) (block_expr : Parsing.Parser_ast.block_expr)
     (typing_context : typing_context) (block_ty : ty)
     (block_contraints : constr list) : unit =
-  if verbose = false then ()
+  if not verbose then ()
   else (
     Fmt.pf ppf "Block expr:@.";
     Parsing.Pprint_parser_ast.pprint_block_expr ppf ~indent:"" ~block_name:""
@@ -64,3 +65,8 @@ let pprint_type_infer_block_expr_verbose (ppf : Format.formatter)
     Fmt.pf ppf "=> Block Expr Constraints:@.";
     pprint_constraints ppf block_contraints;
     Fmt.pf ppf "-------------------------\n@.")
+
+let pprint_substs (ppf : Format.formatter) (substs : subst list) : unit =
+  List.iter substs ~f:(fun (ty_var, ty_subst) -> 
+      Fmt.pf ppf "Type Variable - %s, Type - %s@." ty_var (string_of_ty ty_subst)
+    )

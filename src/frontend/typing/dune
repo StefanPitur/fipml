@@ -11,6 +11,7 @@
   type_infer
   type_infer_types
   type_infer_constraints_generator
+  type_infer_constraints_unification
   functions_env
   pprint_type_infer)
  (libraries core ast parsing))

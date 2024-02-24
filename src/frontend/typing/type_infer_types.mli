@@ -15,6 +15,7 @@ type ty =
   | TyArrow of ty * ty
   | TyTuple of ty * ty
 
+type subst = string * ty
 type constr = ty * ty
 type typing_context = ty Type_context_env.typing_context
 
@@ -29,3 +30,6 @@ val zip_lists : 'a list -> 'b list -> ('a * 'b) list Or_error.t
 
 val pop_last_element_from_list : 'a list -> ('a * 'a list) Or_error.t
 (** Pops last element from list *)
+
+val ty_equal : ty -> ty -> bool
+(** Checks if the two provides tys are equal *)

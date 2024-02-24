@@ -15,8 +15,23 @@ type ty =
   | TyArrow of ty * ty
   | TyTuple of ty * ty
 
+type subst = string * ty
 type constr = ty * ty
 type typing_context = ty Type_context_env.typing_context
+
+let rec ty_equal (ty1 : ty) (ty2 : ty) : bool =
+  match ty1, ty2 with
+  | TyVar ty_var1, TyVar ty_var2 -> String.(=) ty_var1 ty_var2
+  | TyUnit, TyUnit -> true
+  | TyInt, TyInt -> true
+  | TyBool, TyBool -> true
+  | TyOption ty1, TyOption ty2 -> ty_equal ty1 ty2
+  | TyCustom type1, TyCustom type2 -> Type_name.(=) type1 type2
+  | TyArrow (ty11, ty12), TyArrow (ty21, ty22) ->
+      ty_equal ty11 ty21 && ty_equal ty12 ty22
+  | TyTuple (ty11, ty12), TyTuple (ty21, ty22) ->
+      ty_equal ty11 ty21 && ty_equal ty12 ty22
+  | _ -> false
 
 let fresh =
   let index = ref 0 in
@@ -36,6 +51,7 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
         ( convert_ast_type_to_ty input_type_expr,
           convert_ast_type_to_ty output_type_expr )
 
+(* This can be removed by using List.fold2, probably the last one as well *)
 let rec zip_lists (list1 : 'a list) (list2 : 'b list) :
     ('a * 'b) list Or_error.t =
   match (list1, list2) with
