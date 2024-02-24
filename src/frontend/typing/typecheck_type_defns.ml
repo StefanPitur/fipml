@@ -40,7 +40,8 @@ let typecheck_type_constructor (types_env : types_env)
     ConstructorEnvEntry (constructor_type, constructor_name, constructor_args)
   in
   let typed_ast_type_constructor =
-    Typed_ast.TTypeConstructor (loc, TECustom (loc, constructor_type) , constructor_name, constructor_args)
+    Typed_ast.TTypeConstructor
+      (loc, TECustom (loc, constructor_type), constructor_name, constructor_args)
   in
   Ok (constructor_env_entry :: constructors_env, typed_ast_type_constructor)
 
@@ -74,7 +75,11 @@ let typecheck_type_defn (types_env : types_env)
   Ok
     ( extended_types_env,
       constructors_env,
-      Typed_ast.TType (loc, Ast_types.TECustom (loc, type_name), type_name, typed_ast_type_constructors) )
+      Typed_ast.TType
+        ( loc,
+          Ast_types.TECustom (loc, type_name),
+          type_name,
+          typed_ast_type_constructors ) )
 
 let rec typecheck_type_defns_wrapper (types_env : types_env)
     (constructors_env : constructors_env)

@@ -32,4 +32,5 @@ let typecheck_program (Parser_ast.TProg (loc, type_defns, _, _)) :
   List.iter constructors_env ~f:(fun constructors_env_entry ->
       pprint_constructors_env_entry Fmt.stdout constructors_env_entry);
   Fmt.pf Fmt.stdout "><><><><><><><><><><><><><><><><><><><><><><\n\n";
-  Ok (Typed_ast.TProg (typed_ast_type_defns, Ast.Ast_types.TEUnit loc, [], None))
+  Ok
+    (Typed_ast.TProg (typed_ast_type_defns, Ast.Ast_types.TEUnit loc, [], None))

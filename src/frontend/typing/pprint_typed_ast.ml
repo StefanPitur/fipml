@@ -4,7 +4,8 @@ open Typed_ast
 let indent_tab = "    "
 
 (* Pretty-printing Type Definition *)
-let rec pprint_type_defn ppf ~indent (TType (_, _, type_name, type_constructors)) =
+let rec pprint_type_defn ppf ~indent
+    (TType (_, _, type_name, type_constructors)) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
   Fmt.pf ppf "%sType Constructors:@." indent;

@@ -27,10 +27,14 @@ and matched_expr =
   | MConstructor of loc * type_expr * Constructor_name.t * matched_expr list
   | MOption of loc * type_expr * matched_expr option
 
-type type_defn = TType of loc * type_expr * Type_name.t * type_constructor list
+type type_defn =
+  | TType of loc * type_expr * Type_name.t * type_constructor list
 
 and type_constructor =
   | TTypeConstructor of loc * type_expr * Constructor_name.t * type_expr list
 
-type function_defn = TFun of loc * type_expr * Function_name.t * param list * block_expr
-type program = TProg of type_defn list * type_expr * function_defn list * expr option
+type function_defn =
+  | TFun of loc * type_expr * Function_name.t * param list * block_expr
+
+type program =
+  | TProg of type_defn list * type_expr * function_defn list * expr option
