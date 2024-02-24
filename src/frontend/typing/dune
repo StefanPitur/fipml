@@ -1,10 +1,11 @@
 (library
  (name typing)
  (modules
+  pretyped_ast
   typed_ast
   typecheck_program
   typecheck_type_defns
-  typecheck_functions
+  typecheck_functions_defns
   type_defns_env
   pprint_typed_ast
   type_context_env
@@ -13,5 +14,6 @@
   type_infer_constraints_generator
   type_infer_constraints_unification
   functions_env
-  pprint_type_infer)
+  pprint_type_infer
+  pprint_pretyped_ast)
  (libraries core ast parsing))

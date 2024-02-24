@@ -14,6 +14,6 @@ let type_infer (_ : Type_defns_env.types_env)
       let open Result in
       generate_constraints_block_expr constructors_env functions_env []
         block_expr ~verbose
-      >>= fun (_, _, constraints) ->
+      >>= fun (_, _, constraints, _) ->
       unify constraints >>= fun substs ->
       Ok (Pprint_type_infer.pprint_substs Fmt.stdout substs)
