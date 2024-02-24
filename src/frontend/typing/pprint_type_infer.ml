@@ -67,6 +67,6 @@ let pprint_type_infer_block_expr_verbose (ppf : Format.formatter)
     Fmt.pf ppf "-------------------------\n@.")
 
 let pprint_substs (ppf : Format.formatter) (substs : subst list) : unit =
-  List.iter substs ~f:(fun (ty_var, ty_subst) -> 
-      Fmt.pf ppf "Type Variable - %s, Type - %s@." ty_var (string_of_ty ty_subst)
-    )
+  List.iter substs ~f:(fun (ty_var, ty_subst) ->
+      Fmt.pf ppf "Type Variable - %s, Type - %s@." ty_var
+        (string_of_ty ty_subst))

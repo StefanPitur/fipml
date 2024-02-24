@@ -20,13 +20,13 @@ type constr = ty * ty
 type typing_context = ty Type_context_env.typing_context
 
 let rec ty_equal (ty1 : ty) (ty2 : ty) : bool =
-  match ty1, ty2 with
-  | TyVar ty_var1, TyVar ty_var2 -> String.(=) ty_var1 ty_var2
+  match (ty1, ty2) with
+  | TyVar ty_var1, TyVar ty_var2 -> String.( = ) ty_var1 ty_var2
   | TyUnit, TyUnit -> true
   | TyInt, TyInt -> true
   | TyBool, TyBool -> true
   | TyOption ty1, TyOption ty2 -> ty_equal ty1 ty2
-  | TyCustom type1, TyCustom type2 -> Type_name.(=) type1 type2
+  | TyCustom type1, TyCustom type2 -> Type_name.( = ) type1 type2
   | TyArrow (ty11, ty12), TyArrow (ty21, ty22) ->
       ty_equal ty11 ty21 && ty_equal ty12 ty22
   | TyTuple (ty11, ty12), TyTuple (ty21, ty22) ->

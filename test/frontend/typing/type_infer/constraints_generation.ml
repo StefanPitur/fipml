@@ -8,7 +8,9 @@ let mock_loc : Lexing.position =
 
 let%expect_test "Constraints Generation: Basic Expr - Unit" =
   let expr = Unit mock_loc in
-  ignore (Type_infer_constraints_generator.generate_constraints [] [] [] expr ~verbose:true);
+  ignore
+    (Type_infer_constraints_generator.generate_constraints [] [] [] expr
+       ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -22,7 +24,9 @@ let%expect_test "Constraints Generation: Basic Expr - Unit" =
 
 let%expect_test "Constraints Generation: Option Expr - Unit" =
   let expr = Option (mock_loc, Some (Unit mock_loc)) in
-  ignore (Type_infer_constraints_generator.generate_constraints [] [] [] expr ~verbose:true);
+  ignore
+    (Type_infer_constraints_generator.generate_constraints [] [] [] expr
+       ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -56,7 +60,8 @@ let%expect_test "Constraints Generation: Option Variable" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context expr ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -101,8 +106,8 @@ let%expect_test "Constraints Generation: Constructor" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints constructors_env [] typing_context expr
-       ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints constructors_env []
+       typing_context expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -133,7 +138,9 @@ let%expect_test "Constraints Generation: Let Expr" =
   let in_expr = Variable (mock_loc, Var_name.of_string "x") in
   let var_expr = Option (mock_loc, None) in
   let expr = Let (mock_loc, Var_name.of_string "x", var_expr, in_expr) in
-  ignore (Type_infer_constraints_generator.generate_constraints [] [] [] expr ~verbose:true);
+  ignore
+    (Type_infer_constraints_generator.generate_constraints [] [] [] expr
+       ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -195,7 +202,8 @@ let%expect_test "Constraints Generation: If & IfElse Expr" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context expr ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -336,7 +344,8 @@ let%expect_test "Constraints Generation: UnOp Expr - UnOpNot, UnOpNeg" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context expr_neg ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr_neg ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -363,7 +372,8 @@ let%expect_test "Constraints Generation: UnOp Expr - UnOpNot, UnOpNeg" =
     (TyInt, TyInt)
     ------------------------- |}];
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context expr_not ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr_not ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -406,8 +416,8 @@ let%expect_test "Constraints Generation: BinOp Expr - BinOpPlus, BinOpLt, \
         Variable (mock_loc, Var_name.of_string "x2") )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context_ints bin_op_plus_expr
-       ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] []
+       typing_context_ints bin_op_plus_expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -456,8 +466,8 @@ let%expect_test "Constraints Generation: BinOp Expr - BinOpPlus, BinOpLt, \
         Variable (mock_loc, Var_name.of_string "x2") )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context_ints bin_op_lt_expr
-       ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] []
+       typing_context_ints bin_op_lt_expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -513,8 +523,8 @@ let%expect_test "Constraints Generation: BinOp Expr - BinOpPlus, BinOpLt, \
         Variable (mock_loc, Var_name.of_string "b2") )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context_bools bin_op_and_expr
-       ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] []
+       typing_context_bools bin_op_and_expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -563,8 +573,8 @@ let%expect_test "Constraints Generation: BinOp Expr - BinOpPlus, BinOpLt, \
         Variable (mock_loc, Var_name.of_string "x2") )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context_ints
-       bin_op_eq_expr_ints ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] []
+       typing_context_ints bin_op_eq_expr_ints ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -612,8 +622,8 @@ let%expect_test "Constraints Generation: BinOp Expr - BinOpPlus, BinOpLt, \
         Variable (mock_loc, Var_name.of_string "b2") )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context_bools
-       bin_op_eq_expr_bools ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] []
+       typing_context_bools bin_op_eq_expr_bools ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -699,8 +709,8 @@ let%expect_test "Constraints Generation: FunApp Expr" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints constructors_env functions_env
-       typing_context fun_app_expr ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints constructors_env
+       functions_env typing_context fun_app_expr ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -810,8 +820,8 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
     ]
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints [] [] typing_context expr_optional
-       ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr_optional ~verbose:true);
   [%expect
     {|
     Actual expr:
@@ -940,8 +950,8 @@ let%expect_test "Constraints Generation: Match & DMatch Expr" =
         ] )
   in
   ignore
-    (Type_infer_constraints_generator.generate_constraints constructors_env [] typing_context
-       match_expr ~verbose:true);
+    (Type_infer_constraints_generator.generate_constraints constructors_env []
+       typing_context match_expr ~verbose:true);
   [%expect
     {|
     Actual expr:

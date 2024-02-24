@@ -3,6 +3,12 @@ open Core
 open Parsing.Parser_ast
 open Type_infer_types
 
+(*
+  Implementation notes:
+  - nothing on tuples actually works, need to implement tuples  
+  - typing context is not passed between successive expressions in block_expr 
+*)
+
 let rec generate_constraints_block_expr
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
@@ -87,8 +93,8 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       generate_constraints constructors_env functions_env typing_context
         expr_cond ~verbose
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-        generate_constraints_block_expr constructors_env functions_env typing_context
-        expr_then ~verbose
+      generate_constraints_block_expr constructors_env functions_env
+        typing_context expr_then ~verbose
       >>= fun (_, expr_then_type, expr_then_constrs) ->
       Ok
         ( typing_context,
@@ -100,11 +106,11 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       generate_constraints constructors_env functions_env typing_context
         expr_cond ~verbose
       >>= fun (_, expr_cond_type, expr_cond_constrs) ->
-        generate_constraints_block_expr constructors_env functions_env typing_context
-        expr_then ~verbose
+      generate_constraints_block_expr constructors_env functions_env
+        typing_context expr_then ~verbose
       >>= fun (_, expr_then_type, expr_then_constrs) ->
-        generate_constraints_block_expr constructors_env functions_env typing_context
-        expr_else ~verbose
+      generate_constraints_block_expr constructors_env functions_env
+        typing_context expr_else ~verbose
       >>= fun (_, expr_else_type, expr_else_constrs) ->
       Ok
         ( typing_context,
