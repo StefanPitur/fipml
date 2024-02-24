@@ -103,7 +103,7 @@
 
 program:
 | type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
-    TProg(type_defns, function_defns, expr)
+    TProg($startpos, type_defns, function_defns, expr)
   }
 
 

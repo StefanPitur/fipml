@@ -21,7 +21,7 @@ let pprint_types_env_entry (ppf : Format.formatter)
     (Ast.Ast_types.Type_name.to_string types_env_entry);
   Fmt.pf ppf "----------------------------\n@."
 
-let typecheck_program (Parser_ast.TProg (type_defns, _, _)) :
+let typecheck_program (Parser_ast.TProg (loc, type_defns, _, _)) :
     Typed_ast.program Or_error.t =
   let open Result in
   Typecheck_type_defns.typecheck_type_defns type_defns
@@ -32,4 +32,4 @@ let typecheck_program (Parser_ast.TProg (type_defns, _, _)) :
   List.iter constructors_env ~f:(fun constructors_env_entry ->
       pprint_constructors_env_entry Fmt.stdout constructors_env_entry);
   Fmt.pf Fmt.stdout "><><><><><><><><><><><><><><><><><><><><><><\n\n";
-  Ok (Typed_ast.TProg (typed_ast_type_defns, [], None))
+  Ok (Typed_ast.TProg (typed_ast_type_defns, Ast.Ast_types.TEUnit loc, [], None))

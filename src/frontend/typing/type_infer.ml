@@ -3,12 +3,6 @@ open Type_infer_constraints_generator
 open Type_infer_constraints_unification
 open Parsing.Parser_ast
 
-(*
-  Implementation notes:
-  - nothing on tuples actually works, need to implement tuples  
-  - typing context is not passed between successive expressions in block_expr 
-*)
-
 let type_infer (_ : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)

@@ -161,7 +161,7 @@ and pprint_function_defn ppf ~indent
     body_expr
 
 (* Pretty-printing Program *)
-and pprint_program ppf (TProg (type_defns, function_defns, expr_option)) =
+and pprint_program ppf (TProg (_, type_defns, function_defns, expr_option)) =
   Fmt.pf ppf "Program@.";
   List.iter (pprint_type_defn ppf ~indent:indent_tab) type_defns;
   List.iter (pprint_function_defn ppf ~indent:indent_tab) function_defns;
