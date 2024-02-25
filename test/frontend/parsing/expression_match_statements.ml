@@ -1,8 +1,8 @@
 let%expect_test "expression: match" =
   let source_code =
     "\n\
-    \    begin
-    \      match x with\n\
+    \    begin\n\
+    \          match x with\n\
     \      | _ -> begin () end\n\
     \      | y -> begin () end\n\
     \      | (y, z) -> begin () end\n\
@@ -11,8 +11,8 @@ let%expect_test "expression: match" =
     \      | None -> begin () end\n\
     \      | Some _ -> begin () end\n\
     \      endmatch\n\
-    \    end
-    \  "
+    \    end\n\
+    \      "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect

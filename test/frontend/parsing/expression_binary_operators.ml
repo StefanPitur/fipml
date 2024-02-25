@@ -20,7 +20,8 @@ let%expect_test "expression: binary operators" =
   in
   let source_codes =
     List.map
-      (fun binary_op -> "begin expr1 " ^ string_of_binary_op binary_op ^ "expr2 end")
+      (fun binary_op ->
+        "begin expr1 " ^ string_of_binary_op binary_op ^ "expr2 end")
       binary_operators
   in
   List.iter Pprint_parser_ast.pprint_parser_ast source_codes;
