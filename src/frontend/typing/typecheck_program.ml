@@ -14,13 +14,14 @@ let typecheck_program
   (match main_expr_option with
   | None -> Ok None
   | Some main_block_expr ->
-      type_infer types_env constructors_env functions_env main_block_expr
+      type_infer types_env constructors_env functions_env [] main_block_expr
         ~verbose:false
       >>= fun typed_main_block_expr -> Ok (Some typed_main_block_expr))
   >>= fun typed_main_block_expr_option ->
   Ok
     (Typed_ast.TProg
        ( typed_ast_type_defns,
+         (*TODO: fix TProg type*)
          Ast.Ast_types.TEUnit loc,
          typed_function_defns,
          typed_main_block_expr_option ))
