@@ -6,5 +6,5 @@ val type_infer :
   Functions_env.functions_env ->
   Parsing.Parser_ast.block_expr ->
   verbose:bool ->
-  unit Or_error.t
+  Typed_ast.block_expr Or_error.t
 (** Type Inference for functions and main expression *)

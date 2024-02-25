@@ -1,6 +1,7 @@
 (library
  (name typing)
  (modules
+  construct_typed_ast
   pretyped_ast
   typed_ast
   typecheck_program

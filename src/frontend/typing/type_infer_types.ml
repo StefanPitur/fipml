@@ -4,6 +4,7 @@ open Core
 exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
 exception PartialFunctionApplicationNotAllowed
+exception FailureConvertTyToAstType
 
 type ty =
   | TyVar of string
@@ -50,6 +51,24 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
       TyArrow
         ( convert_ast_type_to_ty input_type_expr,
           convert_ast_type_to_ty output_type_expr )
+
+(** TODO: Passing loc in this function is completely wrong, could need ty to hold loc as well *)
+let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
+  match ty with
+  | TyUnit -> Ok (TEUnit loc)
+  | TyInt -> Ok (TEInt loc)
+  | TyBool -> Ok (TEBool loc)
+  | TyOption ty ->
+      let open Result in
+      convert_ty_to_ast_type ty loc >>= fun ast_type ->
+      Ok (TEOption (loc, ast_type))
+  | TyCustom custom_type_name -> Ok (TECustom (loc, custom_type_name))
+  | TyArrow (ty1, ty2) ->
+      let open Result in
+      convert_ty_to_ast_type ty1 loc >>= fun ast_type1 ->
+      convert_ty_to_ast_type ty2 loc >>= fun ast_type2 ->
+      Ok (TEArrow (loc, ast_type1, ast_type2))
+  | _ -> Or_error.of_exn FailureConvertTyToAstType
 
 (* This can be removed by using List.fold2, probably the last one as well *)
 let rec zip_lists (list1 : 'a list) (list2 : 'b list) :

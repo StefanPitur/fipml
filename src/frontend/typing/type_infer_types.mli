@@ -4,6 +4,7 @@ open Core
 exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
 exception PartialFunctionApplicationNotAllowed
+exception FailureConvertTyToAstType
 
 type ty =
   | TyVar of string
@@ -21,6 +22,9 @@ type typing_context = ty Type_context_env.typing_context
 
 val convert_ast_type_to_ty : type_expr -> ty
 (** Converts AST type into Ty used for type inference *)
+
+val convert_ty_to_ast_type : ty -> loc -> type_expr Or_error.t
+(** Converts Ty into AST type *)
 
 val fresh : unit -> ty
 (** Generates new fresh ty variable for type inference *)
