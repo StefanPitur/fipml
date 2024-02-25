@@ -1,15 +1,25 @@
+open Core
+
 let%expect_test "expression: value" =
-  let source_codes = [ "None"; "()"; "1"; "true"; "false" ] in
-  List.iter Pprint_parser_ast.pprint_parser_ast source_codes;
+  let values = [ "None"; "()"; "1"; "true"; "false" ] in
+  let source_codes =
+    List.map values ~f:(fun value -> "begin " ^ value ^ " end")
+  in
+  List.iter source_codes ~f:Pprint_parser_ast.pprint_parser_ast;
   [%expect
     {|
     Program
-        Expr: Option - None
+        Main Block
+            Expr: Option - None
     Program
-        Expr: Unit
+        Main Block
+            Expr: Unit
     Program
-        Expr: Int: 1
+        Main Block
+            Expr: Int: 1
     Program
-        Expr: Bool: true
+        Main Block
+            Expr: Bool: true
     Program
-        Expr: Bool: false |}]
+        Main Block
+            Expr: Bool: false |}]

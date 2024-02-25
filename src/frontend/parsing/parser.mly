@@ -102,8 +102,8 @@
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
-    TProg($startpos, type_defns, function_defns, expr)
+| type_defns=list(type_defn); function_defns=list(function_defn); block_expr=option(block_expr); EOF { 
+    TProg($startpos, type_defns, function_defns, block_expr)
   }
 
 

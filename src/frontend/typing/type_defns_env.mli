@@ -45,3 +45,6 @@ val get_constructor_by_name :
   Ast_types.Constructor_name.t ->
   constructor_env_entry list ->
   constructor_env_entry Or_error.t
+
+val assert_type_defined :
+  Ast_types.type_expr -> Ast_types.Type_name.t list -> unit Or_error.t

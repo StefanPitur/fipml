@@ -39,4 +39,4 @@ type function_defn =
   | TFun of loc * Function_name.t * param list * block_expr * type_expr
 
 type program =
-  | TProg of loc * type_defn list * function_defn list * expr option
+  | TProg of loc * type_defn list * function_defn list * block_expr option

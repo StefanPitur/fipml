@@ -20,87 +20,100 @@ let%expect_test "expression: binary operators" =
   in
   let source_codes =
     List.map
-      (fun binary_op -> "expr1 " ^ string_of_binary_op binary_op ^ "expr2")
+      (fun binary_op -> "begin expr1 " ^ string_of_binary_op binary_op ^ "expr2 end")
       binary_operators
   in
   List.iter Pprint_parser_ast.pprint_parser_ast source_codes;
   [%expect
     {|
     Program
-        Binary Op: +
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: +
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: -
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: -
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: *
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: *
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: /
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: /
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: %
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: %
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: <
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: <
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: >
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: >
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: <=
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: <=
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: >=
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: >=
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: ==
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: ==
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: !=
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: !=
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: &&
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2
+        Main Block
+            Binary Op: &&
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2
     Program
-        Binary Op: ||
-            LeftExpr
-            Expr: Var: expr1
-            RightExpr
-            Expr: Var: expr2 |}]
+        Main Block
+            Binary Op: ||
+                LeftExpr
+                Expr: Var: expr1
+                RightExpr
+                Expr: Var: expr2 |}]

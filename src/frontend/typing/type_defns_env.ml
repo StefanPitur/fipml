@@ -85,3 +85,15 @@ let get_constructor_by_name (loc : loc) (constructor_name : Constructor_name.t)
       Or_error.of_exn (ConstructorNotFound error_string)
   | [ matched_constructor ] -> Ok matched_constructor
   | _ -> Or_error.of_exn ConstructorMultipleInstancesFound
+
+let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
+    unit Or_error.t =
+  match type_expr with
+  | TEUnit _ | TEInt _ | TEBool _ -> Ok ()
+  | TEOption (_, type_expr) -> assert_type_defined type_expr types_env
+  | TEArrow (_, in_type_expr, out_type_expr) ->
+      let open Result in
+      assert_type_defined in_type_expr types_env >>= fun _ ->
+      assert_type_defined out_type_expr types_env
+  | TECustom (loc, custom_type_name) ->
+      assert_custom_type_in_types_env loc custom_type_name types_env
