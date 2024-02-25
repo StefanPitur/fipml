@@ -4,6 +4,8 @@ open Parsing
 open Type_defns_env
 open Type_infer
 
+exception IncorrectFunctionReturnType of string
+
 let typecheck_function_signature (types_env : types_env)
     (TFun (_, _, function_params, _, function_return_type) :
       Parser_ast.function_defn) : unit Or_error.t =
@@ -11,6 +13,7 @@ let typecheck_function_signature (types_env : types_env)
       Or_error.ok_exn (assert_type_defined type_expr types_env));
   assert_type_defined function_return_type types_env
 
+(* TODO: does not handle recursive functions*)
 let typecheck_function_defn (types_env : types_env)
     (constructors_env : constructors_env) (functions_env : functions_env)
     (TFun
@@ -25,25 +28,40 @@ let typecheck_function_defn (types_env : types_env)
       ~f:(fun (Ast.Ast_types.TParam (function_param_type, _, _)) ->
         function_param_type)
   in
-  let function_typing_context : Type_infer_types.typing_context = 
+  let function_typing_context : Type_infer_types.typing_context =
     List.map function_params
-      ~f:(fun (Ast.Ast_types.TParam (function_param_type, function_param_var, _)) -> 
-          Type_context_env.TypingContextEntry (function_param_var, Type_infer_types.convert_ast_type_to_ty function_param_type)
-        )
+      ~f:(fun
+          (Ast.Ast_types.TParam (function_param_type, function_param_var, _)) ->
+        Type_context_env.TypingContextEntry
+          ( function_param_var,
+            Type_infer_types.convert_ast_type_to_ty function_param_type ))
   in
-  type_infer types_env constructors_env functions_env function_typing_context function_body
-    ~verbose:false
-  >>= fun typed_function_body ->
-  Ok
-    ( FunctionEnvEntry
-        (function_name, function_params_types, function_return_type)
-      :: functions_env,
-      Typed_ast.TFun
-        ( loc,
-          function_return_type,
-          function_name,
-          function_params,
-          typed_function_body ) )
+  type_infer types_env constructors_env functions_env function_typing_context
+    function_body ~verbose:false
+  >>= fun (Typed_ast.Block (_, typed_block_expr_type, _) as typed_function_body)
+    ->
+  if
+    String.( <> )
+      (Ast.Ast_types.string_of_type typed_block_expr_type)
+      (Ast.Ast_types.string_of_type function_return_type)
+  then
+    let error_string =
+      Fmt.str "Function return type (%s) does not match the signature (%s)"
+        (Ast.Ast_types.string_of_type typed_block_expr_type)
+        (Ast.Ast_types.string_of_type function_return_type)
+    in
+    Or_error.of_exn (IncorrectFunctionReturnType error_string)
+  else
+    Ok
+      ( FunctionEnvEntry
+          (function_name, function_params_types, function_return_type)
+        :: functions_env,
+        Typed_ast.TFun
+          ( loc,
+            function_return_type,
+            function_name,
+            function_params,
+            typed_function_body ) )
 
 let rec typecheck_functions_defns_wrapper (types_env : types_env)
     (constructors_env : constructors_env) (functions_env : functions_env)

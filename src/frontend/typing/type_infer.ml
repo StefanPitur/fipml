@@ -14,8 +14,8 @@ let type_infer (_ : Type_defns_env.types_env)
   | [] -> Ok (Typed_ast.Block (loc, Ast.Ast_types.TEUnit loc, []))
   | _ ->
       let open Result in
-      generate_constraints_block_expr constructors_env functions_env typing_context
-        block_expr ~verbose
+      generate_constraints_block_expr constructors_env functions_env
+        typing_context block_expr ~verbose
       >>= fun (_, _, constraints, pretyped_block_expr) ->
       unify constraints >>= fun substs ->
       construct_typed_ast_block pretyped_block_expr substs
