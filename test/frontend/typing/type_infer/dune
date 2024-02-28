@@ -1,0 +1,6 @@
+(library
+ (name test_typing_type_infer)
+ (libraries core fmt ast parsing typing)
+ (inline_tests)
+ (preprocess
+  (pps ppx_expect)))

@@ -102,8 +102,8 @@
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
-    TProg(type_defns, function_defns, expr)
+| type_defns=list(type_defn); function_defns=list(function_defn); block_expr=option(block_expr); EOF { 
+    TProg($startpos, type_defns, function_defns, block_expr)
   }
 
 
@@ -165,6 +165,7 @@ block_expr:
 expr:
 /* Simple expression containing values, variables and applied constructors */
 | value=value { value }
+| LPAREN; expr=expr; RPAREN {expr}
 | SOME; expr=expr { Option($startpos, Some expr) }
 | var_name=LID { Variable($startpos, Var_name.of_string var_name) }
 | constructor_expr=constructor_expr { constructor_expr }

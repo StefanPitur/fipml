@@ -1,11 +1,14 @@
-let%expect_test "simple custom type definition" = 
-  let source_code = "
-    type custom_simple_type = 
-    | Constructor1
-    | Constructor2
-  " in
+let%expect_test "simple custom type definition" =
+  let source_code =
+    "\n\
+    \    type custom_simple_type = \n\
+    \    | Constructor1\n\
+    \    | Constructor2\n\
+    \  "
+  in
   Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
+  [%expect
+    {|
     Program
         Type Name: custom_simple_type
         Type Constructors:
