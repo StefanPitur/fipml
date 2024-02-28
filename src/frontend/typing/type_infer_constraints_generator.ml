@@ -103,7 +103,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
         )
   (* TODO: Implement Tuples, they're not in the language right now as a type*)
   | Tuple (loc, _, _) ->
-      Ok (typing_context, TyUnit, [], Pretyped_ast.Unit (loc, TyUnit))
+      Ok (typing_context, TyCustom (Type_name.of_string "_undefined"), [], Pretyped_ast.Unit (loc, TyCustom (Type_name.of_string "_undefined")))
   (* Note that we do not care about Polymorphic - Let, as we only allow top-level functions *)
   | Let (loc, var_name, var_expr, expr) ->
       generate_constraints constructors_env functions_env typing_context
@@ -178,7 +178,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
               Pretyped_ast.UnOp (loc, expr_type, UnOpNot, pretyped_expr) )
       (* TODO: Implement after Tuple *)
       | UnOpFst | UnOpSnd ->
-          Ok (typing_context, TyUnit, [], Pretyped_ast.Unit (loc, TyUnit)))
+          Ok (typing_context, TyCustom (Type_name.of_string "_undefined"), [], Pretyped_ast.Unit (loc, TyCustom (Type_name.of_string "_undefined"))))
   | BinaryOp (loc, binary_op, expr1, expr2) -> (
       generate_constraints constructors_env functions_env typing_context expr1
         ~verbose

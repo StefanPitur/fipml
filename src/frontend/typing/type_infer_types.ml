@@ -52,7 +52,6 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
         ( convert_ast_type_to_ty input_type_expr,
           convert_ast_type_to_ty output_type_expr )
 
-(** TODO: Passing loc in this function is completely wrong, could need ty to hold loc as well *)
 let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
   match ty with
   | TyUnit -> Ok (TEUnit loc)
