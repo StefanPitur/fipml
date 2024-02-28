@@ -165,6 +165,7 @@ block_expr:
 expr:
 /* Simple expression containing values, variables and applied constructors */
 | value=value { value }
+| LPAREN; expr=expr; RPAREN {expr}
 | SOME; expr=expr { Option($startpos, Some expr) }
 | var_name=LID { Variable($startpos, Var_name.of_string var_name) }
 | constructor_expr=constructor_expr { constructor_expr }

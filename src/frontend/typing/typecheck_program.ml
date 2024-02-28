@@ -12,16 +12,19 @@ let typecheck_program
     function_defns
   >>= fun (functions_env, typed_function_defns) ->
   (match main_expr_option with
-  | None -> Ok None
+  | None -> Ok (None, Ast.Ast_types.TEUnit loc)
   | Some main_block_expr ->
       type_infer types_env constructors_env functions_env [] main_block_expr
         ~verbose:false
-      >>= fun typed_main_block_expr -> Ok (Some typed_main_block_expr))
-  >>= fun typed_main_block_expr_option ->
+      >>= fun typed_main_block_expr ->
+      let (Typed_ast.Block (_, typed_main_block_expr_type, _)) =
+        typed_main_block_expr
+      in
+      Ok (Some typed_main_block_expr, typed_main_block_expr_type))
+  >>= fun (typed_main_block_expr_option, typed_main_block_expr_type) ->
   Ok
     (Typed_ast.TProg
        ( typed_ast_type_defns,
-         (*TODO: fix TProg type*)
-         Ast.Ast_types.TEUnit loc,
+         typed_main_block_expr_type,
          typed_function_defns,
          typed_main_block_expr_option ))

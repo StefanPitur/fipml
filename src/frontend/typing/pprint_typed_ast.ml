@@ -183,8 +183,9 @@ and pprint_typed_expr ppf ~indent expr =
   | _ -> raise (Invalid_argument "Invalid argument for pprint_typed_expr")
 
 and pprint_typed_program ppf
-    (TProg (type_defns, _, function_defns, main_block_expr_optional)) =
-  Fmt.pf ppf "Typed Program@.";
+    (TProg (type_defns, program_type, function_defns, main_block_expr_optional))
+    =
+  Fmt.pf ppf "Typed Program - %s@." (string_of_type program_type);
   List.iter (pprint_typed_defn ppf ~indent:indent_tab) type_defns;
   List.iter (pprint_typed_function_defn ppf ~indent:indent_tab) function_defns;
   match main_block_expr_optional with

@@ -1,0 +1,13 @@
+type custom_type =
+| C of int
+
+fun add_y (x : custom_type option) (y : int) : int = begin
+  match x with
+  | None -> begin (); 1 end
+  | Some C (x) -> begin x end
+  endmatch
+end
+
+begin
+  add_y (Some C(2), 5)
+end
