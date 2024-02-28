@@ -67,7 +67,7 @@ let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
       convert_ty_to_ast_type ty1 loc >>= fun ast_type1 ->
       convert_ty_to_ast_type ty2 loc >>= fun ast_type2 ->
       Ok (TEArrow (loc, ast_type1, ast_type2))
-  | TyVar _ -> Ok (TECustom (loc, (Type_name.of_string "_undefined")))
+  | TyVar _ -> Ok (TECustom (loc, Type_name.of_string "_undefined"))
   | _ -> Or_error.of_exn FailureConvertTyToAstType
 
 (* This can be removed by using List.fold2, probably the last one as well *)

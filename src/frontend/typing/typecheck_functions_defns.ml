@@ -13,7 +13,7 @@ let typecheck_function_signature (types_env : types_env)
       Or_error.ok_exn (assert_type_defined type_expr types_env));
   assert_type_defined function_return_type types_env
 
-(* TODO: does not handle recursive functions*)
+(* Handles all functions as being recursive, regardless of them being annotate as such or not *)
 let typecheck_function_defn (types_env : types_env)
     (constructors_env : constructors_env) (functions_env : functions_env)
     (TFun
@@ -28,6 +28,10 @@ let typecheck_function_defn (types_env : types_env)
       ~f:(fun (Ast.Ast_types.TParam (function_param_type, _, _)) ->
         function_param_type)
   in
+  let extended_function_env =
+    FunctionEnvEntry (function_name, function_params_types, function_return_type)
+    :: functions_env
+  in
   let function_typing_context : Type_infer_types.typing_context =
     List.map function_params
       ~f:(fun
@@ -36,8 +40,8 @@ let typecheck_function_defn (types_env : types_env)
           ( function_param_var,
             Type_infer_types.convert_ast_type_to_ty function_param_type ))
   in
-  type_infer types_env constructors_env functions_env function_typing_context
-    function_body ~verbose:false
+  type_infer types_env constructors_env extended_function_env
+    function_typing_context function_body ~verbose:false
   >>= fun (Typed_ast.Block (_, typed_block_expr_type, _) as typed_function_body)
     ->
   if
@@ -53,9 +57,7 @@ let typecheck_function_defn (types_env : types_env)
     Or_error.of_exn (IncorrectFunctionReturnType error_string)
   else
     Ok
-      ( FunctionEnvEntry
-          (function_name, function_params_types, function_return_type)
-        :: functions_env,
+      ( extended_function_env,
         Typed_ast.TFun
           ( loc,
             function_return_type,
