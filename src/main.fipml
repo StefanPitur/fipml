@@ -9,5 +9,6 @@ fun add_y (x : custom_type option) (y : int) : int = begin
 end
 
 begin
+  let x = None in
   add_y (Some C(2), 5)
 end
