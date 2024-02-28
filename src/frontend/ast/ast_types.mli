@@ -4,6 +4,7 @@ type loc = Lexing.position
 (* Abstract type for identifiers *)
 module type ID = sig
   type t
+
   val of_string : string -> t
   val to_string : t -> string
   val ( = ) : t -> t -> bool
@@ -19,24 +20,20 @@ module Function_name : ID
 type borrowed = Borrowed
 
 (** Types of expressions in FipML *)
-type type_expr = 
-  | TEUnit
-  | TEInt
-  | TEBool
-  | TEOption of type_expr
-  | TECustom of string
+type type_expr =
+  | TEUnit of loc
+  | TEInt of loc
+  | TEBool of loc
+  | TEOption of loc * type_expr
+  | TECustom of loc * Type_name.t
+  | TEArrow of loc * type_expr * type_expr
 
-type param = 
-  | TParam of type_expr * Var_name.t * borrowed option
+type param = TParam of type_expr * Var_name.t * borrowed option
 
 val get_params_type : param list -> type_expr list
 
 (** Unary operators *)
-type unary_op =
-  | UnOpNot
-  | UnOpNeg
-  | UnOpFst
-  | UnOpSnd
+type unary_op = UnOpNot | UnOpNeg | UnOpFst | UnOpSnd
 
 (** Binary operators *)
 type binary_op =

@@ -71,6 +71,8 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
+%right ARROW
+%left TYPE_OPTION
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -100,17 +102,19 @@
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); expr=option(expr); EOF { 
-    TProg(type_defns, function_defns, expr)
+| type_defns=list(type_defn); function_defns=list(function_defn); block_expr=option(block_expr); EOF { 
+    TProg($startpos, type_defns, function_defns, block_expr)
   }
 
 
 type_expr:
-| TYPE_UNIT { TEUnit }
-| TYPE_INT { TEInt }
-| TYPE_BOOL { TEBool }
-| type_expr=type_expr; TYPE_OPTION { TEOption(type_expr) }
-| custom_type=LID { TECustom(custom_type) }
+| TYPE_UNIT { TEUnit($startpos) }
+| TYPE_INT { TEInt($startpos) }
+| TYPE_BOOL { TEBool($startpos) }
+| type_expr=type_expr; TYPE_OPTION { TEOption($startpos, type_expr) }
+| custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
+| in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
+| LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 
 /* Type Definition Production Rules */
@@ -139,8 +143,8 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); ASSIGN; fun_body=block_expr {
-    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body)
+| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
 
 
@@ -161,6 +165,7 @@ block_expr:
 expr:
 /* Simple expression containing values, variables and applied constructors */
 | value=value { value }
+| LPAREN; expr=expr; RPAREN {expr}
 | SOME; expr=expr { Option($startpos, Some expr) }
 | var_name=LID { Variable($startpos, Var_name.of_string var_name) }
 | constructor_expr=constructor_expr { constructor_expr }
@@ -227,7 +232,7 @@ match_constructor:
   }
 | NONE { MOption($startpos, None) }
 | SOME; matched_expr=match_constructor { MOption($startpos, Some matched_expr) }
-
+(* maybe collapse None Some with Constructors *)
 
 %inline unary_op:
 | SUB { UnOpNeg }

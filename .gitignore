@@ -1,2 +1,2 @@
 _build/
-src/frontend/parser.conflicts
+src/frontend/parsing/parser.conflicts
