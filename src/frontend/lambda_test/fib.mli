@@ -1,1 +1,1 @@
-val fib : int -> int
+val fib : int -> int -> int

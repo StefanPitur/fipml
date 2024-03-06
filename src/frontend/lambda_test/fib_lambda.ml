@@ -1,14 +1,12 @@
 open Lambda
 
-let rec fib n = if n <= 0 then 0 else n + fib (n - 1)
-
 let fib_lambda =
   let fib = Ident.create_local "fib"
   and n = Ident.create_local "n"
-  and x = Ident.create_local "x" in
+  and acc = Ident.create_local "acc" in
   let body =
     lfunction ~kind:Curried
-      ~params:[ (n, Pgenval) ]
+      ~params:[ (n, Pgenval); (acc, Pgenval) ]
       ~return:Pgenval ~loc:Loc_unknown ~attr:default_function_attribute
       ~body:
         (Lifthenelse
@@ -16,30 +14,29 @@ let fib_lambda =
                ( Pintcomp Cle,
                  [ Lvar n; Lconst (Const_base (Const_int 0)) ],
                  Loc_unknown ),
-             Lconst (Const_base (Const_int 0)),
+             Lvar acc,
              Llet
-               ( Strict,
+               ( Alias,
                  Pgenval,
-                 x,
-                 Lprim
-                   ( Psubint,
-                     [ Lvar n; Lconst (Const_base (Const_int 1)) ],
-                     Loc_unknown ),
-                 Lprim
-                   ( Paddint,
-                     [
-                       Lvar n;
-                       Lapply
-                         {
-                           ap_func = Lvar fib;
-                           ap_args = [ Lvar x ];
-                           ap_loc = Loc_unknown;
-                           ap_tailcall = Default_tailcall;
-                           ap_inlined = Default_inline;
-                           ap_specialised = Default_specialise;
-                         };
-                     ],
-                     Loc_unknown ) ) ))
+                 acc,
+                 Lprim (Paddint, [ Lvar n; Lvar acc ], Loc_unknown),
+                 Llet
+                   ( Alias,
+                     Pgenval,
+                     n,
+                     Lprim
+                       ( Psubint,
+                         [ Lvar n; Lconst (Const_base (Const_int 1)) ],
+                         Loc_unknown ),
+                     Lapply
+                       {
+                         ap_func = Lvar fib;
+                         ap_args = [ Lvar n; Lvar acc ];
+                         ap_loc = Loc_unknown;
+                         ap_tailcall = Default_tailcall;
+                         ap_inlined = Default_inline;
+                         ap_specialised = Default_specialise;
+                       } ) ) ))
   in
   Lprim
     ( Psetglobal (Ident.create_persistent "Fib"),
