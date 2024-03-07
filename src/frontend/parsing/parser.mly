@@ -58,6 +58,7 @@
 %token EOF
 
 /* Types Tokens */
+%token<string> TYPE_POLY
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
@@ -111,6 +112,7 @@ type_expr:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
+| poly_id=TYPE_POLY { TEPoly($startpos, poly_id) }
 | type_expr=type_expr; TYPE_OPTION { TEOption($startpos, type_expr) }
 | custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
 | in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
@@ -120,7 +122,8 @@ type_expr:
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+| TYPE; polys=list(TYPE_POLY); type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    List.iter print_string polys;
     TType($startpos, Type_name.of_string type_name, type_constructors) 
   }
 

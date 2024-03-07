@@ -45,6 +45,7 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
   | TEUnit _ -> TyUnit
   | TEInt _ -> TyInt
   | TEBool _ -> TyBool
+  | TEPoly _ -> exit (-1)
   | TEOption (_, type_expr) -> TyOption (convert_ast_type_to_ty type_expr)
   | TECustom (_, custom_type_name) -> TyCustom custom_type_name
   | TEArrow (_, input_type_expr, output_type_expr) ->

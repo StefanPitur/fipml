@@ -57,4 +57,5 @@ let pprint_lexer_token ppf token =
     | TYPE_INT -> "int"
     | TYPE_BOOL -> "bool"
     | TYPE_UNIT -> "unit"
-    | TYPE_OPTION -> "option")
+    | TYPE_OPTION -> "option"
+    | TYPE_POLY poly -> "Poly " ^ poly)

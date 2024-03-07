@@ -75,6 +75,7 @@ rule token = parse
   | "with" { WITH }
   | "Some" { SOME }
   | "None" { NONE }
+  | "'" lid_regex_expression { TYPE_POLY (Lexing.lexeme lexbuf) }
   | "option" { TYPE_OPTION }
   | "int" { TYPE_INT }
   | "bool" { TYPE_BOOL }
