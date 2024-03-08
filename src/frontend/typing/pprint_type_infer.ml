@@ -8,7 +8,6 @@ let rec string_of_ty (ty : ty) : string =
   | TyUnit -> "TyUnit"
   | TyInt -> "TyInt"
   | TyBool -> "TyBool"
-  | TyOption ty -> "TyOption " ^ string_of_ty ty
   | TyCustom type_name -> "TyCustom " ^ Type_name.to_string type_name
   | TyArrow (in_ty, out_ty) ->
       Fmt.str "TyArrow (%s -> %s)" (string_of_ty in_ty) (string_of_ty out_ty)

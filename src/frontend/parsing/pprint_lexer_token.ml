@@ -51,11 +51,8 @@ let pprint_lexer_token ppf token =
     | DMATCH -> "match!"
     | ENDMATCH -> "endmatch"
     | WITH -> "with"
-    | SOME -> "Some"
-    | NONE -> "None"
     | EOF -> "eof"
     | TYPE_INT -> "int"
     | TYPE_BOOL -> "bool"
     | TYPE_UNIT -> "unit"
-    | TYPE_OPTION -> "option"
     | TYPE_POLY poly -> "Poly " ^ poly)

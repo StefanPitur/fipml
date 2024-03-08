@@ -53,8 +53,6 @@
 %token DMATCH
 %token ENDMATCH
 %token WITH
-%token SOME
-%token NONE
 %token EOF
 
 /* Types Tokens */
@@ -62,18 +60,16 @@
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
-%token TYPE_OPTION
 
 /* Precedence and associativity */
 %nonassoc LT GT LEQ GEQ EQ NEQ IN
-%right FST SND SOME
+%right FST SND
 %left OR
 %left AND
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
 %right ARROW
-%left TYPE_OPTION
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -113,7 +109,6 @@ type_expr:
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
 | poly_id=TYPE_POLY { TEPoly($startpos, poly_id) }
-| type_expr=type_expr; TYPE_OPTION { TEOption($startpos, type_expr) }
 | custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
 | in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
@@ -169,7 +164,6 @@ expr:
 /* Simple expression containing values, variables and applied constructors */
 | value=value { value }
 | LPAREN; expr=expr; RPAREN {expr}
-| SOME; expr=expr { Option($startpos, Some expr) }
 | var_name=LID { Variable($startpos, Var_name.of_string var_name) }
 | constructor_expr=constructor_expr { constructor_expr }
 
@@ -233,8 +227,6 @@ match_constructor:
 | constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, match_constructor); RPAREN {
     MConstructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
   }
-| NONE { MOption($startpos, None) }
-| SOME; matched_expr=match_constructor { MOption($startpos, Some matched_expr) }
 (* maybe collapse None Some with Constructors *)
 
 %inline unary_op:
@@ -261,7 +253,6 @@ match_constructor:
 
 
 %inline value:
-| NONE { Option($startpos, None) }
 | UNIT { Unit($startpos) }
 | n=INT { Integer($startpos, n) }
 | TRUE { Boolean($startpos, true) }

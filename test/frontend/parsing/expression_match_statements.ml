@@ -2,14 +2,12 @@ let%expect_test "expression: match" =
   let source_code =
     "\n\
     \    begin\n\
-    \          match x with\n\
+    \       match x with\n\
     \      | _ -> begin () end\n\
     \      | y -> begin () end\n\
     \      | (y, z) -> begin () end\n\
     \      | Constructor1 -> begin () end\n\
     \      | Constructor2 (_) -> begin () end\n\
-    \      | None -> begin () end\n\
-    \      | Some _ -> begin () end\n\
     \      endmatch\n\
     \    end\n\
     \      "
@@ -41,15 +39,6 @@ let%expect_test "expression: match" =
                         Expr: Unit
                 PatternExpr
                     MatchedExpr: Constructor - Constructor2
-                        MatchedExpr: Underscore
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: MOption - None
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: MOption - Some
                         MatchedExpr: Underscore
                     PatternBlockExpr Block
                         Expr: Unit |}]

@@ -4,7 +4,6 @@ type expr =
   | Unit of loc
   | Integer of loc * int
   | Boolean of loc * bool
-  | Option of loc * expr option
   | Variable of loc * Var_name.t
   | Constructor of loc * Constructor_name.t * expr list
   | Tuple of loc * expr * expr
@@ -25,7 +24,6 @@ and matched_expr =
   | MVariable of loc * Var_name.t
   | MTuple of loc * matched_expr * matched_expr
   | MConstructor of loc * Constructor_name.t * matched_expr list
-  | MOption of loc * matched_expr option
 
 and block_expr = Block of loc * expr list
 

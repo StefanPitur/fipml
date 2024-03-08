@@ -52,19 +52,6 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Ok (typing_context, TyInt, [], Pretyped_ast.Integer (loc, TyInt, i))
   | Boolean (loc, b) ->
       Ok (typing_context, TyBool, [], Pretyped_ast.Boolean (loc, TyBool, b))
-  | Option (loc, expr) -> (
-      let t = fresh () in
-      match expr with
-      | None -> Ok (typing_context, t, [], Pretyped_ast.Option (loc, t, None))
-      | Some expr ->
-          generate_constraints constructors_env functions_env typing_context
-            expr ~verbose
-          >>= fun (_, expr_type, expr_constrs, pretyped_expr) ->
-          Ok
-            ( typing_context,
-              t,
-              (t, TyOption expr_type) :: expr_constrs,
-              Pretyped_ast.Option (loc, t, Some pretyped_expr) ))
   | Variable (loc, var) ->
       Type_context_env.get_var_type typing_context var >>= fun var_type ->
       Ok
@@ -451,21 +438,3 @@ and generate_constraints_matched_expr
               TyCustom constructor_type_name,
               constructor_name,
               pretyped_matched_exprs ) )
-  | MOption (loc, matched_expr) -> (
-      let t = fresh () in
-      match matched_expr with
-      | None ->
-          Ok (matched_typing_context, t, [], Pretyped_ast.MOption (loc, t, None))
-      | Some matched_expr ->
-          let open Result in
-          generate_constraints_matched_expr constructors_env
-            matched_typing_context matched_expr ~verbose
-          >>= fun ( matched_typing_context,
-                    match_expr_type,
-                    match_expr_constraints,
-                    pretyped_matched_expr ) ->
-          Ok
-            ( matched_typing_context,
-              t,
-              (t, TyOption match_expr_type) :: match_expr_constraints,
-              Pretyped_ast.MOption (loc, t, Some pretyped_matched_expr) ))

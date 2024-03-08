@@ -90,7 +90,6 @@ let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
     unit Or_error.t =
   match type_expr with
   | TEUnit _ | TEInt _ | TEBool _ | TEPoly _ -> Ok ()
-  | TEOption (_, type_expr) -> assert_type_defined type_expr types_env
   | TEArrow (_, in_type_expr, out_type_expr) ->
       let open Result in
       assert_type_defined in_type_expr types_env >>= fun _ ->

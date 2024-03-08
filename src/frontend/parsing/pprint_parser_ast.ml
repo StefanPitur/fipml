@@ -12,12 +12,6 @@ let rec pprint_expr ppf ~indent expr =
   | Unit _ -> print_expr "Unit"
   | Integer (_, i) -> print_expr (Fmt.str "Int: %d" i)
   | Boolean (_, b) -> print_expr (Fmt.str "Bool: %b" b)
-  | Option (_, o) -> (
-      match o with
-      | None -> print_expr (Fmt.str "Option - None")
-      | Some expr ->
-          print_expr (Fmt.str "Option - Some");
-          pprint_expr ppf ~indent:sub_expr_indent expr)
   | Variable (_, var_name) ->
       print_expr (Fmt.str "Var: %s" (Var_name.to_string var_name))
   | Constructor (_, constructor_name, constructor_args) ->
@@ -125,12 +119,6 @@ and pprint_matched_expr ppf ~indent matched_expr =
         (Fmt.str "Constructor - %s"
            (Constructor_name.to_string constructor_name));
       List.iter (pprint_matched_expr ppf ~indent:sub_expr_indent) matched_exprs
-  | MOption (_, matched_expr_option) -> (
-      match matched_expr_option with
-      | None -> print_matched_expr "MOption - None"
-      | Some matched_expr ->
-          print_matched_expr "MOption - Some";
-          pprint_matched_expr ppf ~indent:sub_expr_indent matched_expr)
 
 (* Pretty-printing Type Definition *)
 and pprint_type_defn ppf ~indent (TType (_, type_name, type_constructors)) =
