@@ -16,7 +16,8 @@ let%expect_test "typing type defn: used type before actual definition" =
           TTypeConstructor
             ( mock_loc,
               Constructor_name.of_string "C1",
-              [ TECustom (mock_loc, [], Type_name.of_string "custom_type_2") ] );
+              [ TECustom (mock_loc, [], Type_name.of_string "custom_type_2") ]
+            );
         ] )
   in
   let simple_custom_type_2 =

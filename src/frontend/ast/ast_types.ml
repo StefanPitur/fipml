@@ -71,9 +71,11 @@ let rec string_of_type = function
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
   | TEPoly (_, poly) -> Fmt.str "Poly %s" poly
-  | TECustom (_, custom_type_polys, custom_type_name) -> 
-      List.fold_left (fun acc custom_type_poly -> acc ^ custom_type_poly ^ " ") "" custom_type_polys ^
-      Type_name.to_string custom_type_name
+  | TECustom (_, custom_type_polys, custom_type_name) ->
+      List.fold_left
+        (fun acc custom_type_poly -> acc ^ custom_type_poly ^ " ")
+        "" custom_type_polys
+      ^ Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) ->
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in

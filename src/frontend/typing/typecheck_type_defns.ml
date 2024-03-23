@@ -39,7 +39,10 @@ let typecheck_type_constructor (types_env : types_env)
   in
   let typed_ast_type_constructor =
     Typed_ast.TTypeConstructor
-      (loc, TECustom (loc, [], constructor_type), constructor_name, constructor_args)
+      ( loc,
+        TECustom (loc, [], constructor_type),
+        constructor_name,
+        constructor_args )
   in
   Ok (constructor_env_entry :: constructors_env, typed_ast_type_constructor)
 
