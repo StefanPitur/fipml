@@ -15,7 +15,7 @@ let%expect_test "custom type with function params" =
         Type Poly Params:
         Type Constructors:
             Type Constructor Name: Constructor1
-                Type Expr: ('a option my_custom_type -> (Int -> Unit))
+                Type Expr: ((('a) option) my_custom_type -> (Int -> Unit))
             Type Constructor Name: Constructor2
                 Type Expr: ((Int -> Unit) -> Int)
             Type Constructor Name: Constructor3
