@@ -5,7 +5,6 @@ let parsed_program =
   Parsing.Lex_and_parse.parse_source_code_with_error
     (Lexing.from_channel channel)
 in
-Fmt.pf Fmt.stdout "\n--------------------\n\n";
 Parsing.Pprint_parser_ast.pprint_program Fmt.stdout parsed_program
 (* match Typing.Typecheck_program.typecheck_program parsed_program with
    | Error err -> print_string (Error.to_string_hum err)

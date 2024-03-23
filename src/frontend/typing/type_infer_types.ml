@@ -44,7 +44,7 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
   | TEInt _ -> TyInt
   | TEBool _ -> TyBool
   | TEPoly _ -> exit (-1)
-  | TECustom (_, custom_type_name) -> TyCustom custom_type_name
+  | TECustom (_, _, custom_type_name) -> TyCustom custom_type_name
   | TEArrow (_, input_type_expr, output_type_expr) ->
       TyArrow
         ( convert_ast_type_to_ty input_type_expr,
@@ -55,13 +55,13 @@ let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
   | TyUnit -> Ok (TEUnit loc)
   | TyInt -> Ok (TEInt loc)
   | TyBool -> Ok (TEBool loc)
-  | TyCustom custom_type_name -> Ok (TECustom (loc, custom_type_name))
+  | TyCustom custom_type_name -> Ok (TECustom (loc, [], custom_type_name))
   | TyArrow (ty1, ty2) ->
       let open Result in
       convert_ty_to_ast_type ty1 loc >>= fun ast_type1 ->
       convert_ty_to_ast_type ty2 loc >>= fun ast_type2 ->
       Ok (TEArrow (loc, ast_type1, ast_type2))
-  | TyVar _ -> Ok (TECustom (loc, Type_name.of_string "_undefined"))
+  | TyVar _ -> Ok (TECustom (loc, [], Type_name.of_string "_undefined"))
   | _ -> Or_error.of_exn FailureConvertTyToAstType
 
 (* This can be removed by using List.fold2, probably the last one as well *)

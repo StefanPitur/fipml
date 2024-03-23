@@ -12,6 +12,7 @@ let%expect_test "custom type with function params" =
     {|
     Program
         Type Name: custom_simple_type
+        Type Poly Params:
         Type Constructors:
             Type Constructor Name: Constructor1
                 Type Expr: (my_custom_type -> (Int -> Unit))

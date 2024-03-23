@@ -10,6 +10,7 @@ let%expect_test "typing type defn: simple custom type" =
   let simple_custom_type =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "simple_custom_type",
         [
           TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []);
@@ -21,7 +22,7 @@ let%expect_test "typing type defn: simple custom type" =
                 TEInt mock_loc;
                 TEBool mock_loc;
                 TEArrow (mock_loc, TEUnit mock_loc, TEInt mock_loc);
-                TECustom (mock_loc, Type_name.of_string "simple_custom_type");
+                TECustom (mock_loc, [], Type_name.of_string "simple_custom_type");
               ] );
         ] )
   in

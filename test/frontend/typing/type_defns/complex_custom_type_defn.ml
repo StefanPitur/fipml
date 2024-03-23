@@ -10,12 +10,14 @@ let%expect_test "typing type defn: complex custom type" =
   let simple_custom_type =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "simple_custom_type",
         [ TTypeConstructor (mock_loc, Constructor_name.of_string "SC1", []) ] )
   in
   let complex_custom_type =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "complex_custom_type",
         [
           TTypeConstructor
@@ -24,8 +26,8 @@ let%expect_test "typing type defn: complex custom type" =
             ( mock_loc,
               Constructor_name.of_string "CC2",
               [
-                TECustom (mock_loc, Type_name.of_string "complex_custom_type");
-                TECustom (mock_loc, Type_name.of_string "simple_custom_type");
+                TECustom (mock_loc, [], Type_name.of_string "complex_custom_type");
+                TECustom (mock_loc, [], Type_name.of_string "simple_custom_type");
               ] );
         ] )
   in

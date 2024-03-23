@@ -121,9 +121,12 @@ and pprint_matched_expr ppf ~indent matched_expr =
       List.iter (pprint_matched_expr ppf ~indent:sub_expr_indent) matched_exprs
 
 (* Pretty-printing Type Definition *)
-and pprint_type_defn ppf ~indent (TType (_, type_name, type_constructors)) =
+and pprint_type_defn ppf ~indent
+    (TType (_, poly_types, type_name, type_constructors)) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
+  Fmt.pf ppf "%sType Poly Params:@." indent;
+  List.iter (Fmt.pf ppf "%sType Poly Param: %s@." sub_expr_indent) poly_types;
   Fmt.pf ppf "%sType Constructors:@." indent;
   List.iter
     (pprint_type_constructor ppf ~indent:sub_expr_indent)

@@ -11,6 +11,7 @@ let%expect_test "Full Type Checking" =
     [
       TType
         ( mock_loc,
+          [],
           Type_name.of_string "custom_type",
           [
             TTypeConstructor
@@ -29,7 +30,7 @@ let%expect_test "Full Type Checking" =
           Function_name.of_string "add_y",
           [
             TParam
-              ( TECustom (mock_loc, Type_name.of_string "custom_type"),
+              ( TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                 Var_name.of_string "x",
                 None );
             TParam (TEInt mock_loc, Var_name.of_string "y", None);

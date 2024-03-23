@@ -109,7 +109,7 @@ type_expr:
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
 | poly_id=TYPE_POLY { TEPoly($startpos, poly_id) }
-| custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
+| polys=list(TYPE_POLY); custom_type=LID { TECustom($startpos, polys, Type_name.of_string custom_type) }
 | in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
@@ -117,9 +117,8 @@ type_expr:
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; polys=list(TYPE_POLY); type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    List.iter print_string polys;
-    TType($startpos, Type_name.of_string type_name, type_constructors) 
+| TYPE; poly_types=list(TYPE_POLY); type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    TType($startpos, poly_types, Type_name.of_string type_name, type_constructors) 
   }
 
 

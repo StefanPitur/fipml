@@ -25,7 +25,7 @@ type type_expr =
   | TEInt of loc
   | TEBool of loc
   | TEPoly of loc * string
-  | TECustom of loc * Type_name.t
+  | TECustom of loc * string list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
 type param = TParam of type_expr * Var_name.t * borrowed option

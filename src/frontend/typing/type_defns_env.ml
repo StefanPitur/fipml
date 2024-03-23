@@ -94,5 +94,5 @@ let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
       let open Result in
       assert_type_defined in_type_expr types_env >>= fun _ ->
       assert_type_defined out_type_expr types_env
-  | TECustom (loc, custom_type_name) ->
+  | TECustom (loc, _, custom_type_name) ->
       assert_custom_type_in_types_env loc custom_type_name types_env

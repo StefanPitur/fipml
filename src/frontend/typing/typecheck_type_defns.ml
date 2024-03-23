@@ -6,7 +6,7 @@ open Type_defns_env
 let rec typecheck_type_constructor_arg (types_env : types_env)
     (constructor_arg : Ast_types.type_expr) : unit Or_error.t =
   match constructor_arg with
-  | Ast_types.TECustom (loc, custom_arg_type) ->
+  | Ast_types.TECustom (loc, _, custom_arg_type) ->
       assert_custom_type_in_types_env loc custom_arg_type types_env
   | Ast_types.TEArrow (_, input_type, output_type) ->
       let open Result in
@@ -39,7 +39,7 @@ let typecheck_type_constructor (types_env : types_env)
   in
   let typed_ast_type_constructor =
     Typed_ast.TTypeConstructor
-      (loc, TECustom (loc, constructor_type), constructor_name, constructor_args)
+      (loc, TECustom (loc, [], constructor_type), constructor_name, constructor_args)
   in
   Ok (constructor_env_entry :: constructors_env, typed_ast_type_constructor)
 
@@ -62,7 +62,8 @@ let rec typecheck_type_constructors (types_env : types_env)
 
 let typecheck_type_defn (types_env : types_env)
     (constructors_env : constructors_env)
-    (TType (loc, type_name, type_constructors) : Parsing.Parser_ast.type_defn) :
+    (TType (loc, _, type_name, type_constructors) :
+      Parsing.Parser_ast.type_defn) :
     (types_env * constructors_env * Typed_ast.type_defn) Or_error.t =
   let extended_types_env = type_name :: types_env in
   let open Result in
@@ -75,7 +76,7 @@ let typecheck_type_defn (types_env : types_env)
       constructors_env,
       Typed_ast.TType
         ( loc,
-          Ast_types.TECustom (loc, type_name),
+          Ast_types.TECustom (loc, [], type_name),
           type_name,
           typed_ast_type_constructors ) )
 

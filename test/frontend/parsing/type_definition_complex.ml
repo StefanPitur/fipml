@@ -12,6 +12,7 @@ let%expect_test "complex type definition" =
     {|
     Program
         Type Name: custom_complex_type
+        Type Poly Params:
         Type Constructors:
             Type Constructor Name: Constructor1
             Type Constructor Name: Constructor2
