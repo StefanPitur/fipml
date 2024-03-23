@@ -69,7 +69,6 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
-%right ARROW
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -109,8 +108,9 @@ type_expr:
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
 | poly_id=TYPE_POLY { TEPoly($startpos, poly_id) }
-| polys=list(TYPE_POLY); custom_type=LID { TECustom($startpos, polys, Type_name.of_string custom_type) }
-| in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
+| custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
+| custom_poly_param=type_expr; custom_type=LID { TECustom($startpos, [custom_poly_param], Type_name.of_string custom_type) }
+| LPAREN; custom_poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, custom_poly_params, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 

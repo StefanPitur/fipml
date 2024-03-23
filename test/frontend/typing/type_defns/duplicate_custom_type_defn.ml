@@ -24,7 +24,6 @@ let%expect_test "typing type defn: duplicated custom type definition" =
             (mock_loc, Constructor_name.of_string "C2", [ TEUnit mock_loc ]);
         ] )
   in
-
   match typecheck_type_defns [ custom_type; duplicated_custom_type ] with
   | Ok _ -> ()
   | Error err ->

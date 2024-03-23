@@ -30,7 +30,7 @@ type type_expr =
   | TEInt of loc
   | TEBool of loc
   | TEPoly of loc * string
-  | TECustom of loc * string list * Type_name.t
+  | TECustom of loc * type_expr list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
 type param = TParam of type_expr * Var_name.t * borrowed option
@@ -70,12 +70,18 @@ let rec string_of_type = function
   | TEUnit _ -> "Unit"
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
-  | TEPoly (_, poly) -> Fmt.str "Poly %s" poly
-  | TECustom (_, custom_type_polys, custom_type_name) ->
-      List.fold_left
-        (fun acc custom_type_poly -> acc ^ custom_type_poly ^ " ")
-        "" custom_type_polys
-      ^ Type_name.to_string custom_type_name
+  | TEPoly (_, poly) -> Fmt.str "%s" poly
+  | TECustom (_, custom_poly_params, custom_type_name) ->
+      let custom_poly_params_string =
+        match custom_poly_params with
+        | [] -> ""
+        | _ ->
+            let custom_poly_params_strings =
+              List.map string_of_type custom_poly_params
+            in
+            "(" ^ String.concat ", " custom_poly_params_strings ^ ") "
+      in
+      custom_poly_params_string ^ Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) ->
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in

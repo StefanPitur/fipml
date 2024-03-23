@@ -1,5 +1,18 @@
-type 'a 'b mama = 
-| C1 
-| C2 of 'a
+type 'a option =
+| None
+| Some of 'a
 
-fun test_function (x : mama) : 'c = begin () end
+type 'a custom_type =
+| C of 'a
+
+fun add_y (x : int custom_type option) (y : int) : int = begin
+  match x with
+  | None -> begin (); 1 end
+  | Some (C (x)) -> begin x end
+  endmatch
+end
+
+begin
+  let x = None in
+  add_y (Some (C(2)), 5)
+end
