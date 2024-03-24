@@ -15,7 +15,9 @@ let assert_poly_parameters_unique (poly_params : Ast_types.type_expr list) :
           (match (poly_param_1, poly_param_2) with
           | TEPoly (_, poly_id_1), TEPoly (_, poly_id_2) ->
               Ok (Bool.to_int (String.( <> ) poly_id_1 poly_id_2))
-          | _ -> print_string "err"; Or_error.of_exn PolymorphicTypeExpressionExpected))
+          | _ ->
+              print_string "err";
+              Or_error.of_exn PolymorphicTypeExpressionExpected))
   with
   | None -> Ok ()
   | Some dup_poly_param ->
