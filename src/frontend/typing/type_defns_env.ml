@@ -1,6 +1,7 @@
 open Ast.Ast_types
 open Core
 
+exception TypeExpressionShouldBePolymorphicVar of string
 exception TypeNotFound of string
 exception TypeAlreadyExists of string
 exception ConstructorNotFound of string
@@ -10,30 +11,56 @@ exception ConstructorMultipleInstancesFound
 type constructor_env_entry =
   | ConstructorEnvEntry of Type_name.t * Constructor_name.t * type_expr list
 
-type types_env = Type_name.t list
 type constructors_env = constructor_env_entry list
 
-let assert_custom_type_in_types_env (loc : loc) (type_name : Type_name.t)
-    (types_env : types_env) : unit Or_error.t =
-  let open Result in
-  if List.mem types_env type_name ~equal:Type_name.( = ) then Ok ()
-  else
-    let error_string =
-      Fmt.str "%s. Type %s not defined" (string_of_loc loc)
-        (Type_name.to_string type_name)
-    in
-    Or_error.of_exn (TypeNotFound error_string)
+(* A type entry in types_env should only be a possibly polymorphic custom type.
+   Therefore, type_expr list should only be a TEPoly list actually *)
+type types_env_entry = TypesEnvEntry of type_expr list * Type_name.t
+type types_env = types_env_entry list
 
-let assert_custom_type_not_in_types_env (loc : loc) (type_name : Type_name.t)
-    (types_env : types_env) : unit Or_error.t =
+let filter_types_env_by_type_signature
+    (TypesEnvEntry (type_poly_params, type_name) : types_env_entry)
+    (types_env : types_env) : types_env =
+  List.filter types_env
+    ~f:(fun (TypesEnvEntry (type_poly_params_entry, type_name_entry)) ->
+      Type_name.( = ) type_name_entry type_name
+      && List.length type_poly_params = List.length type_poly_params_entry)
+
+let assert_custom_type_in_types_env (loc : loc)
+    (TypesEnvEntry (type_poly_params, type_name) as types_env_entry :
+      types_env_entry) (types_env : types_env) : unit Or_error.t =
   let open Result in
-  if not (List.mem types_env type_name ~equal:Type_name.( = )) then Ok ()
-  else
-    let error_string =
-      Fmt.str "%s. Duplicate definition of type %s" (string_of_loc loc)
-        (Type_name.to_string type_name)
-    in
-    Or_error.of_exn (TypeAlreadyExists error_string)
+  let matched_types =
+    filter_types_env_by_type_signature types_env_entry types_env
+  in
+  match matched_types with
+  | [] ->
+      let type_poly_ids = List.map ~f:string_of_type type_poly_params in
+      let error_string =
+        Fmt.str "%s. Type (%s) %s not defined" (string_of_loc loc)
+          (String.concat ~sep:", " type_poly_ids)
+          (Type_name.to_string type_name)
+      in
+      Or_error.of_exn (TypeNotFound error_string)
+  | _ -> Ok ()
+
+let assert_custom_type_not_in_types_env (loc : loc)
+    (TypesEnvEntry (type_poly_params, type_name) as types_env_entry :
+      types_env_entry) (types_env : types_env) : unit Or_error.t =
+  let open Result in
+  let matched_types =
+    filter_types_env_by_type_signature types_env_entry types_env
+  in
+  match matched_types with
+  | [] -> Ok ()
+  | _ ->
+      let type_poly_ids = List.map ~f:string_of_type type_poly_params in
+      let error_string =
+        Fmt.str "%s. Duplicate definition of type (%s) %s" (string_of_loc loc)
+          (String.concat ~sep:", " type_poly_ids)
+          (Type_name.to_string type_name)
+      in
+      Or_error.of_exn (TypeAlreadyExists error_string)
 
 let filter_constructors_env_by_name (constructor_name : Constructor_name.t)
     (constructors_env : constructors_env) : constructors_env =
@@ -94,5 +121,7 @@ let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
       let open Result in
       assert_type_defined in_type_expr types_env >>= fun _ ->
       assert_type_defined out_type_expr types_env
-  | TECustom (loc, _, custom_type_name) ->
-      assert_custom_type_in_types_env loc custom_type_name types_env
+  | TECustom (loc, custom_type_expr_poly_params, custom_type_name) ->
+      assert_custom_type_in_types_env loc
+        (TypesEnvEntry (custom_type_expr_poly_params, custom_type_name))
+        types_env

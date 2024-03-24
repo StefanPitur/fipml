@@ -54,6 +54,15 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
+let get_loc (type_expr : type_expr) : loc =
+  match type_expr with
+  | TEUnit loc -> loc
+  | TEInt loc -> loc
+  | TEBool loc -> loc
+  | TEPoly (loc, _) -> loc
+  | TECustom (loc, _, _) -> loc
+  | TEArrow (loc, _, _) -> loc
+
 (* Implementation of helper functions for printing AST *)
 let string_of_loc loc =
   let loc_file = loc.Lexing.pos_fname in
@@ -70,7 +79,7 @@ let rec string_of_type = function
   | TEUnit _ -> "Unit"
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
-  | TEPoly (_, poly) -> Fmt.str "%s" poly
+  | TEPoly (_, poly_id) -> Fmt.str "%s" poly_id
   | TECustom (_, custom_poly_params, custom_type_name) ->
       let custom_poly_params_string =
         match custom_poly_params with

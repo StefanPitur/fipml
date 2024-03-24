@@ -51,6 +51,9 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
+val get_loc : type_expr -> loc
+(** Extract loc from type expression *)
+
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string
 val string_of_type : type_expr -> string

@@ -1,6 +1,7 @@
 open Ast
 open Core
 
+exception TypeExpressionShouldBePolymorphicVar of string
 exception TypeNotFound of string
 exception TypeAlreadyExists of string
 exception ConstructorNotFound of string
@@ -13,20 +14,20 @@ type constructor_env_entry =
       * Ast_types.Constructor_name.t
       * Ast_types.type_expr list
 
-type types_env = Ast_types.Type_name.t list
 type constructors_env = constructor_env_entry list
 
+type types_env_entry =
+  | TypesEnvEntry of Ast_types.type_expr list * Ast_types.Type_name.t
+
+type types_env = types_env_entry list
+
+val assert_type_defined : Ast_types.type_expr -> types_env -> unit Or_error.t
+
 val assert_custom_type_in_types_env :
-  Ast_types.loc ->
-  Ast_types.Type_name.t ->
-  Ast_types.Type_name.t list ->
-  unit Or_error.t
+  Ast_types.loc -> types_env_entry -> types_env -> unit Or_error.t
 
 val assert_custom_type_not_in_types_env :
-  Ast_types.loc ->
-  Ast_types.Type_name.t ->
-  Ast_types.Type_name.t list ->
-  unit Or_error.t
+  Ast_types.loc -> types_env_entry -> types_env -> unit Or_error.t
 
 val assert_constructor_in_constructors_env :
   Ast_types.loc ->
@@ -45,6 +46,3 @@ val get_constructor_by_name :
   Ast_types.Constructor_name.t ->
   constructor_env_entry list ->
   constructor_env_entry Or_error.t
-
-val assert_type_defined :
-  Ast_types.type_expr -> Ast_types.Type_name.t list -> unit Or_error.t

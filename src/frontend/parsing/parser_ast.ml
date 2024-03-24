@@ -29,7 +29,7 @@ and block_expr = Block of loc * expr list
 
 (* Type Definitions *)
 type type_defn =
-  | TType of loc * string list * Type_name.t * type_constructor list
+  | TType of loc * type_expr list * Type_name.t * type_constructor list
 
 and type_constructor =
   | TTypeConstructor of loc * Constructor_name.t * type_expr list

@@ -30,7 +30,7 @@ let%expect_test "typing type defn: simple custom type" =
     Or_error.ok_exn (typecheck_type_defns [ simple_custom_type ])
   in
   pprint_types_env Fmt.stdout types_env;
-  [%expect {| simple_custom_type |}];
+  [%expect {| () simple_custom_type |}];
   pprint_constructors_env Fmt.stdout constructors_env;
   [%expect
     {|

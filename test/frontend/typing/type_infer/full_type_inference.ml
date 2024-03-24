@@ -156,6 +156,7 @@ let%expect_test "Full Type Checking" =
         {|
           Typed Program - Int
               Type Name: custom_type
+              Type Poly Params:
               Type Constructors:
                   Type Constructor Name: C2
                       Type Expr: Int

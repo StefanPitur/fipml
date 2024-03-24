@@ -4,7 +4,7 @@ let%expect_test "polymorphic custom type definition" =
     \    type 'a simple_poly_type = \n\
     \    | Constructor1 of 'a\n\
     \    | Constructor2 of ('a option some_other_poly_time -> unit)\n\n\n\
-    \    type 'a 'b complex_poly_type = \n\
+    \    type ('a, 'b) complex_poly_type = \n\
     \    | ConstructorComplex1 of 'a * 'b\n\
     \  "
   in

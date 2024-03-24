@@ -1,7 +1,6 @@
 %{
   open Ast.Ast_types
   open Parser_ast
-  (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
 %}
 
 /* Tokens Definition */
@@ -56,7 +55,7 @@
 %token EOF
 
 /* Types Tokens */
-%token<string> TYPE_POLY
+%token<Lexing.position * string> TYPE_POLY
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
@@ -107,18 +106,26 @@ type_expr:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| poly_id=TYPE_POLY { TEPoly($startpos, poly_id) }
+| poly=TYPE_POLY { let (poly_pos, poly_id) = poly in TEPoly (poly_pos, poly_id) }
 | custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
-| custom_poly_param=type_expr; custom_type=LID { TECustom($startpos, [custom_poly_param], Type_name.of_string custom_type) }
-| LPAREN; custom_poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, custom_poly_params, Type_name.of_string custom_type) }
+| poly_param=type_expr; custom_type=LID { TECustom($startpos, [poly_param], Type_name.of_string custom_type) }
+| LPAREN; poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, poly_params, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
 type_defn:
-| TYPE; poly_types=list(TYPE_POLY); type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, poly_types, Type_name.of_string type_name, type_constructors) 
+| TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    TType($startpos, [], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; poly=TYPE_POLY; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let (poly_pos, poly_id) = poly in
+    TType($startpos, [TEPoly (poly_pos, poly_id)], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, TYPE_POLY); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let poly_type_exprs = List.map (fun (poly_pos, poly_id) -> TEPoly (poly_pos, poly_id)) polys in
+    TType($startpos, poly_type_exprs, Type_name.of_string type_name, type_constructors) 
   }
 
 
