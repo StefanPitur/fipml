@@ -1,7 +1,17 @@
 open Core
 
 let%expect_test "expression: value" =
-  let values = [ "None"; "()"; "1"; "true"; "false" ] in
+  let values =
+    [
+      "SimpleConstructor";
+      "ComplexConstructor(1, SimpleConstructor)";
+      "()";
+      "1";
+      "true";
+      "false";
+      "x";
+    ]
+  in
   let source_codes =
     List.map values ~f:(fun value -> "begin " ^ value ^ " end")
   in
@@ -10,16 +20,35 @@ let%expect_test "expression: value" =
     {|
     Program
         Main Block
-            Expr: Option - None
+            Expr: UnboxedSingleton
+                Value: Constructor: SimpleConstructor
+                    ()
     Program
         Main Block
-            Expr: Unit
+            Expr: UnboxedSingleton
+                Value: Constructor: ComplexConstructor
+                    ConstructorArg
+                        Value: Int: 1
+                    ConstructorArg
+                        Value: Constructor: SimpleConstructor
+                            ()
     Program
         Main Block
-            Expr: Int: 1
+            Expr: UnboxedSingleton
+                Value: Unit
     Program
         Main Block
-            Expr: Bool: true
+            Expr: UnboxedSingleton
+                Value: Int: 1
     Program
         Main Block
-            Expr: Bool: false |}]
+            Expr: UnboxedSingleton
+                Value: Bool: true
+    Program
+        Main Block
+            Expr: UnboxedSingleton
+                Value: Bool: false
+    Program
+        Main Block
+            Expr: UnboxedSingleton
+                Value: Var: x |}]

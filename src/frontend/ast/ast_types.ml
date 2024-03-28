@@ -29,14 +29,14 @@ type type_expr =
   | TEUnit of loc
   | TEInt of loc
   | TEBool of loc
-  | TEOption of loc * type_expr
   | TECustom of loc * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
 type param = TParam of type_expr * Var_name.t * borrowed option
+type fip = Fip of int | Fbip of int
 
 (* Unary operators *)
-type unary_op = UnOpNot | UnOpNeg | UnOpFst | UnOpSnd
+type unary_op = UnOpNot | UnOpNeg
 
 (* Binary operators *)
 type binary_op =
@@ -70,7 +70,6 @@ let rec string_of_type = function
   | TEUnit _ -> "Unit"
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
-  | TEOption (_, type_name) -> string_of_type type_name ^ " option"
   | TECustom (_, custom_type_name) -> Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) ->
       let in_type_string = string_of_type in_type in
@@ -83,11 +82,7 @@ let get_params_type (params : param list) =
   in
   List.map get_param_type params
 
-let string_of_unary_op = function
-  | UnOpNeg -> "-"
-  | UnOpNot -> "!"
-  | UnOpFst -> "fst"
-  | UnOpSnd -> "snd"
+let string_of_unary_op = function UnOpNeg -> "-" | UnOpNot -> "!"
 
 let string_of_binary_op = function
   | BinOpPlus -> "+"

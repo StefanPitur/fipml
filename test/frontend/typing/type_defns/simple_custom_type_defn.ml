@@ -20,7 +20,6 @@ let%expect_test "typing type defn: simple custom type" =
                 TEUnit mock_loc;
                 TEInt mock_loc;
                 TEBool mock_loc;
-                TEOption (mock_loc, TEUnit mock_loc);
                 TEArrow (mock_loc, TEUnit mock_loc, TEInt mock_loc);
                 TECustom (mock_loc, Type_name.of_string "simple_custom_type");
               ] );
@@ -39,7 +38,6 @@ let%expect_test "typing type defn: simple custom type" =
             Type Expr: Unit
             Type Expr: Int
             Type Expr: Bool
-            Type Expr: Unit option
             Type Expr: (Unit -> Int)
             Type Expr: simple_custom_type
     Constructor Type : simple_custom_type

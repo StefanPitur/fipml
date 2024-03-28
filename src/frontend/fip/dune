@@ -1,0 +1,4 @@
+(library
+ (name fip)
+ (modules)
+ (libraries core ast parsing))

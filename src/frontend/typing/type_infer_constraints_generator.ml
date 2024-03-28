@@ -52,19 +52,6 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Ok (typing_context, TyInt, [], Pretyped_ast.Integer (loc, TyInt, i))
   | Boolean (loc, b) ->
       Ok (typing_context, TyBool, [], Pretyped_ast.Boolean (loc, TyBool, b))
-  | Option (loc, expr) -> (
-      let t = fresh () in
-      match expr with
-      | None -> Ok (typing_context, t, [], Pretyped_ast.Option (loc, t, None))
-      | Some expr ->
-          generate_constraints constructors_env functions_env typing_context
-            expr ~verbose
-          >>= fun (_, expr_type, expr_constrs, pretyped_expr) ->
-          Ok
-            ( typing_context,
-              t,
-              (t, TyOption expr_type) :: expr_constrs,
-              Pretyped_ast.Option (loc, t, Some pretyped_expr) ))
   | Variable (loc, var) ->
       Type_context_env.get_var_type typing_context var >>= fun var_type ->
       Ok
@@ -100,14 +87,6 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
           t,
           (t, TyCustom constructor_type) :: params_contraints,
           Pretyped_ast.Constructor (loc, t, constructor_name, pretyped_params)
-        )
-  (* TODO: Implement Tuples, they're not in the language right now as a type*)
-  | Tuple (loc, _, _) ->
-      Ok
-        ( typing_context,
-          TyCustom (Type_name.of_string "_undefined"),
-          [],
-          Pretyped_ast.Unit (loc, TyCustom (Type_name.of_string "_undefined"))
         )
   (* Note that we do not care about Polymorphic - Let, as we only allow top-level functions *)
   | Let (loc, var_name, var_expr, expr) ->
@@ -180,15 +159,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
             ( typing_context,
               expr_type,
               (expr_type, TyBool) :: expr_constrs,
-              Pretyped_ast.UnOp (loc, expr_type, UnOpNot, pretyped_expr) )
-      (* TODO: Implement after Tuple *)
-      | UnOpFst | UnOpSnd ->
-          Ok
-            ( typing_context,
-              TyCustom (Type_name.of_string "_undefined"),
-              [],
-              Pretyped_ast.Unit
-                (loc, TyCustom (Type_name.of_string "_undefined")) ))
+              Pretyped_ast.UnOp (loc, expr_type, UnOpNot, pretyped_expr) ))
   | BinaryOp (loc, binary_op, expr1, expr2) -> (
       generate_constraints constructors_env functions_env typing_context expr1
         ~verbose
@@ -378,33 +349,6 @@ and generate_constraints_matched_expr
           t,
           [],
           Pretyped_ast.MVariable (loc, t, matched_var_name) )
-  | MTuple (loc, matched_expr_fst, matched_expr_snd) ->
-      let t = fresh () in
-      let open Result in
-      generate_constraints_matched_expr constructors_env matched_typing_context
-        matched_expr_fst ~verbose
-      >>= fun ( matched_typing_context_fst,
-                matched_expr_fst_type,
-                matched_expr_fst_contraints,
-                pretyped_matched_expr_fst ) ->
-      generate_constraints_matched_expr constructors_env matched_typing_context
-        matched_expr_snd ~verbose
-      >>= fun ( matched_typing_context_snd,
-                matched_expr_snd_type,
-                matched_expr_snd_contraints,
-                pretyped_matched_expr_snd ) ->
-      let union_matched_typing_context =
-        Type_context_env.prepend_typing_contexts matched_typing_context_fst
-          matched_typing_context_snd
-      in
-      Ok
-        ( union_matched_typing_context,
-          t,
-          (t, TyTuple (matched_expr_fst_type, matched_expr_snd_type))
-          :: matched_expr_fst_contraints
-          @ matched_expr_snd_contraints,
-          Pretyped_ast.MTuple
-            (loc, t, pretyped_matched_expr_fst, pretyped_matched_expr_snd) )
   | MConstructor (loc, constructor_name, matched_exprs) ->
       let open Result in
       Type_defns_env.get_constructor_by_name loc constructor_name
@@ -451,21 +395,3 @@ and generate_constraints_matched_expr
               TyCustom constructor_type_name,
               constructor_name,
               pretyped_matched_exprs ) )
-  | MOption (loc, matched_expr) -> (
-      let t = fresh () in
-      match matched_expr with
-      | None ->
-          Ok (matched_typing_context, t, [], Pretyped_ast.MOption (loc, t, None))
-      | Some matched_expr ->
-          let open Result in
-          generate_constraints_matched_expr constructors_env
-            matched_typing_context matched_expr ~verbose
-          >>= fun ( matched_typing_context,
-                    match_expr_type,
-                    match_expr_constraints,
-                    pretyped_matched_expr ) ->
-          Ok
-            ( matched_typing_context,
-              t,
-              (t, TyOption match_expr_type) :: match_expr_constraints,
-              Pretyped_ast.MOption (loc, t, Some pretyped_matched_expr) ))

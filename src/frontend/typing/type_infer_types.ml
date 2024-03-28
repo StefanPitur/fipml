@@ -11,10 +11,8 @@ type ty =
   | TyUnit
   | TyInt
   | TyBool
-  | TyOption of ty
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
-  | TyTuple of ty * ty
 
 type subst = string * ty
 type constr = ty * ty
@@ -26,11 +24,8 @@ let rec ty_equal (ty1 : ty) (ty2 : ty) : bool =
   | TyUnit, TyUnit -> true
   | TyInt, TyInt -> true
   | TyBool, TyBool -> true
-  | TyOption ty1, TyOption ty2 -> ty_equal ty1 ty2
   | TyCustom type1, TyCustom type2 -> Type_name.( = ) type1 type2
   | TyArrow (ty11, ty12), TyArrow (ty21, ty22) ->
-      ty_equal ty11 ty21 && ty_equal ty12 ty22
-  | TyTuple (ty11, ty12), TyTuple (ty21, ty22) ->
       ty_equal ty11 ty21 && ty_equal ty12 ty22
   | _ -> false
 
@@ -45,7 +40,6 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
   | TEUnit _ -> TyUnit
   | TEInt _ -> TyInt
   | TEBool _ -> TyBool
-  | TEOption (_, type_expr) -> TyOption (convert_ast_type_to_ty type_expr)
   | TECustom (_, custom_type_name) -> TyCustom custom_type_name
   | TEArrow (_, input_type_expr, output_type_expr) ->
       TyArrow
@@ -57,10 +51,6 @@ let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
   | TyUnit -> Ok (TEUnit loc)
   | TyInt -> Ok (TEInt loc)
   | TyBool -> Ok (TEBool loc)
-  | TyOption ty ->
-      let open Result in
-      convert_ty_to_ast_type ty loc >>= fun ast_type ->
-      Ok (TEOption (loc, ast_type))
   | TyCustom custom_type_name -> Ok (TECustom (loc, custom_type_name))
   | TyArrow (ty1, ty2) ->
       let open Result in
@@ -68,7 +58,6 @@ let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
       convert_ty_to_ast_type ty2 loc >>= fun ast_type2 ->
       Ok (TEArrow (loc, ast_type1, ast_type2))
   | TyVar _ -> Ok (TECustom (loc, Type_name.of_string "_undefined"))
-  | _ -> Or_error.of_exn FailureConvertTyToAstType
 
 (* This can be removed by using List.fold2, probably the last one as well *)
 let rec zip_lists (list1 : 'a list) (list2 : 'b list) :

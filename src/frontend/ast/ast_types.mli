@@ -24,16 +24,16 @@ type type_expr =
   | TEUnit of loc
   | TEInt of loc
   | TEBool of loc
-  | TEOption of loc * type_expr
   | TECustom of loc * Type_name.t
   | TEArrow of loc * type_expr * type_expr
 
 type param = TParam of type_expr * Var_name.t * borrowed option
+type fip = Fip of int | Fbip of int
 
 val get_params_type : param list -> type_expr list
 
 (** Unary operators *)
-type unary_op = UnOpNot | UnOpNeg | UnOpFst | UnOpSnd
+type unary_op = UnOpNot | UnOpNeg
 
 (** Binary operators *)
 type binary_op =

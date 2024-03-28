@@ -54,8 +54,6 @@ rule token = parse
   | "->" { ARROW }
   | "()" { UNIT }
   | "of" { OF }
-  | "fst" { FST }
-  | "snd" { SND }
   | "if" { IF }
   | "then" { THEN }
   | "else" { ELSE }
@@ -63,22 +61,21 @@ rule token = parse
   | "true" { TRUE }
   | "false" { FALSE }
   | "let" { LET }
-  | "rec" { REC }
   | "fun" { FUN }
   | "in" { IN }
   | "begin" { BEGIN }
   | "end" { END }
   | "type" { TYPE }
   | "match" { MATCH }
-  | "match!" { DMATCH }
   | "endmatch" { ENDMATCH }
   | "with" { WITH }
-  | "Some" { SOME }
-  | "None" { NONE }
-  | "option" { TYPE_OPTION }
   | "int" { TYPE_INT }
   | "bool" { TYPE_BOOL }
   | "unit" { TYPE_UNIT }
+  | "fip" { FIP }
+  | "fbip" { FBIP }
+  | "drop" { DROP }
+  | "free" { FREE }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | lid_regex_expression { LID (Lexing.lexeme lexbuf) }
   | uid_regex_expression { UID (Lexing.lexeme lexbuf) }

@@ -6,9 +6,11 @@ let%expect_test "expression: If" =
     Program
         Main Block
             Expr: If
-                Expr: Var: cond_var
+                Expr: UnboxedSingleton
+                    Value: Var: cond_var
                 Then Block
-                    Expr: Var: then_expr |}]
+                    Expr: UnboxedSingleton
+                        Value: Var: then_expr |}]
 
 let%expect_test "expression: IfElse" =
   let source_code =
@@ -32,8 +34,11 @@ let%expect_test "expression: IfElse" =
     Program
         Main Block
             Expr: IfElse
-                Expr: Var: cond_var
+                Expr: UnboxedSingleton
+                    Value: Var: cond_var
                 Then Block
-                    Expr: Var: then_expr
+                    Expr: UnboxedSingleton
+                        Value: Var: then_expr
                 Else Block
-                    Expr: Var: else_expr |}]
+                    Expr: UnboxedSingleton
+                        Value: Var: else_expr |}]

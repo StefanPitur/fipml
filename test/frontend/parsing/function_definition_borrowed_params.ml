@@ -1,7 +1,7 @@
 let%expect_test "function definition with borrowed parameters" =
   let source_code =
     "\n\
-    \    fun function_name (^x : int) (^y : bool) : unit = begin\n\
+    \    fun function_name ^(x : int) ^(y : bool) : unit = begin\n\
     \      ()\n\
     \    end\n\
     \  "
@@ -12,10 +12,13 @@ let%expect_test "function definition with borrowed parameters" =
     Program
         Function Name: function_name
         Return Type: Unit
-        Param List:
+        Borrowed Param List:
             Type Expr: Int
             BorrowedParam: x
             Type Expr: Bool
             BorrowedParam: y
+        Owned Param List:
+            Void
             Function Body Block
-                Expr: Unit |}]
+                Expr: UnboxedSingleton
+                    Value: Unit |}]
