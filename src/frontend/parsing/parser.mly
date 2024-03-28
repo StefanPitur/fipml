@@ -159,7 +159,7 @@ function_defn:
 
 
 function_params:
-| borrowed_param=function_borrowed_param; borrowed_params=list(function_borrowed_param); owned_params=list(function_owned_param) {(borrowed_param :: borrowed_params, owned_params)}
+| borrowed_params=nonempty_list(function_borrowed_param); owned_params=list(function_owned_param) {(borrowed_params, owned_params)}
 | owned_params=nonempty_list(function_owned_param) {([], owned_params)}
 
 function_owned_param:
