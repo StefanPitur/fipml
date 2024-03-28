@@ -24,6 +24,6 @@ let%expect_test "function definition with owned parameters" =
             Param: z
             Type Expr: custom_type
             Param: t
-            Function Body Block
-                Expr: UnboxedSingleton
-                    Value: Unit |}]
+        Function Body Block
+            Expr: UnboxedSingleton
+                Value: Unit |}]

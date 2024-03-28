@@ -162,20 +162,18 @@ and pprint_function_defn ppf ~indent
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sFunction Name: %s@." indent
     (Function_name.to_string function_name);
-  match fip with
+  (match fip with
   | Some (Fip n) ->
       Fmt.pf ppf "%sFunction Type - fip(%s)@." indent (string_of_int n)
   | Some (Fbip n) ->
       Fmt.pf ppf "%sFunction Type - fbip(%s)@." indent (string_of_int n)
-  | _ ->
-      ();
-      Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type return_type);
-      Fmt.pf ppf "%sBorrowed Param List:@." indent;
-      pprint_params ppf ~indent:sub_expr_indent borrowed_params;
-      Fmt.pf ppf "%sOwned Param List:@." indent;
-      pprint_params ppf ~indent:sub_expr_indent owned_params;
-      pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Function Body"
-        body_expr
+  | _ -> ());
+  Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type return_type);
+  Fmt.pf ppf "%sBorrowed Param List:@." indent;
+  pprint_params ppf ~indent:sub_expr_indent borrowed_params;
+  Fmt.pf ppf "%sOwned Param List:@." indent;
+  pprint_params ppf ~indent:sub_expr_indent owned_params;
+  pprint_block_expr ppf ~indent ~block_name:"Function Body" body_expr
 
 (* Pretty-printing Program *)
 and pprint_program ppf

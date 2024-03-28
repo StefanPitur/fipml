@@ -19,6 +19,6 @@ let%expect_test "function definition with borrowed parameters" =
             BorrowedParam: y
         Owned Param List:
             Void
-            Function Body Block
-                Expr: UnboxedSingleton
-                    Value: Unit |}]
+        Function Body Block
+            Expr: UnboxedSingleton
+                Value: Unit |}]
