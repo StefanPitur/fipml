@@ -10,7 +10,7 @@ let%expect_test "function definition with both borrowed and owned parameters" =
     {|
     Program
         Function Name: my_function
-        Return Type: Unit
+        Return Type: (Unit)
         Borrowed Param List:
             Type Expr: Int
             BorrowedParam: y1

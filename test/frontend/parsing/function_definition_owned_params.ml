@@ -2,7 +2,7 @@ let%expect_test "function definition with owned parameters" =
   let source_code =
     "\n\
     \    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type ) \
-     : unit = begin\n\
+     : [unit * int * custom_type * bool * (int -> int) -> int] = begin\n\
     \      ()\n\
     \    end\n\
     \  "
@@ -12,7 +12,7 @@ let%expect_test "function definition with owned parameters" =
     {|
     Program
         Function Name: function_name
-        Return Type: Unit
+        Return Type: (Unit * Int * custom_type * Bool * ((Int -> Int) -> Int))
         Borrowed Param List:
             Void
         Owned Param List:

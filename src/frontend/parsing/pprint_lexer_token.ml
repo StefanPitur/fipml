@@ -8,6 +8,8 @@ let pprint_lexer_token ppf token =
     | UID uid -> Fmt.str "UID: %s@." uid
     | LPAREN -> "("
     | RPAREN -> ")"
+    | LSQPAREN -> "["
+    | RSQPAREN -> "]"
     | COMMA -> ","
     | COLON -> ":"
     | SEMICOLON -> ";"

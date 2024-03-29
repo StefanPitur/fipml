@@ -45,7 +45,7 @@ type function_defn =
       * param list
       * param list
       * block_expr
-      * type_expr
+      * type_expr list
 
 type program =
   | TProg of loc * type_defn list * function_defn list * block_expr option

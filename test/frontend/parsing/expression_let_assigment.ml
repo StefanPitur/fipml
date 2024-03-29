@@ -1,11 +1,11 @@
 let%expect_test "expression: let assigment" =
-  let source_code_singleton_let = "begin let x = expr1 in expr2 end" in
+  let source_code_singleton_let = "begin let (x, y, z) = expr1 in expr2 end" in
   Pprint_parser_ast.pprint_parser_ast source_code_singleton_let;
   [%expect
     {|
     Program
         Main Block
-            Expr: Let vars: (x) =
+            Expr: Let vars: (x, y, z) =
                 Expr: UnboxedSingleton
                     Value: Var: expr1
                 Expr: UnboxedSingleton

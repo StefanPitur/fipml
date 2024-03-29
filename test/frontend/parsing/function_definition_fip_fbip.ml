@@ -8,7 +8,7 @@ let%expect_test "expression: fip function" =
     Program
         Function Name: my_fip_func
         Function Type - fip(0)
-        Return Type: Unit
+        Return Type: (Unit)
         Borrowed Param List:
             Type Expr: Int
             BorrowedParam: y
@@ -28,7 +28,7 @@ let%expect_test "expression: fip function" =
       Program
           Function Name: my_fip_func
           Function Type - fip(1)
-          Return Type: Unit
+          Return Type: (Unit)
           Borrowed Param List:
               Type Expr: Int
               BorrowedParam: y
@@ -48,7 +48,7 @@ let%expect_test "expression: fbip function" =
     Program
         Function Name: my_fip_func
         Function Type - fbip(0)
-        Return Type: Unit
+        Return Type: (Unit)
         Borrowed Param List:
             Type Expr: Int
             BorrowedParam: y
@@ -68,7 +68,7 @@ let%expect_test "expression: fip function" =
       Program
           Function Name: my_fip_func
           Function Type - fbip(1)
-          Return Type: Unit
+          Return Type: (Unit)
           Borrowed Param List:
               Type Expr: Int
               BorrowedParam: y

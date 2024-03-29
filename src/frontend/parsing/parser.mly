@@ -10,6 +10,8 @@
 %token<string> UID
 %token LPAREN
 %token RPAREN
+%token LSQPAREN
+%token RSQPAREN
 %token COMMA
 %token COLON
 %token SEMICOLON
@@ -136,27 +138,30 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+| FIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
     let (borrowed_params, owned_params) = fun_params in
     TFun($startpos, Some (Fip 0), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
   }
-| FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+| FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
     let (borrowed_params, owned_params) = fun_params in
     TFun($startpos, Some (Fip n), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
   }
-| FBIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+| FBIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
     let (borrowed_params, owned_params) = fun_params in
     TFun($startpos, Some (Fbip 0), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
   }
-| FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+| FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
     let (borrowed_params, owned_params) = fun_params in
     TFun($startpos, Some (Fbip n), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
   }
-| FUN; fun_name=LID; fun_params=function_params; COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
+| FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
     let (borrowed_params, owned_params) = fun_params in
     TFun($startpos, None, Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
   }
 
+function_return_type:
+| return_type=type_expr { [return_type] }
+| LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { return_types }
 
 function_params:
 | borrowed_params=nonempty_list(function_borrowed_param); owned_params=list(function_owned_param) {(borrowed_params, owned_params)}

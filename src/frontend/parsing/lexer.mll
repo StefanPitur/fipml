@@ -30,6 +30,8 @@ rule token = parse
   | whitespace_regex_expression { token lexbuf }
   | "(" { LPAREN }
   | ")" { RPAREN }
+  | "[" { LSQPAREN }
+  | "]" { RSQPAREN }
   | "," { COMMA }
   | ":" { COLON }
   | ";" { SEMICOLON }

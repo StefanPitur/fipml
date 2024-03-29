@@ -168,7 +168,7 @@ and pprint_function_defn ppf ~indent
   | Some (Fbip n) ->
       Fmt.pf ppf "%sFunction Type - fbip(%s)@." indent (string_of_int n)
   | _ -> ());
-  Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type return_type);
+  Fmt.pf ppf "%sReturn Type: (%s)@." indent (String.concat " * " (List.map string_of_type return_type));
   Fmt.pf ppf "%sBorrowed Param List:@." indent;
   pprint_params ppf ~indent:sub_expr_indent borrowed_params;
   Fmt.pf ppf "%sOwned Param List:@." indent;
