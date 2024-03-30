@@ -1,7 +1,7 @@
 let%expect_test "function definition with both borrowed and owned parameters" =
   let source_code =
     "\n\
-    \    fun my_function ^(y1 : int) (x : custom_type) ^(y2 : unit) : unit = { \
+    \    fun my_function ^(y1 : int) (x : custom_type) ^(y2 : unit) : [unit * custom_type * int -> bool ] = { \
      () }\n\
     \  "
   in
@@ -17,7 +17,7 @@ let%expect_test "function definition with both borrowed and owned parameters" =
             OwnedParam: x
             Type Expr: Unit
             BorrowedParam: y2
-        Return Type: (Unit)
+        Return Type: (Unit * custom_type * (Int -> Bool))
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

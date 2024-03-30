@@ -11,7 +11,7 @@ let%expect_test "expression: fip function" =
         Param Types:
             Type Expr: Int
             BorrowedParam: y
-        Return Type: (Unit)
+        Return Type: Unit
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]
@@ -29,7 +29,7 @@ let%expect_test "expression: fip function" =
           Param Types:
               Type Expr: Int
               BorrowedParam: y
-          Return Type: (Unit)
+          Return Type: Unit
           Function Body Expr
               Expr: UnboxedSingleton
                   Value: Unit |}]
@@ -47,7 +47,7 @@ let%expect_test "expression: fbip function" =
         Param Types:
             Type Expr: Int
             BorrowedParam: y
-        Return Type: (Unit)
+        Return Type: Unit
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]
@@ -65,7 +65,7 @@ let%expect_test "expression: fip function" =
           Param Types:
               Type Expr: Int
               BorrowedParam: y
-          Return Type: (Unit)
+          Return Type: Unit
           Function Body Expr
               Expr: UnboxedSingleton
                   Value: Unit |}]

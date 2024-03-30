@@ -37,7 +37,7 @@ and type_constructor =
 
 type function_defn =
   | TFun of
-      loc * fip option * Function_name.t * param list * expr * type_expr list
+      loc * fip option * Function_name.t * param list * expr * type_expr
 
 type program =
   | TProg of loc * type_defn list * function_defn list * expr option

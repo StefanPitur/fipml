@@ -16,7 +16,7 @@ let%expect_test "function definition with borrowed parameters" =
             BorrowedParam: x
             Type Expr: Bool
             BorrowedParam: y
-        Return Type: (Unit)
+        Return Type: Unit
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

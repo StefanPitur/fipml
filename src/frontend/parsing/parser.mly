@@ -154,8 +154,8 @@ function_defn:
   }
 
 function_return_type:
-| return_type=type_expr { [return_type] }
-| LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { return_types }
+| return_type=type_expr { return_type }
+| LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { TETuple ($startpos, return_types) }
 
 function_param:
 | borrowed=option(BORROWED); LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {

@@ -164,8 +164,8 @@ and pprint_function_defn ppf ~indent
   | _ -> ());
   Fmt.pf ppf "%sParam Types:@." indent;
   pprint_params ppf ~indent:sub_expr_indent function_params;
-  Fmt.pf ppf "%sReturn Type: (%s)@." indent
-    (String.concat " * " (List.map string_of_type return_type));
+  Fmt.pf ppf "%sReturn Type: %s@." indent
+    (string_of_type return_type);
   Fmt.pf ppf "%sFunction Body Expr@." indent;
   pprint_expr ppf ~indent:sub_expr_indent body_expr
 
