@@ -32,6 +32,8 @@ rule token = parse
   | ")" { RPAREN }
   | "[" { LSQPAREN }
   | "]" { RSQPAREN }
+  | "{" { LCURLY }
+  | "}" { RCURLY }
   | "," { COMMA }
   | ":" { COLON }
   | ";" { SEMICOLON }
@@ -65,8 +67,6 @@ rule token = parse
   | "let" { LET }
   | "fun" { FUN }
   | "in" { IN }
-  | "begin" { BEGIN }
-  | "end" { END }
   | "type" { TYPE }
   | "match" { MATCH }
   | "endmatch" { ENDMATCH }

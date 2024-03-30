@@ -1,10 +1,10 @@
 let%expect_test "expression: FunApp" =
-  let source_code = "begin e (_; (x, y, z)) end" in
+  let source_code = "{ e (_; (x, y, z)) }" in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: FunApp
                 FunctionVar: e
                 Owned Args:
@@ -14,12 +14,12 @@ let%expect_test "expression: FunApp" =
                     Value: Var: z |}]
 
 let%expect_test "expression: FunCall" =
-  let source_code = "begin func ((y1, y2, y3);x) end" in
+  let source_code = "{ func ((y1, y2, y3); x) }" in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: FunCall
                 Function Name: func
                 Borrowed Args:

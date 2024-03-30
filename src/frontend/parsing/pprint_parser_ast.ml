@@ -73,12 +73,15 @@ and pprint_expr ppf ~indent expr =
   | If (_, cond_expr, then_expr) ->
       print_expr "If";
       pprint_expr ppf ~indent:sub_expr_indent cond_expr;
-      pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Then" then_expr
+      Fmt.pf ppf "%sThen@." sub_expr_indent;
+      pprint_expr ppf ~indent:sub_expr_indent then_expr
   | IfElse (_, cond_expr, then_expr, else_expr) ->
       print_expr "IfElse";
       pprint_expr ppf ~indent:sub_expr_indent cond_expr;
-      pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Then" then_expr;
-      pprint_block_expr ppf ~indent:sub_expr_indent ~block_name:"Else" else_expr
+      Fmt.pf ppf "%sThen@." sub_expr_indent;
+      pprint_expr ppf ~indent:sub_expr_indent then_expr;
+      Fmt.pf ppf "%sElse@." sub_expr_indent;
+      pprint_expr ppf ~indent:sub_expr_indent else_expr
   | Match (_, var_name, pattern_exprs) ->
       print_expr "Match";
       Fmt.pf ppf "%sMatch Var: %s@." sub_expr_indent
@@ -93,31 +96,29 @@ and pprint_expr ppf ~indent expr =
       pprint_expr ppf ~indent:sub_expr_indent left_expr;
       Fmt.pf ppf "%sRightExpr@." sub_expr_indent;
       pprint_expr ppf ~indent:sub_expr_indent right_expr
-  | Drop (_, dropped_var_name) ->
-      print_expr (Fmt.str "Drop - %s" (Var_name.to_string dropped_var_name))
-  | Free (_, freed_reuse_credit_size) ->
+  | Drop (_, dropped_var_name, expr) ->
+      print_expr
+        (Fmt.str "Drop %s - Expr:" (Var_name.to_string dropped_var_name));
+      pprint_expr ppf ~indent:sub_expr_indent expr
+  | Free (_, freed_reuse_credit_size, expr) ->
       print_expr "Free";
-      pprint_value ppf ~indent:sub_expr_indent freed_reuse_credit_size
-
-and pprint_block_expr ppf ~indent ~block_name (Block (_, exprs)) =
-  let sub_expr_indent = indent_tab ^ indent in
-  Fmt.pf ppf "%s%s Block@." indent block_name;
-  List.iter (pprint_expr ppf ~indent:sub_expr_indent) exprs
+      pprint_value ppf ~indent:sub_expr_indent freed_reuse_credit_size;
+      Fmt.pf ppf "%sFree Expr@." indent;
+      pprint_expr ppf ~indent:sub_expr_indent expr
 
 and pprint_pattern_exprs ppf ~indent = function
   | [] ->
-      print_string "PELEME";
       raise
         (Invalid_argument
            "Match expressions should have at least one pattern matching")
   | pattern_exprs ->
       let sub_expr_indent = indent ^ indent_tab in
       List.iter
-        (fun (MPattern (_, matched_expr, block_expr)) ->
-          Fmt.pf ppf "%sPatternExpr@." indent;
+        (fun (MPattern (_, matched_expr, expr)) ->
+          Fmt.pf ppf "%sPattern@." indent;
           pprint_matched_expr ppf ~indent:sub_expr_indent matched_expr;
-          pprint_block_expr ppf ~indent:sub_expr_indent
-            ~block_name:"PatternBlockExpr" block_expr)
+          Fmt.pf ppf "%sPatternExpr@." sub_expr_indent;
+          pprint_expr ppf ~indent:sub_expr_indent expr)
         pattern_exprs
 
 and pprint_matched_expr ppf ~indent matched_expr =
@@ -151,14 +152,7 @@ and pprint_type_constructor ppf ~indent
 
 (* Pretty-printing Function Definition *)
 and pprint_function_defn ppf ~indent
-    (TFun
-      ( _,
-        fip,
-        function_name,
-        borrowed_params,
-        owned_params,
-        body_expr,
-        return_type )) =
+    (TFun (_, fip, function_name, function_params, body_expr, return_type)) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sFunction Name: %s@." indent
     (Function_name.to_string function_name);
@@ -168,20 +162,20 @@ and pprint_function_defn ppf ~indent
   | Some (Fbip n) ->
       Fmt.pf ppf "%sFunction Type - fbip(%s)@." indent (string_of_int n)
   | _ -> ());
-  Fmt.pf ppf "%sReturn Type: (%s)@." indent (String.concat " * " (List.map string_of_type return_type));
-  Fmt.pf ppf "%sBorrowed Param List:@." indent;
-  pprint_params ppf ~indent:sub_expr_indent borrowed_params;
-  Fmt.pf ppf "%sOwned Param List:@." indent;
-  pprint_params ppf ~indent:sub_expr_indent owned_params;
-  pprint_block_expr ppf ~indent ~block_name:"Function Body" body_expr
+  Fmt.pf ppf "%sParam Types:@." indent;
+  pprint_params ppf ~indent:sub_expr_indent function_params;
+  Fmt.pf ppf "%sReturn Type: (%s)@." indent
+    (String.concat " * " (List.map string_of_type return_type));
+  Fmt.pf ppf "%sFunction Body Expr@." indent;
+  pprint_expr ppf ~indent:sub_expr_indent body_expr
 
 (* Pretty-printing Program *)
-and pprint_program ppf
-    (TProg (_, type_defns, function_defns, block_expr_option)) =
+and pprint_program ppf (TProg (_, type_defns, function_defns, expr_option)) =
   Fmt.pf ppf "Program@.";
   List.iter (pprint_type_defn ppf ~indent:indent_tab) type_defns;
   List.iter (pprint_function_defn ppf ~indent:indent_tab) function_defns;
-  match block_expr_option with
+  match expr_option with
   | None -> ()
-  | Some block_expr ->
-      pprint_block_expr ppf ~indent:indent_tab ~block_name:"Main" block_expr
+  | Some expr ->
+      Fmt.pf ppf "%sMain@." indent_tab;
+      pprint_expr ppf ~indent:(indent_tab ^ indent_tab) expr

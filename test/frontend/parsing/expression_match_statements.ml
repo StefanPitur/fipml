@@ -1,49 +1,45 @@
 let%expect_test "expression: match" =
   let source_code =
     "\n\
-    \        begin\n\
+    \        {\n\
     \            match x with\n\
-    \            | _ -> begin () end\n\
-    \            | y -> begin ((), true) end\n\
-    \            | Constructor1 -> begin (); 0 end\n\
-    \            | Constructor2 (_, x, y) -> begin (); (x, y) end\n\
+    \            | _ -> { true }\n\
+    \            | y -> { ((), true) }\n\
+    \            | Constructor1 -> { 0 }\n\
+    \            | Constructor2 (_, x, y) -> { (x, y) }\n\
     \            endmatch\n\
-    \        end\n\
+    \        }\n\
     \     "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
        Program
-           Main Block
+           Main
                Expr: Match
                    Match Var: x
-                   PatternExpr
+                   Pattern
                        MatchedExpr: Underscore
-                       PatternBlockExpr Block
-                           Expr: UnboxedSingleton
-                               Value: Unit
-                   PatternExpr
+                       PatternExpr
+                       Expr: UnboxedSingleton
+                           Value: Bool: true
+                   Pattern
                        MatchedExpr: Var - y
-                       PatternBlockExpr Block
-                           Expr: UnboxedTuple
-                               Value: Unit
-                               Value: Bool: true
-                   PatternExpr
+                       PatternExpr
+                       Expr: UnboxedTuple
+                           Value: Unit
+                           Value: Bool: true
+                   Pattern
                        MatchedExpr: Constructor - Constructor1
-                       PatternBlockExpr Block
-                           Expr: UnboxedSingleton
-                               Value: Unit
-                           Expr: UnboxedSingleton
-                               Value: Int: 0
-                   PatternExpr
+                       PatternExpr
+                       Expr: UnboxedSingleton
+                           Value: Int: 0
+                   Pattern
                        MatchedExpr: Constructor - Constructor2
                            MatchedExpr: Underscore
                            MatchedExpr: Var - x
                            MatchedExpr: Var - y
-                       PatternBlockExpr Block
-                           Expr: UnboxedSingleton
-                               Value: Unit
-                           Expr: UnboxedTuple
-                               Value: Var: x
-                               Value: Var: y |}]
+                       PatternExpr
+                       Expr: UnboxedTuple
+                           Value: Var: x
+                           Value: Var: y |}]

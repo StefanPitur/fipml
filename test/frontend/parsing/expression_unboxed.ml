@@ -1,20 +1,18 @@
 let%expect_test "expression: unboxed singleton/tuple" =
-  let source_code_singleton = "begin variable_name end" in
+  let source_code_singleton = "{ variable_name }" in
   Pprint_parser_ast.pprint_parser_ast source_code_singleton;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: UnboxedSingleton
                 Value: Var: variable_name |}];
-  let source_code_tuple =
-    "begin (1, false, Constructor ((), true), var_name) end"
-  in
+  let source_code_tuple = "{ (1, false, Constructor ((), true), var_name) }" in
   Pprint_parser_ast.pprint_parser_ast source_code_tuple;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: UnboxedTuple
                 Value: Int: 1
                 Value: Bool: false

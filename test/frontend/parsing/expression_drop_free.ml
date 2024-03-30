@@ -1,17 +1,26 @@
 let%expect_test "expression: drop" =
-  let source_code = "begin drop x end" in
-  Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect {|
-    Program
-        Main Block
-            Expr: Drop - x |}]
-
-let%expect_test "expression: free" =
-  let source_code = "begin free k end" in
+  let source_code = "{ drop x; () }" in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
+            Expr: Drop x - Expr:
+                Expr: UnboxedSingleton
+                    Value: Unit |}]
+
+let%expect_test "expression: free" =
+  let source_code = "{ free k; free 1; () }" in
+  Pprint_parser_ast.pprint_parser_ast source_code;
+  [%expect
+    {|
+    Program
+        Main
             Expr: Free
-                Value: Var: k |}]
+                Value: Var: k
+            Free Expr
+                Expr: Free
+                    Value: Int: 1
+                Free Expr
+                    Expr: UnboxedSingleton
+                        Value: Unit |}]

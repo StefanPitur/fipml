@@ -12,6 +12,8 @@
 %token RPAREN
 %token LSQPAREN
 %token RSQPAREN
+%token LCURLY
+%token RCURLY
 %token COMMA
 %token COLON
 %token SEMICOLON
@@ -45,8 +47,6 @@
 %token LET
 %token FUN
 %token IN
-%token BEGIN
-%token END
 %token TYPE
 %token MATCH
 %token ENDMATCH
@@ -70,6 +70,7 @@
 %left ADD SUB
 %left MUL DIV MOD
 %right ARROW
+%nonassoc SEMICOLON
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -83,11 +84,9 @@
 
 /* Types for Function Definitions */
 %type<function_defn> function_defn
-%type<(param list * param list)> function_params
+%type<param> function_param
 
 /* Types for Expression Definitions */
-%type<block_expr> block_expr
-
 %type<expr> expr
 %type<pattern_expr> match_expr
 %type<matched_expr> match_constructor
@@ -98,8 +97,8 @@
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); block_expr=option(block_expr); EOF { 
-    TProg($startpos, type_defns, function_defns, block_expr)
+| type_defns=list(type_defn); function_defns=list(function_defn); main_expr_option=option(block_expr); EOF { 
+    TProg($startpos, type_defns, function_defns, main_expr_option)
   }
 
 
@@ -138,49 +137,36 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    let (borrowed_params, owned_params) = fun_params in
-    TFun($startpos, Some (Fip 0), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
+| FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Some (Fip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    let (borrowed_params, owned_params) = fun_params in
-    TFun($startpos, Some (Fip n), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
+| FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Some (Fip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FBIP; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    let (borrowed_params, owned_params) = fun_params in
-    TFun($startpos, Some (Fbip 0), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
+| FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Some (Fbip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    let (borrowed_params, owned_params) = fun_params in
-    TFun($startpos, Some (Fbip n), Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
+| FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    TFun($startpos, Some (Fbip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FUN; fun_name=LID; fun_params=function_params; COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    let (borrowed_params, owned_params) = fun_params in
-    TFun($startpos, None, Function_name.of_string fun_name, borrowed_params, owned_params, fun_body, return_type)
+| FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    TFun($startpos, None, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
 
 function_return_type:
 | return_type=type_expr { [return_type] }
 | LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { return_types }
 
-function_params:
-| borrowed_params=nonempty_list(function_borrowed_param); owned_params=list(function_owned_param) {(borrowed_params, owned_params)}
-| owned_params=nonempty_list(function_owned_param) {([], owned_params)}
-
-function_owned_param:
-| LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
-    TParam(param_type, Var_name.of_string param_name, None)
+function_param:
+| borrowed=option(BORROWED); LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
+    match borrowed with
+    | None -> TParam(param_type, Var_name.of_string param_name, None)
+    | Some _ -> TParam(param_type, Var_name.of_string param_name, Some Borrowed)
   }
-  
-function_borrowed_param:
-| BORROWED; LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
-    TParam(param_type, Var_name.of_string param_name, Some Borrowed)
-  }
-
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| BEGIN; exprs=separated_nonempty_list(SEMICOLON, expr); END { Block($startpos, exprs) }
+| LCURLY; expr=expr; RCURLY { expr }
 
 /* Value Definition Production Rules */
 value:
@@ -227,9 +213,9 @@ expr:
   }
 
 /* Memory deallocation operators */
-| DROP; dropped_var_name=LID { Drop($startpos, Var_name.of_string dropped_var_name) }
-| FREE; freed_reuse_credit_size=LID { Free($startpos, Variable($startpos, Var_name.of_string freed_reuse_credit_size)) }
-| FREE; freed_reuse_credit_size=INT { Free($startpos, Integer($startpos, freed_reuse_credit_size)) }
+| DROP; dropped_var_name=LID; SEMICOLON; expr=expr { Drop($startpos, Var_name.of_string dropped_var_name, expr) }
+| FREE; freed_reuse_credit_size=LID; SEMICOLON; expr=expr { Free($startpos, Variable($startpos, Var_name.of_string freed_reuse_credit_size), expr) }
+| FREE; freed_reuse_credit_size=INT; SEMICOLON; expr=expr { Free($startpos, Integer($startpos, freed_reuse_credit_size), expr) }
 
 /* Function call / application */
 | fun_name=LID; LPAREN; fun_borrowed_args=option(expr); SEMICOLON; fun_owned_args=option(expr); RPAREN {
@@ -241,8 +227,8 @@ expr:
 
 /* Matching expression */
 match_expr:
-| BAR; matched_expr=match_constructor; ARROW; block_expr=block_expr { 
-    MPattern($startpos, matched_expr, block_expr) 
+| BAR; pattern_expr=match_constructor; ARROW; matched_expr=block_expr { 
+    MPattern($startpos, pattern_expr, matched_expr) 
   }
 
 

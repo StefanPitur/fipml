@@ -1,9 +1,9 @@
 let%expect_test "function definition with borrowed parameters" =
   let source_code =
     "\n\
-    \    fun function_name ^(x : int) ^(y : bool) : unit = begin\n\
+    \    fun function_name ^(x : int) ^(y : bool) : unit = {\n\
     \      ()\n\
-    \    end\n\
+    \    }\n\
     \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
@@ -11,14 +11,12 @@ let%expect_test "function definition with borrowed parameters" =
     {|
     Program
         Function Name: function_name
-        Return Type: (Unit)
-        Borrowed Param List:
+        Param Types:
             Type Expr: Int
             BorrowedParam: x
             Type Expr: Bool
             BorrowedParam: y
-        Owned Param List:
-            Void
-        Function Body Block
+        Return Type: (Unit)
+        Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

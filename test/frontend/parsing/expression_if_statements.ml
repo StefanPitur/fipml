@@ -1,44 +1,44 @@
 let%expect_test "expression: If" =
-  let source_code = "begin if cond_var then begin then_expr end endif end" in
+  let source_code = "{ if cond_var then { then_expr } endif }" in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: If
                 Expr: UnboxedSingleton
                     Value: Var: cond_var
-                Then Block
-                    Expr: UnboxedSingleton
-                        Value: Var: then_expr |}]
+                Then
+                Expr: UnboxedSingleton
+                    Value: Var: then_expr |}]
 
 let%expect_test "expression: IfElse" =
   let source_code =
     "\n\
-    \    begin\n\
+    \    {\n\
     \      if cond_var then\n\
-    \        begin\n\
+    \        {\n\
     \          then_expr\n\
-    \        end\n\
+    \        }\n\
     \      else\n\
-    \        begin\n\
+    \        {\n\
     \          else_expr\n\
-    \        end\n\
+    \        }\n\
     \      endif\n\
-    \    end\n\
+    \    }\n\
     \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: IfElse
                 Expr: UnboxedSingleton
                     Value: Var: cond_var
-                Then Block
-                    Expr: UnboxedSingleton
-                        Value: Var: then_expr
-                Else Block
-                    Expr: UnboxedSingleton
-                        Value: Var: else_expr |}]
+                Then
+                Expr: UnboxedSingleton
+                    Value: Var: then_expr
+                Else
+                Expr: UnboxedSingleton
+                    Value: Var: else_expr |}]
