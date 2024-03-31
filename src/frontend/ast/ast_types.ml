@@ -129,5 +129,5 @@ let string_of_borrowed_option = function
 
 let string_of_fip_option = function
   | None -> ""
-  | Some (Fip n) -> Fmt.str "Fip(%s)" (string_of_int n)
-  | Some (Fbip n) -> Fmt.str "Fbip(%s)" (string_of_int n)
+  | Some (Fip n) -> Fmt.str "Fip(%s) " (string_of_int n)
+  | Some (Fbip n) -> Fmt.str "Fbip(%s) " (string_of_int n)

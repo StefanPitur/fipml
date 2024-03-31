@@ -48,7 +48,7 @@ let typecheck_function_defn (types_env : types_env)
     function_typing_context function_body ~verbose:false
   >>= fun typed_function_body ->
   let typed_function_body_type = Typed_ast.get_expr_type typed_function_body in
-  if Ast.Ast_types.equal_type_expr function_return_type typed_function_body_type
+  if not (Ast.Ast_types.equal_type_expr function_return_type typed_function_body_type)
   then
     let error_string =
       Fmt.str "Function return type %s does not match the signature %s"

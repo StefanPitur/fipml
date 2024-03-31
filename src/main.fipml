@@ -2,13 +2,19 @@ type custom_type =
 | C1 of int
 | C2 of bool * custom_type
 
+fip fun add (x : int) ^(y : int) : int = {
+  x + y
+}
+
 {
-  let x = C1 (10) in
-  let (y1, y2) =
-    match x with
-    | _ -> { (0, true) }
-    | C1(y) -> { (y, true) }
-    | C2(y, C1 (_)) -> { (1, y) }
+  let x = 5 in
+  let y = C1 (10) in
+  let (z1, z2) =
+    match y with
+    | _ -> { let res = add (0, x) in (res, true) }
+    | C1(t) -> { let res = add (t, x) in (res, true) }
+    | C2(t, C1 (_)) -> { let res = add (2, -x) in (res, t) }
     endmatch
-  in y1
+  in
+  if z2 then { z1 } else { x } endif
 }
