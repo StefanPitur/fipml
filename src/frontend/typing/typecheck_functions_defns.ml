@@ -7,7 +7,7 @@ open Type_infer
 exception IncorrectFunctionReturnType of string
 
 let typecheck_function_signature (types_env : types_env)
-    (TFun (_, _, function_params, _, function_return_type) :
+    (TFun (_, _, _, function_params, _, function_return_type) :
       Parser_ast.function_defn) : unit Or_error.t =
   List.iter function_params ~f:(fun (Ast.Ast_types.TParam (type_expr, _, _)) ->
       Or_error.ok_exn (assert_type_defined type_expr types_env));
@@ -17,8 +17,12 @@ let typecheck_function_signature (types_env : types_env)
 let typecheck_function_defn (types_env : types_env)
     (constructors_env : constructors_env) (functions_env : functions_env)
     (TFun
-       (loc, function_name, function_params, function_body, function_return_type)
-     as function_defn :
+       ( loc,
+         fip,
+         function_name,
+         function_params,
+         function_body,
+         function_return_type ) as function_defn :
       Parser_ast.function_defn) :
     (functions_env * Typed_ast.function_defn) Or_error.t =
   let open Result in
@@ -42,16 +46,13 @@ let typecheck_function_defn (types_env : types_env)
   in
   type_infer types_env constructors_env extended_function_env
     function_typing_context function_body ~verbose:false
-  >>= fun (Typed_ast.Block (_, typed_block_expr_type, _) as typed_function_body)
-    ->
-  if
-    String.( <> )
-      (Ast.Ast_types.string_of_type typed_block_expr_type)
-      (Ast.Ast_types.string_of_type function_return_type)
+  >>= fun typed_function_body ->
+  let typed_function_body_type = Typed_ast.get_expr_type typed_function_body in
+  if Ast.Ast_types.equal_type_expr function_return_type typed_function_body_type
   then
     let error_string =
-      Fmt.str "Function return type (%s) does not match the signature (%s)"
-        (Ast.Ast_types.string_of_type typed_block_expr_type)
+      Fmt.str "Function return type %s does not match the signature %s"
+        (Ast.Ast_types.string_of_type typed_function_body_type)
         (Ast.Ast_types.string_of_type function_return_type)
     in
     Or_error.of_exn (IncorrectFunctionReturnType error_string)
@@ -61,6 +62,7 @@ let typecheck_function_defn (types_env : types_env)
         Typed_ast.TFun
           ( loc,
             function_return_type,
+            fip,
             function_name,
             function_params,
             typed_function_body ) )

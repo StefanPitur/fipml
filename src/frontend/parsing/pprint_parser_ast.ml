@@ -47,29 +47,22 @@ and pprint_expr ppf ~indent expr =
         (Fmt.str "Let vars: (%s) = " (String.concat ", " var_names_strings));
       pprint_expr ppf ~indent:sub_expr_indent expr;
       pprint_expr ppf ~indent:sub_expr_indent in_expr
-  | FunApp (_, function_var, owned_function_args) -> (
+  | FunApp (_, function_var, function_args) ->
       print_expr "FunApp";
       Fmt.pf ppf "%sFunctionVar: %s@." sub_expr_indent
         (Var_name.to_string function_var);
-      Fmt.pf ppf "%sOwned Args:@." sub_expr_indent;
-      match owned_function_args with
-      | Some owned_function_args ->
-          pprint_expr ppf ~indent:sub_expr_indent owned_function_args
-      | None -> Fmt.pf ppf "%s()@." sub_expr_indent)
-  | FunCall (_, function_name, borrowed_function_args, owned_function_args) -> (
+      Fmt.pf ppf "%sFunApp Args:@." sub_expr_indent;
+      List.iter
+        (pprint_expr ppf ~indent:(sub_expr_indent ^ indent_tab))
+        function_args
+  | FunCall (_, function_name, function_args) ->
       print_expr "FunCall";
       Fmt.pf ppf "%sFunction Name: %s@." sub_expr_indent
         (Function_name.to_string function_name);
-      Fmt.pf ppf "%sBorrowed Args:@." sub_expr_indent;
-      (match borrowed_function_args with
-      | Some borrowed_function_args ->
-          pprint_expr ppf ~indent:sub_expr_indent borrowed_function_args
-      | None -> Fmt.pf ppf "%s()@." sub_expr_indent);
-      Fmt.pf ppf "%sOwned Args:@." sub_expr_indent;
-      match owned_function_args with
-      | Some owned_function_args ->
-          pprint_expr ppf ~indent:sub_expr_indent owned_function_args
-      | None -> Fmt.pf ppf "%s()@." sub_expr_indent)
+      Fmt.pf ppf "%sFunCall Args:@." sub_expr_indent;
+      List.iter
+        (pprint_expr ppf ~indent:(sub_expr_indent ^ indent_tab))
+        function_args
   | If (_, cond_expr, then_expr) ->
       print_expr "If";
       pprint_expr ppf ~indent:sub_expr_indent cond_expr;
@@ -164,8 +157,7 @@ and pprint_function_defn ppf ~indent
   | _ -> ());
   Fmt.pf ppf "%sParam Types:@." indent;
   pprint_params ppf ~indent:sub_expr_indent function_params;
-  Fmt.pf ppf "%sReturn Type: %s@." indent
-    (string_of_type return_type);
+  Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type return_type);
   Fmt.pf ppf "%sFunction Body Expr@." indent;
   pprint_expr ppf ~indent:sub_expr_indent body_expr
 

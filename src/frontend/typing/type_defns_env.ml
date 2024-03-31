@@ -96,3 +96,7 @@ let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
       assert_type_defined out_type_expr types_env
   | TECustom (loc, custom_type_name) ->
       assert_custom_type_in_types_env loc custom_type_name types_env
+  | TETuple (_, type_exprs) ->
+      Ok
+        (List.iter type_exprs ~f:(fun type_expr ->
+             Or_error.ok_exn (assert_type_defined type_expr types_env)))

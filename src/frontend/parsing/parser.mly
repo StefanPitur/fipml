@@ -218,10 +218,10 @@ expr:
 | FREE; freed_reuse_credit_size=INT; SEMICOLON; expr=expr { Free($startpos, Integer($startpos, freed_reuse_credit_size), expr) }
 
 /* Function call / application */
-| fun_name=LID; LPAREN; fun_borrowed_args=option(expr); SEMICOLON; fun_owned_args=option(expr); RPAREN {
-    FunCall($startpos, Function_name.of_string fun_name, fun_borrowed_args, fun_owned_args)
+| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, expr); RPAREN {
+    FunCall($startpos, Function_name.of_string fun_name, fun_args)
   }
-| fun_name=LID; LPAREN; UNDERSCORE; SEMICOLON; fun_owned_args=option(expr); RPAREN {
+| BORROWED; fun_name=LID; LPAREN; fun_owned_args=separated_nonempty_list(COMMA, expr); RPAREN {
     FunApp($startpos, Var_name.of_string fun_name, fun_owned_args)
   }
 

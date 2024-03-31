@@ -11,8 +11,8 @@ type expr =
   | UnboxedSingleton of loc * value
   | UnboxedTuple of loc * value list
   | Let of loc * Var_name.t list * expr * expr
-  | FunApp of loc * Var_name.t * expr option
-  | FunCall of loc * Function_name.t * expr option * expr option
+  | FunApp of loc * Var_name.t * expr list
+  | FunCall of loc * Function_name.t * expr list
   | If of loc * expr * expr
   | IfElse of loc * expr * expr * expr
   | Match of loc * Var_name.t * pattern_expr list
@@ -36,8 +36,7 @@ and type_constructor =
   | TTypeConstructor of loc * Constructor_name.t * type_expr list
 
 type function_defn =
-  | TFun of
-      loc * fip option * Function_name.t * param list * expr * type_expr
+  | TFun of loc * fip option * Function_name.t * param list * expr * type_expr
 
 type program =
   | TProg of loc * type_defn list * function_defn list * expr option

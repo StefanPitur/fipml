@@ -1,14 +1,12 @@
 type custom_type =
-| C of int
+| C1 of int
+| C2 of bool * custom_type
 
-fun add_y (x : custom_type option) (y : int) : int = begin
+{
+  let x = C1 (10) in
   match x with
-  | None -> begin (); 1 end
-  | Some C (x) -> begin x end
+  | _ -> { (0, true) }
+  | C1(y) -> { (y, true) }
+  | C2(y, C1 (_)) -> { (1, y) }
   endmatch
-end
-
-begin
-  let x = None in
-  add_y (Some C(2), 5)
-end
+}

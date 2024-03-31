@@ -5,6 +5,7 @@ exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
 exception PartialFunctionApplicationNotAllowed
 exception FailureConvertTyToAstType
+exception FunctionExpected
 
 type ty =
   | TyVar of string
@@ -13,6 +14,7 @@ type ty =
   | TyBool
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
+  | TyTuple of ty list
 
 type subst = string * ty
 type constr = ty * ty
@@ -27,6 +29,7 @@ let rec ty_equal (ty1 : ty) (ty2 : ty) : bool =
   | TyCustom type1, TyCustom type2 -> Type_name.( = ) type1 type2
   | TyArrow (ty11, ty12), TyArrow (ty21, ty22) ->
       ty_equal ty11 ty21 && ty_equal ty12 ty22
+  | TyTuple tys1, TyTuple tys2 -> List.for_all2_exn tys1 tys2 ~f:ty_equal
   | _ -> false
 
 let fresh =
@@ -45,6 +48,8 @@ let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
       TyArrow
         ( convert_ast_type_to_ty input_type_expr,
           convert_ast_type_to_ty output_type_expr )
+  | TETuple (_, type_exprs) ->
+      TyTuple (List.map type_exprs ~f:convert_ast_type_to_ty)
 
 let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
   match ty with
@@ -57,20 +62,31 @@ let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
       convert_ty_to_ast_type ty1 loc >>= fun ast_type1 ->
       convert_ty_to_ast_type ty2 loc >>= fun ast_type2 ->
       Ok (TEArrow (loc, ast_type1, ast_type2))
+  | TyTuple tys ->
+      let type_exprs =
+        List.map tys ~f:(fun ty ->
+            Or_error.ok_exn (convert_ty_to_ast_type ty loc))
+      in
+      Ok (TETuple (loc, type_exprs))
   | TyVar _ -> Ok (TECustom (loc, Type_name.of_string "_undefined"))
-
-(* This can be removed by using List.fold2, probably the last one as well *)
-let rec zip_lists (list1 : 'a list) (list2 : 'b list) :
-    ('a * 'b) list Or_error.t =
-  match (list1, list2) with
-  | [], [] -> Ok []
-  | [], _ | _, [] -> Or_error.of_exn ListsOfDifferentLengths
-  | x :: xs, y :: ys ->
-      let open Result in
-      zip_lists xs ys >>= fun combined_list -> Ok ((x, y) :: combined_list)
 
 let pop_last_element_from_list (lst : 'a list) : ('a * 'a list) Or_error.t =
   let reversed_lst = List.rev lst in
   match reversed_lst with
   | [] -> Or_error.of_exn UnableToRemoveLastElementFromEmptyList
   | x :: xs -> Ok (x, List.rev xs)
+
+let get_ty_function_signature (ty : ty) : (ty list * ty) Or_error.t =
+  match ty with
+  | TyArrow _ ->
+      let rec get_ty_function_signature (ty : ty) : ty list =
+        match ty with
+        | TyArrow (in_ty, out_ty) -> in_ty :: get_ty_function_signature out_ty
+        | _ -> [ ty ]
+      in
+      let ty_return, ty_params =
+        Or_error.ok_exn
+          (pop_last_element_from_list (get_ty_function_signature ty))
+      in
+      Ok (ty_params, ty_return)
+  | _ -> Or_error.of_exn FunctionExpected
