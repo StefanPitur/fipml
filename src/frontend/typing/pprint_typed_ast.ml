@@ -194,5 +194,5 @@ and pprint_typed_program ppf
   match main_expr_optional with
   | None -> ()
   | Some main_expr ->
-      Fmt.pf ppf "Typed Main@.";
+      Fmt.pf ppf "%sTyped Main@." indent_tab;
       pprint_typed_expr ppf ~indent:indent_tab main_expr

@@ -22,6 +22,7 @@
        [
          TFun
            ( mock_loc,
+             None,
              Function_name.of_string "add_y",
              [
                TParam
