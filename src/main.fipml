@@ -4,9 +4,11 @@ type custom_type =
 
 {
   let x = C1 (10) in
-  match x with
-  | _ -> { (0, true) }
-  | C1(y) -> { (y, true) }
-  | C2(y, C1 (_)) -> { (1, y) }
-  endmatch
+  let (y1, y2) =
+    match x with
+    | _ -> { (0, true) }
+    | C1(y) -> { (y, true) }
+    | C2(y, C1 (_)) -> { (1, y) }
+    endmatch
+  in y1
 }

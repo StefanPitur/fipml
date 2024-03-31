@@ -46,25 +46,38 @@ let rec generate_constraints
       generate_constraints constructors_env functions_env typing_context
         vars_expr ~verbose
       >>= fun (_, var_type, var_constrs, pretyped_vars) ->
-      let extended_typing_context =
+      let extended_typing_context, extra_tyvar_constraints =
         Or_error.ok_exn
           (match var_type with
           | TyTuple tys ->
               if List.length var_names = 1 then Or_error.of_exn TyNotMatching
               else
                 Ok
-                  (List.fold2_exn var_names tys ~init:typing_context
-                     ~f:(fun typing_context var_name var_type ->
-                       Or_error.ok_exn
-                         (Type_context_env.extend_typing_context typing_context
-                            var_name var_type)))
+                  ( List.fold2_exn var_names tys ~init:typing_context
+                      ~f:(fun typing_context var_name var_type ->
+                        Or_error.ok_exn
+                          (Type_context_env.extend_typing_context typing_context
+                             var_name var_type)),
+                    [] )
+          | TyVar _ when List.length var_names <> 1 ->
+              let typing_context, fresh_tys =
+                List.fold_right var_names ~init:(typing_context, [])
+                  ~f:(fun var_name (typing_context, fresh_tys) ->
+                    let fresh_ty = fresh () in
+                    ( Or_error.ok_exn
+                        (Type_context_env.extend_typing_context typing_context
+                           var_name fresh_ty),
+                      fresh_ty :: fresh_tys ))
+              in
+              Ok (typing_context, [ (TyTuple fresh_tys, var_type) ])
           | _ -> (
               match var_names with
               | [ var_name ] ->
                   Ok
-                    (Or_error.ok_exn
-                       (Type_context_env.extend_typing_context typing_context
-                          var_name var_type))
+                    ( Or_error.ok_exn
+                        (Type_context_env.extend_typing_context typing_context
+                           var_name var_type),
+                      [] )
               | _ -> Or_error.of_exn TyNotMatching))
       in
       generate_constraints constructors_env functions_env
@@ -73,7 +86,7 @@ let rec generate_constraints
       Ok
         ( typing_context,
           expr_type,
-          expr_constrs @ var_constrs,
+          expr_constrs @ extra_tyvar_constraints @ var_constrs,
           Pretyped_ast.Let
             (loc, expr_type, var_names, pretyped_vars, pretyped_expr) )
   | FunApp (loc, app_var_name, app_exprs) ->
