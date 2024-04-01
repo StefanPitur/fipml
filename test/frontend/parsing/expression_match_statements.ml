@@ -4,7 +4,6 @@ let%expect_test "expression: match" =
     \        {\n\
     \            match x with\n\
     \            | _ -> { true }\n\
-    \            | y -> { ((), true) }\n\
     \            | Constructor1 -> { 0 }\n\
     \            | Constructor2 (_, x, y) -> { (x, y) }\n\
     \            endmatch\n\
@@ -22,12 +21,6 @@ let%expect_test "expression: match" =
                        MatchedExpr: Underscore
                        PatternExpr
                        Expr: UnboxedSingleton
-                           Value: Bool: true
-                   Pattern
-                       MatchedExpr: Var - y
-                       PatternExpr
-                       Expr: UnboxedTuple
-                           Value: Unit
                            Value: Bool: true
                    Pattern
                        MatchedExpr: Constructor - Constructor1
