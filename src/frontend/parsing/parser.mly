@@ -214,14 +214,13 @@ expr:
 
 /* Memory deallocation operators */
 | DROP; dropped_var_name=LID; SEMICOLON; expr=expr { Drop($startpos, Var_name.of_string dropped_var_name, expr) }
-| FREE; freed_reuse_credit_size=LID; SEMICOLON; expr=expr { Free($startpos, Variable($startpos, Var_name.of_string freed_reuse_credit_size), expr) }
-| FREE; freed_reuse_credit_size=INT; SEMICOLON; expr=expr { Free($startpos, Integer($startpos, freed_reuse_credit_size), expr) }
+| FREE; k=INT; SEMICOLON; expr=expr { Free($startpos, k, expr) }
 
 /* Function call / application */
-| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, expr); RPAREN {
+| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, value); RPAREN {
     FunCall($startpos, Function_name.of_string fun_name, fun_args)
   }
-| BORROWED; fun_name=LID; LPAREN; fun_owned_args=separated_nonempty_list(COMMA, expr); RPAREN {
+| BORROWED; fun_name=LID; LPAREN; fun_owned_args=separated_nonempty_list(COMMA, value); RPAREN {
     FunApp($startpos, Var_name.of_string fun_name, fun_owned_args)
   }
 
@@ -230,7 +229,6 @@ match_expr:
 | BAR; pattern_expr=match_constructor; ARROW; matched_expr=block_expr { 
     MPattern($startpos, pattern_expr, matched_expr) 
   }
-
 
 match_var:
 | UNDERSCORE { MUnderscore($startpos) }

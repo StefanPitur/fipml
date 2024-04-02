@@ -11,15 +11,15 @@ type expr =
   | UnboxedSingleton of loc * value
   | UnboxedTuple of loc * value list
   | Let of loc * Var_name.t list * expr * expr
-  | FunApp of loc * Var_name.t * expr list
-  | FunCall of loc * Function_name.t * expr list
+  | FunApp of loc * Var_name.t * value list
+  | FunCall of loc * Function_name.t * value list
   | If of loc * expr * expr
   | IfElse of loc * expr * expr * expr
   | Match of loc * Var_name.t * pattern_expr list
   | UnOp of loc * unary_op * expr
   | BinaryOp of loc * binary_op * expr * expr
   | Drop of loc * Var_name.t * expr
-  | Free of loc * value * expr
+  | Free of loc * int * expr
 
 (* Match Definitions *)
 and pattern_expr = MPattern of loc * matched_expr * expr

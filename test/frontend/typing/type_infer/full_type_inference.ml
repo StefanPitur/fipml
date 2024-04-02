@@ -16,7 +16,12 @@ let%expect_test "Full Type Checking" =
             TTypeConstructor
               (mock_loc, Constructor_name.of_string "C1", [ TEInt mock_loc ]);
             TTypeConstructor
-              (mock_loc, Constructor_name.of_string "C2", [ TEBool mock_loc; TECustom (mock_loc, Type_name.of_string "custom_type") ])
+              ( mock_loc,
+                Constructor_name.of_string "C2",
+                [
+                  TEBool mock_loc;
+                  TECustom (mock_loc, Type_name.of_string "custom_type");
+                ] );
           ] );
     ]
   in
@@ -30,34 +35,117 @@ let%expect_test "Full Type Checking" =
             TParam (TEInt mock_loc, Var_name.of_string "x", None);
             TParam (TEInt mock_loc, Var_name.of_string "y", Some Borrowed);
           ],
-          BinaryOp (mock_loc, BinOpPlus, UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x")), UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "y"))),
+          BinaryOp
+            ( mock_loc,
+              BinOpPlus,
+              UnboxedSingleton
+                (mock_loc, Variable (mock_loc, Var_name.of_string "x")),
+              UnboxedSingleton
+                (mock_loc, Variable (mock_loc, Var_name.of_string "y")) ),
           TEInt mock_loc );
     ]
   in
   let parsed_main =
-    Let (mock_loc, [Var_name.of_string "x"], UnboxedSingleton (mock_loc, Integer (mock_loc, 5)),
-      Let (mock_loc, [Var_name.of_string "y"], UnboxedSingleton (mock_loc, Constructor (mock_loc, Constructor_name.of_string "C1", [Integer (mock_loc, 10)])),
-        Let (mock_loc, [Var_name.of_string "z1"; Var_name.of_string "z2"], 
-          Match (mock_loc, Var_name.of_string "y", [
-            MPattern (mock_loc, MUnderscore mock_loc, 
-              Let (mock_loc, [Var_name.of_string "res"], 
-                FunCall (mock_loc, Function_name.of_string "add", [UnboxedSingleton (mock_loc, Integer (mock_loc, 0)); UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))]),
-                UnboxedTuple (mock_loc, [Variable (mock_loc, Var_name.of_string "res"); Boolean (mock_loc, true)]))
-            );
-            MPattern (mock_loc, MConstructor (mock_loc, Constructor_name.of_string "C1", [MVariable (mock_loc, Var_name.of_string "t")]), 
-              Let (mock_loc, [Var_name.of_string "res"], 
-                FunCall (mock_loc, Function_name.of_string "add", [UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "t")); UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))]),
-                UnboxedTuple (mock_loc, [Variable (mock_loc, Var_name.of_string "res"); Boolean (mock_loc, true)]))
-            );
-            MPattern (mock_loc, MConstructor (mock_loc, Constructor_name.of_string "C2", [MVariable (mock_loc, Var_name.of_string "t"); MConstructor (mock_loc, Constructor_name.of_string "C1", [MUnderscore mock_loc])]), 
-              Let (mock_loc, [Var_name.of_string "res"], 
-                FunCall (mock_loc, Function_name.of_string "add", [UnboxedSingleton (mock_loc, Integer (mock_loc, 2)); UnOp (mock_loc, UnOpNeg, UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x")))]),
-                UnboxedTuple (mock_loc, [Variable (mock_loc, Var_name.of_string "res"); Variable (mock_loc, Var_name.of_string "t")]))
-            )
-          ]),
-          IfElse (mock_loc, UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "z2")), UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "z1")), UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))))
-      )
-    )
+    Let
+      ( mock_loc,
+        [ Var_name.of_string "x" ],
+        UnboxedSingleton (mock_loc, Integer (mock_loc, 5)),
+        Let
+          ( mock_loc,
+            [ Var_name.of_string "y" ],
+            UnboxedSingleton
+              ( mock_loc,
+                Constructor
+                  ( mock_loc,
+                    Constructor_name.of_string "C1",
+                    [ Integer (mock_loc, 10) ] ) ),
+            Let
+              ( mock_loc,
+                [ Var_name.of_string "z1"; Var_name.of_string "z2" ],
+                Match
+                  ( mock_loc,
+                    Var_name.of_string "y",
+                    [
+                      MPattern
+                        ( mock_loc,
+                          MUnderscore mock_loc,
+                          Let
+                            ( mock_loc,
+                              [ Var_name.of_string "res" ],
+                              FunCall
+                                ( mock_loc,
+                                  Function_name.of_string "add",
+                                  [
+                                    Integer (mock_loc, 0);
+                                    Variable (mock_loc, Var_name.of_string "x");
+                                  ] ),
+                              UnboxedTuple
+                                ( mock_loc,
+                                  [
+                                    Variable (mock_loc, Var_name.of_string "res");
+                                    Boolean (mock_loc, true);
+                                  ] ) ) );
+                      MPattern
+                        ( mock_loc,
+                          MConstructor
+                            ( mock_loc,
+                              Constructor_name.of_string "C1",
+                              [ MVariable (mock_loc, Var_name.of_string "t") ]
+                            ),
+                          Let
+                            ( mock_loc,
+                              [ Var_name.of_string "res" ],
+                              FunCall
+                                ( mock_loc,
+                                  Function_name.of_string "add",
+                                  [
+                                    Variable (mock_loc, Var_name.of_string "t");
+                                    Variable (mock_loc, Var_name.of_string "x");
+                                  ] ),
+                              UnboxedTuple
+                                ( mock_loc,
+                                  [
+                                    Variable (mock_loc, Var_name.of_string "res");
+                                    Boolean (mock_loc, true);
+                                  ] ) ) );
+                      MPattern
+                        ( mock_loc,
+                          MConstructor
+                            ( mock_loc,
+                              Constructor_name.of_string "C2",
+                              [
+                                MVariable (mock_loc, Var_name.of_string "t");
+                                MConstructor
+                                  ( mock_loc,
+                                    Constructor_name.of_string "C1",
+                                    [ MUnderscore mock_loc ] );
+                              ] ),
+                          Let
+                            ( mock_loc,
+                              [ Var_name.of_string "res" ],
+                              FunCall
+                                ( mock_loc,
+                                  Function_name.of_string "add",
+                                  [
+                                    Integer (mock_loc, 2);
+                                    Variable (mock_loc, Var_name.of_string "x");
+                                  ] ),
+                              UnboxedTuple
+                                ( mock_loc,
+                                  [
+                                    Variable (mock_loc, Var_name.of_string "res");
+                                    Variable (mock_loc, Var_name.of_string "t");
+                                  ] ) ) );
+                    ] ),
+                IfElse
+                  ( mock_loc,
+                    UnboxedSingleton
+                      (mock_loc, Variable (mock_loc, Var_name.of_string "z2")),
+                    UnboxedSingleton
+                      (mock_loc, Variable (mock_loc, Var_name.of_string "z1")),
+                    UnboxedSingleton
+                      (mock_loc, Variable (mock_loc, Var_name.of_string "x")) )
+              ) ) )
   in
   let parsed_prog =
     TProg (mock_loc, parsed_typed_defns, parsed_function_defns, Some parsed_main)
@@ -110,11 +198,9 @@ let%expect_test "Full Type Checking" =
                                       Typed Expr: FunCall - Int
                                           Function Name: add
                                           FunctionArg
-                                              Typed Expr: UnboxedSingleton - Int
-                                                  Value: Int: 0 - Int
+                                              Value: Int: 0 - Int
                                           FunctionArg
-                                              Typed Expr: UnboxedSingleton - Int
-                                                  Value: Var: x - Int
+                                              Value: Var: x - Int
                                   Typed Expr: Let expr - (Int * Bool)
                                       Typed Expr: UnboxedTuple - (Int * Bool)
                                           Value: Var: res - Int
@@ -127,11 +213,9 @@ let%expect_test "Full Type Checking" =
                                       Typed Expr: FunCall - Int
                                           Function Name: add
                                           FunctionArg
-                                              Typed Expr: UnboxedSingleton - Int
-                                                  Value: Var: t - Int
+                                              Value: Var: t - Int
                                           FunctionArg
-                                              Typed Expr: UnboxedSingleton - Int
-                                                  Value: Var: x - Int
+                                              Value: Var: x - Int
                                   Typed Expr: Let expr - (Int * Bool)
                                       Typed Expr: UnboxedTuple - (Int * Bool)
                                           Value: Var: res - Int
@@ -146,12 +230,9 @@ let%expect_test "Full Type Checking" =
                                       Typed Expr: FunCall - Int
                                           Function Name: add
                                           FunctionArg
-                                              Typed Expr: UnboxedSingleton - Int
-                                                  Value: Int: 2 - Int
+                                              Value: Int: 2 - Int
                                           FunctionArg
-                                              Typed Expr: - - Int
-                                                  Typed Expr: UnboxedSingleton - Int
-                                                      Value: Var: x - Int
+                                              Value: Var: x - Int
                                   Typed Expr: Let expr - (Int * Bool)
                                       Typed Expr: UnboxedTuple - (Int * Bool)
                                           Value: Var: res - Int

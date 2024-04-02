@@ -47,22 +47,22 @@ and pprint_expr ppf ~indent expr =
         (Fmt.str "Let vars: (%s) = " (String.concat ", " var_names_strings));
       pprint_expr ppf ~indent:sub_expr_indent expr;
       pprint_expr ppf ~indent:sub_expr_indent in_expr
-  | FunApp (_, function_var, function_args) ->
+  | FunApp (_, function_var, function_arg_values) ->
       print_expr "FunApp";
       Fmt.pf ppf "%sFunctionVar: %s@." sub_expr_indent
         (Var_name.to_string function_var);
       Fmt.pf ppf "%sFunApp Args:@." sub_expr_indent;
       List.iter
-        (pprint_expr ppf ~indent:(sub_expr_indent ^ indent_tab))
-        function_args
-  | FunCall (_, function_name, function_args) ->
+        (pprint_value ppf ~indent:(sub_expr_indent ^ indent_tab))
+        function_arg_values
+  | FunCall (_, function_name, function_arg_values) ->
       print_expr "FunCall";
       Fmt.pf ppf "%sFunction Name: %s@." sub_expr_indent
         (Function_name.to_string function_name);
       Fmt.pf ppf "%sFunCall Args:@." sub_expr_indent;
       List.iter
-        (pprint_expr ppf ~indent:(sub_expr_indent ^ indent_tab))
-        function_args
+        (pprint_value ppf ~indent:(sub_expr_indent ^ indent_tab))
+        function_arg_values
   | If (_, cond_expr, then_expr) ->
       print_expr "If";
       pprint_expr ppf ~indent:sub_expr_indent cond_expr;
@@ -93,9 +93,8 @@ and pprint_expr ppf ~indent expr =
       print_expr
         (Fmt.str "Drop %s - Expr:" (Var_name.to_string dropped_var_name));
       pprint_expr ppf ~indent:sub_expr_indent expr
-  | Free (_, freed_reuse_credit_size, expr) ->
-      print_expr "Free";
-      pprint_value ppf ~indent:sub_expr_indent freed_reuse_credit_size;
+  | Free (_, k, expr) ->
+      print_expr (Fmt.str "Free %i" k);
       Fmt.pf ppf "%sFree Expr@." indent;
       pprint_expr ppf ~indent:sub_expr_indent expr
 

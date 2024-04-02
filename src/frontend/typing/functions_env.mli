@@ -6,7 +6,8 @@ exception FunctionAlreadyExists of string
 exception FunctionMultipleInstancesFound
 
 type function_env_entry =
-  | FunctionEnvEntry of Function_name.t * type_expr list * type_expr
+  | FunctionEnvEntry of Function_name.t * type_expr list * type_expr * int
+      (** [FunctionEnvEntry] contains [Function_name.t] [param_types] [return_type] [fip allocation credit] *)
 
 type functions_env = function_env_entry list
 
@@ -18,3 +19,9 @@ val assert_function_not_in_functions_env :
 
 val get_function_by_name :
   loc -> Function_name.t -> functions_env -> function_env_entry Or_error.t
+
+val get_function_signature :
+  loc -> Function_name.t -> functions_env -> type_expr Or_error.t
+
+val get_function_allocation_credit :
+  loc -> Function_name.t -> functions_env -> int

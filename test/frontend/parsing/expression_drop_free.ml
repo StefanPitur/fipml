@@ -10,17 +10,13 @@ let%expect_test "expression: drop" =
                     Value: Unit |}]
 
 let%expect_test "expression: free" =
-  let source_code = "{ free k; free 1; () }" in
+  let source_code = "{ free 1; () }" in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
         Main
-            Expr: Free
-                Value: Var: k
+            Expr: Free 1
             Free Expr
-                Expr: Free
-                    Value: Int: 1
-                Free Expr
-                    Expr: UnboxedSingleton
-                        Value: Unit |}]
+                Expr: UnboxedSingleton
+                    Value: Unit |}]

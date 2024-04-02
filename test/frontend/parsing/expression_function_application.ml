@@ -8,7 +8,5 @@ let%expect_test "expression: function application" =
             Expr: FunCall
                 Function Name: function_name
                 FunCall Args:
-                    Expr: UnboxedSingleton
-                        Value: Var: parameter1
-                    Expr: UnboxedSingleton
-                        Value: Int: 0 |}]
+                    Value: Var: parameter1
+                    Value: Int: 0 |}]

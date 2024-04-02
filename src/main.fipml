@@ -6,15 +6,10 @@ fip fun add (x : int) ^(y : int) : int = {
   x + y
 }
 
+fun wrapper_f ^(f : int -> int -> int) (x : int) (y : int) : int = {
+  ^f (x, y)
+}
+
 {
-  let x = 5 in
-  let y = C1 (10) in
-  let (z1, z2) =
-    match y with
-    | _ -> { let res = add (0, x) in (res, true) }
-    | C1(t) -> { let res = add (t, x) in (res, true) }
-    | C2(t, C1 (_)) -> { let res = add (2, -x) in (res, t) }
-    endmatch
-  in
-  if z2 then { z1 } else { x } endif
+  wrapper_f (add, 0, 1)
 }

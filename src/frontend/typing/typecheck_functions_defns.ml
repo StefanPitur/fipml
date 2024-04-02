@@ -32,8 +32,17 @@ let typecheck_function_defn (types_env : types_env)
       ~f:(fun (Ast.Ast_types.TParam (function_param_type, _, _)) ->
         function_param_type)
   in
+  let fip_allocation_credit =
+    match fip with
+    | Some (Ast.Ast_types.Fip n) | Some (Ast.Ast_types.Fbip n) -> n
+    | _ -> 0
+  in
   let extended_function_env =
-    FunctionEnvEntry (function_name, function_params_types, function_return_type)
+    FunctionEnvEntry
+      ( function_name,
+        function_params_types,
+        function_return_type,
+        fip_allocation_credit )
     :: functions_env
   in
   let function_typing_context : Type_infer_types.typing_context =
@@ -48,7 +57,10 @@ let typecheck_function_defn (types_env : types_env)
     function_typing_context function_body ~verbose:false
   >>= fun typed_function_body ->
   let typed_function_body_type = Typed_ast.get_expr_type typed_function_body in
-  if not (Ast.Ast_types.equal_type_expr function_return_type typed_function_body_type)
+  if
+    not
+      (Ast.Ast_types.equal_type_expr function_return_type
+         typed_function_body_type)
   then
     let error_string =
       Fmt.str "Function return type %s does not match the signature %s"

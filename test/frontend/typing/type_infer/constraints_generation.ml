@@ -11,7 +11,7 @@ let mock_loc : Lexing.position =
 let%expect_test "Constraints Generation Value: Unit" =
   let value_unit = Unit mock_loc in
   (match
-     Type_infer_constraints_generator.generate_constraints_value_expr [] []
+     Type_infer_constraints_generator.generate_constraints_value_expr [] [] []
        value_unit ~verbose:true
    with
   | Error _ -> ()
@@ -32,7 +32,7 @@ let%expect_test "Constraints Generation Value: Unit" =
 let%expect_test "Constraints Generation Value: Int" =
   let value_int = Integer (mock_loc, 0) in
   (match
-     Type_infer_constraints_generator.generate_constraints_value_expr [] []
+     Type_infer_constraints_generator.generate_constraints_value_expr [] [] []
        value_int ~verbose:true
    with
   | Error _ -> ()
@@ -64,7 +64,7 @@ let%expect_test "Constraints Generation Value: Atom Constructor" =
   in
   (match
      Type_infer_constraints_generator.generate_constraints_value_expr
-       constructors_env [] value_atom ~verbose:true
+       constructors_env [] [] value_atom ~verbose:true
    with
   | Error _ -> ()
   | Ok (_, _, pretyped_value) ->
@@ -101,7 +101,7 @@ let%expect_test "Constraints Generation Value: Complex Constructor" =
   in
   (match
      Type_infer_constraints_generator.generate_constraints_value_expr
-       constructors_env [] value_constructor ~verbose:true
+       constructors_env [] [] value_constructor ~verbose:true
    with
   | Error _ -> ()
   | Ok (_, _, pretyped_value) ->
@@ -137,7 +137,7 @@ let%expect_test "Constraints Generation Value: Variable" =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", TyInt) ]
   in
   (match
-     Type_infer_constraints_generator.generate_constraints_value_expr []
+     Type_infer_constraints_generator.generate_constraints_value_expr [] []
        typing_context value_var ~verbose:true
    with
   | Error _ -> ()
@@ -452,11 +452,8 @@ let%expect_test "Constraints Generation Expr: FunApp" =
       ( mock_loc,
         Var_name.of_string "f",
         [
-          UnboxedSingleton
-            ( mock_loc,
-              Variable (mock_loc, Var_name.of_string "bool_to_bool_fun") );
-          UnboxedSingleton
-            (mock_loc, Variable (mock_loc, Var_name.of_string "x"));
+          Variable (mock_loc, Var_name.of_string "bool_to_bool_fun");
+          Variable (mock_loc, Var_name.of_string "x");
         ] )
   in
   let typing_context =
@@ -496,19 +493,6 @@ let%expect_test "Constraints Generation Expr: FunApp" =
     => Value Constraints:
     -------------------------
 
-    Actual expr:
-    Expr: UnboxedSingleton
-        Value: Var: x
-
-    => Typing Context:
-    x : TyCustom custom_type
-    bool_to_bool_fun : TyArrow (TyBool -> TyBool)
-    f : TyArrow (TyArrow (TyBool -> TyBool) -> TyArrow (TyCustom custom_type -> TyTuple (TyInt, TyBool, TyCustom custom_type)))
-    => Expr Ty:
-    TyCustom custom_type
-    => Expr Constraints:
-    -------------------------
-
     Actual value:
     Value: Var: bool_to_bool_fun
     => Value Ty:
@@ -517,26 +501,11 @@ let%expect_test "Constraints Generation Expr: FunApp" =
     -------------------------
 
     Actual expr:
-    Expr: UnboxedSingleton
-        Value: Var: bool_to_bool_fun
-
-    => Typing Context:
-    x : TyCustom custom_type
-    bool_to_bool_fun : TyArrow (TyBool -> TyBool)
-    f : TyArrow (TyArrow (TyBool -> TyBool) -> TyArrow (TyCustom custom_type -> TyTuple (TyInt, TyBool, TyCustom custom_type)))
-    => Expr Ty:
-    TyArrow (TyBool -> TyBool)
-    => Expr Constraints:
-    -------------------------
-
-    Actual expr:
     Expr: FunApp
         FunctionVar: f
         FunApp Args:
-            Expr: UnboxedSingleton
-                Value: Var: bool_to_bool_fun
-            Expr: UnboxedSingleton
-                Value: Var: x
+            Value: Var: bool_to_bool_fun
+            Value: Var: x
 
     => Typing Context:
     x : TyCustom custom_type
@@ -552,11 +521,9 @@ let%expect_test "Constraints Generation Expr: FunApp" =
     Pretyped Expr: FunApp - TyTuple (TyInt, TyBool, TyCustom custom_type)
         FunctionVar: f
         FunctionArg
-            Pretyped Expr: UnboxedSingleton - TyArrow (TyBool -> TyBool)
-                Value: Var: bool_to_bool_fun - TyArrow (TyBool -> TyBool)
+            Value: Var: bool_to_bool_fun - TyArrow (TyBool -> TyBool)
         FunctionArg
-            Pretyped Expr: UnboxedSingleton - TyCustom custom_type
-                Value: Var: x - TyCustom custom_type |}]
+            Value: Var: x - TyCustom custom_type |}]
 
 let%expect_test "Constraints Generation Expr: FunCall" =
   let expr_funcall =
@@ -564,11 +531,9 @@ let%expect_test "Constraints Generation Expr: FunCall" =
       ( mock_loc,
         Function_name.of_string "mock_fun",
         [
-          UnboxedSingleton (mock_loc, Integer (mock_loc, 0));
-          UnboxedSingleton
-            ( mock_loc,
-              Constructor
-                (mock_loc, Constructor_name.of_string "C", [ Unit mock_loc ]) );
+          Integer (mock_loc, 0);
+          Constructor
+            (mock_loc, Constructor_name.of_string "C", [ Unit mock_loc ]);
         ] )
   in
   let constructors_env =
@@ -592,7 +557,8 @@ let%expect_test "Constraints Generation Expr: FunCall" =
               [
                 TEInt mock_loc;
                 TECustom (mock_loc, Type_name.of_string "custom_type");
-              ] ) );
+              ] ),
+          0 );
     ]
   in
   (match
@@ -623,20 +589,6 @@ let%expect_test "Constraints Generation Expr: FunCall" =
     (TyUnit, TyUnit)
     -------------------------
 
-    Actual expr:
-    Expr: UnboxedSingleton
-        Value: Constructor: C
-            ConstructorArg
-                Value: Unit
-
-    => Typing Context:
-    => Expr Ty:
-    TyVar t5
-    => Expr Constraints:
-    (TyVar t5, TyCustom custom_type)
-    (TyUnit, TyUnit)
-    -------------------------
-
     Actual value:
     Value: Int: 0
     => Value Ty:
@@ -645,25 +597,13 @@ let%expect_test "Constraints Generation Expr: FunCall" =
     -------------------------
 
     Actual expr:
-    Expr: UnboxedSingleton
-        Value: Int: 0
-
-    => Typing Context:
-    => Expr Ty:
-    TyInt
-    => Expr Constraints:
-    -------------------------
-
-    Actual expr:
     Expr: FunCall
         Function Name: mock_fun
         FunCall Args:
-            Expr: UnboxedSingleton
-                Value: Int: 0
-            Expr: UnboxedSingleton
-                Value: Constructor: C
-                    ConstructorArg
-                        Value: Unit
+            Value: Int: 0
+            Value: Constructor: C
+                ConstructorArg
+                    Value: Unit
 
     => Typing Context:
     => Expr Ty:
@@ -678,13 +618,11 @@ let%expect_test "Constraints Generation Expr: FunCall" =
     Pretyped Expr: FunCall - TyTuple (TyInt, TyCustom custom_type)
         Function Name: mock_fun
         FunctionArg
-            Pretyped Expr: UnboxedSingleton - TyInt
-                Value: Int: 0 - TyInt
+            Value: Int: 0 - TyInt
         FunctionArg
-            Pretyped Expr: UnboxedSingleton - TyVar t5
-                Value: Constructor: C - TyVar t5
-                        ConstructorArg
-                        Value: Unit - TyUnit |}]
+            Value: Constructor: C - TyVar t5
+                    ConstructorArg
+                    Value: Unit - TyUnit |}]
 
 let%expect_test "Constraints Generation Expr: If" =
   let expr_if =
@@ -1416,15 +1354,12 @@ let%expect_test "Constraints Generation Expr: Free" =
   let expr_free =
     Free
       ( mock_loc,
-        Variable (mock_loc, Var_name.of_string "x"),
-        UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "y"))
+        2,
+        UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))
       )
   in
   let typing_context =
-    [
-      Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ());
-      Type_context_env.TypingContextEntry (Var_name.of_string "y", fresh ());
-    ]
+    [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
   in
   (match
      Type_infer_constraints_generator.generate_constraints [] [] typing_context
@@ -1439,47 +1374,35 @@ let%expect_test "Constraints Generation Expr: Free" =
     Actual value:
     Value: Var: x
     => Value Ty:
-    TyVar t15
-    => Value Constraints:
-    -------------------------
-
-    Actual value:
-    Value: Var: y
-    => Value Ty:
     TyVar t14
     => Value Constraints:
     -------------------------
 
     Actual expr:
     Expr: UnboxedSingleton
-        Value: Var: y
+        Value: Var: x
 
     => Typing Context:
-    x : TyVar t15
-    y : TyVar t14
+    x : TyVar t14
     => Expr Ty:
     TyVar t14
     => Expr Constraints:
     -------------------------
 
     Actual expr:
-    Expr: Free
-        Value: Var: x
+    Expr: Free 2
     Free Expr
         Expr: UnboxedSingleton
-            Value: Var: y
+            Value: Var: x
 
     => Typing Context:
-    x : TyVar t15
-    y : TyVar t14
+    x : TyVar t14
     => Expr Ty:
     TyVar t14
     => Expr Constraints:
-    (TyVar t15, TyInt)
     -------------------------
 
-    Pretyped Expr: Free - TyVar t14
-        Value: Var: x - TyVar t15
+    Pretyped Expr: Free 2 - TyVar t14
     Free Expr
         Pretyped Expr: UnboxedSingleton - TyVar t14
-            Value: Var: y - TyVar t14 |}]
+            Value: Var: x - TyVar t14 |}]

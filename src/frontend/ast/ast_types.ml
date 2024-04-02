@@ -10,6 +10,7 @@ module type ID = sig
   val ( = ) : t -> t -> bool
   val compare : t -> t -> int
   val sexp_of_t : t -> Sexp.t
+  val t_of_sexp : Sexp.t -> t
   val hash : t -> int
 end
 
@@ -21,6 +22,11 @@ module StringID : ID = struct
   let ( = ) = String.equal
   let compare = String.compare
   let sexp_of_t x = Sexp.Atom x
+
+  let t_of_sexp = function
+    | Sexp.Atom s -> of_string s
+    | _ -> failwith "Invalid sexp for StringID.t"
+
   let hash x = Hashtbl.hash x
 end
 

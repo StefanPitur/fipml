@@ -12,6 +12,7 @@ val generate_constraints :
 
 val generate_constraints_value_expr :
   Type_defns_env.constructors_env ->
+  Functions_env.functions_env ->
   typing_context ->
   Parsing.Parser_ast.value ->
   verbose:bool ->

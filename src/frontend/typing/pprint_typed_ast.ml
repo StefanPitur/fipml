@@ -57,7 +57,7 @@ and pprint_typed_function_args ppf ~indent = function
       List.iter
         (fun typed_function_arg ->
           Fmt.pf ppf "%sFunctionArg@." indent;
-          pprint_typed_expr ppf ~indent:sub_expr_indent typed_function_arg)
+          pprint_typed_value ppf ~indent:sub_expr_indent typed_function_arg)
         typed_function_args
 
 and pprint_typed_matched_expr ppf ~indent typed_matched_expr =
@@ -180,9 +180,8 @@ and pprint_typed_expr ppf ~indent expr =
            (Var_name.to_string dropped_var_name)
            (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent expr
-  | Free (_, type_expr, freed_reuse_credit_size, expr) ->
-      print_expr (Fmt.str "Free - %s" (string_of_type type_expr));
-      pprint_typed_value ppf ~indent:sub_expr_indent freed_reuse_credit_size;
+  | Free (_, type_expr, k, expr) ->
+      print_expr (Fmt.str "Free %i - %s" k (string_of_type type_expr));
       Fmt.pf ppf "%sFree Expr@." indent;
       pprint_typed_expr ppf ~indent:sub_expr_indent expr
 

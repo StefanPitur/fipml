@@ -66,9 +66,8 @@ let rec pprint_pretyped_expr ppf ~indent expr =
            (Var_name.to_string dropped_var_name)
            (string_of_ty ty));
       pprint_pretyped_expr ppf ~indent:sub_expr_indent expr
-  | Free (_, ty, freed_reuse_credit_size, expr) ->
-      print_expr (Fmt.str "Free - %s" (string_of_ty ty));
-      pprint_pretyped_value ppf ~indent:sub_expr_indent freed_reuse_credit_size;
+  | Free (_, ty, k, expr) ->
+      print_expr (Fmt.str "Free %i - %s" k (string_of_ty ty));
       Fmt.pf ppf "%sFree Expr@." indent;
       pprint_pretyped_expr ppf ~indent:sub_expr_indent expr
 
@@ -104,14 +103,14 @@ and pprint_pretyped_constructor_args ppf ~indent = function
         pretyped_constructor_args
 
 and pprint_pretyped_function_args (ppf : Format.formatter) ~(indent : string)
-    (pretyped_function_args : expr list) : unit =
+    (pretyped_function_args : value list) : unit =
   match pretyped_function_args with
   | [] -> Fmt.pf ppf "%s()@." indent
   | function_args ->
       let sub_expr_indent = indent ^ indent_tab in
       List.iter function_args ~f:(fun function_arg ->
           Fmt.pf ppf "%sFunctionArg@." indent;
-          pprint_pretyped_expr ppf ~indent:sub_expr_indent function_arg)
+          pprint_pretyped_value ppf ~indent:sub_expr_indent function_arg)
 
 and pprint_pretyped_pattern_exprs (ppf : Format.formatter) ~(indent : string)
     (pretyped_pattern_exprs : pattern_expr list) : unit =

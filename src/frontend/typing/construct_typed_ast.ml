@@ -46,25 +46,25 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
       >>= fun typed_var_expr ->
       construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
       Ok (Typed_ast.Let (loc, ast_type, var_names, typed_var_expr, typed_expr))
-  | Pretyped_ast.FunApp (loc, ty, var_name, pretyped_exprs) ->
+  | Pretyped_ast.FunApp (loc, ty, var_name, pretyped_vars) ->
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
-      let typed_exprs =
-        List.map pretyped_exprs ~f:(fun pretyped_expr ->
-            Or_error.ok_exn (construct_typed_ast_expr pretyped_expr substs))
+      let typed_values =
+        List.map pretyped_vars ~f:(fun pretyped_var ->
+            Or_error.ok_exn (construct_typed_ast_value pretyped_var substs))
       in
-      Ok (Typed_ast.FunApp (loc, ast_type, var_name, typed_exprs))
-  | Pretyped_ast.FunCall (loc, ty, function_name, pretyped_function_arg_exprs)
+      Ok (Typed_ast.FunApp (loc, ast_type, var_name, typed_values))
+  | Pretyped_ast.FunCall (loc, ty, function_name, pretyped_function_arg_values)
     ->
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
-      let typed_function_args_exprs =
-        List.map pretyped_function_arg_exprs
-          ~f:(fun pretyped_function_arg_expr ->
+      let typed_function_args_values =
+        List.map pretyped_function_arg_values
+          ~f:(fun pretyped_function_arg_value ->
             Or_error.ok_exn
-              (construct_typed_ast_expr pretyped_function_arg_expr substs))
+              (construct_typed_ast_value pretyped_function_arg_value substs))
       in
       Ok
         (Typed_ast.FunCall
-           (loc, ast_type, function_name, typed_function_args_exprs))
+           (loc, ast_type, function_name, typed_function_args_values))
   | Pretyped_ast.If (loc, ty, pretyped_cond_expr, pretyped_then_expr) ->
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
       construct_typed_ast_expr pretyped_cond_expr substs
@@ -110,11 +110,10 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
       construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
       Ok (Typed_ast.Drop (loc, ast_type, var_name, typed_expr))
-  | Pretyped_ast.Free (loc, ty, pretyped_value, pretyped_expr) ->
+  | Pretyped_ast.Free (loc, ty, k, pretyped_expr) ->
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
-      construct_typed_ast_value pretyped_value substs >>= fun typed_value ->
       construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
-      Ok (Typed_ast.Free (loc, ast_type, typed_value, typed_expr))
+      Ok (Typed_ast.Free (loc, ast_type, k, typed_expr))
 
 and construct_typed_ast_pattern
     (pretyped_pattern_expr : Pretyped_ast.pattern_expr) (substs : subst list) :

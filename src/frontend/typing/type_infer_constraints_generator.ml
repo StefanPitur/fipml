@@ -14,8 +14,8 @@ let rec generate_constraints
   let open Result in
   (match expr with
   | UnboxedSingleton (loc, value) ->
-      generate_constraints_value_expr constructors_env typing_context value
-        ~verbose
+      generate_constraints_value_expr constructors_env functions_env
+        typing_context value ~verbose
       >>= fun (value_ty, value_constraints, pretyped_value) ->
       Ok
         ( typing_context,
@@ -27,8 +27,8 @@ let rec generate_constraints
         List.fold_right values ~init:([], [], [])
           ~f:(fun value (acc_types, acc_constraints, acc_pretyped_values) ->
             Or_error.ok_exn
-              ( generate_constraints_value_expr constructors_env typing_context
-                  value ~verbose
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context value ~verbose
               >>= fun (value_ty, value_constraints, pretyped_value) ->
                 Ok
                   ( value_ty :: acc_types,
@@ -89,26 +89,26 @@ let rec generate_constraints
           expr_constrs @ extra_tyvar_constraints @ var_constrs,
           Pretyped_ast.Let
             (loc, expr_type, var_names, pretyped_vars, pretyped_expr) )
-  | FunApp (loc, app_var_name, app_exprs) ->
+  | FunApp (loc, app_var_name, app_values) ->
       Type_context_env.get_var_type typing_context app_var_name
       >>= fun app_var_ty ->
       get_ty_function_signature app_var_ty
       >>= fun (app_params_tys, app_return_ty) ->
       let app_params_constraints, app_params_pretyped =
-        List.fold_right2_exn app_params_tys app_exprs ~init:([], [])
+        List.fold_right2_exn app_params_tys app_values ~init:([], [])
           ~f:(fun
               app_param_ty
-              app_expr
+              app_value
               (acc_params_constraints, acc_params_pretyped)
             ->
             Or_error.ok_exn
-              ( generate_constraints constructors_env functions_env
-                  typing_context app_expr ~verbose
-              >>= fun (_, expr_ty, expr_constraints, pretyped_expr) ->
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context app_value ~verbose
+              >>= fun (value_ty, value_constraints, pretyped_value) ->
                 Ok
-                  ( ((expr_ty, app_param_ty) :: expr_constraints)
+                  ( ((value_ty, app_param_ty) :: value_constraints)
                     @ acc_params_constraints,
-                    pretyped_expr :: acc_params_pretyped ) ))
+                    pretyped_value :: acc_params_pretyped ) ))
       in
       Ok
         ( typing_context,
@@ -116,26 +116,29 @@ let rec generate_constraints
           app_params_constraints,
           Pretyped_ast.FunApp
             (loc, app_return_ty, app_var_name, app_params_pretyped) )
-  | FunCall (loc, function_name, exprs) ->
+  | FunCall (loc, function_name, values) ->
       Functions_env.get_function_by_name loc function_name functions_env
-      >>= fun (FunctionEnvEntry (_, function_args_types, function_return_type))
-        ->
-      if List.length exprs <> List.length function_args_types then
+      >>= fun (FunctionEnvEntry
+                (_, function_args_types, function_return_type, _)) ->
+      if List.length values <> List.length function_args_types then
         Or_error.of_exn PartialFunctionApplicationNotAllowed
       else
         let args_constraints, args_pretyped =
-          List.fold_right2_exn function_args_types exprs ~init:([], [])
+          List.fold_right2_exn function_args_types values ~init:([], [])
             ~f:(fun
-                function_arg_type expr (acc_constraints, acc_pretyped_exprs) ->
+                function_arg_type
+                value
+                (acc_constraints, acc_pretyped_values)
+              ->
               Or_error.ok_exn
-                ( generate_constraints constructors_env functions_env
-                    typing_context expr ~verbose
-                >>= fun (_, expr_ty, expr_constraints, pretyped_expr) ->
+                ( generate_constraints_value_expr constructors_env functions_env
+                    typing_context value ~verbose
+                >>= fun (value_ty, value_constraints, pretyped_value) ->
                   Ok
-                    ( (convert_ast_type_to_ty function_arg_type, expr_ty)
-                      :: expr_constraints
+                    ( (convert_ast_type_to_ty function_arg_type, value_ty)
+                      :: value_constraints
                       @ acc_constraints,
-                      pretyped_expr :: acc_pretyped_exprs ) ))
+                      pretyped_value :: acc_pretyped_values ) ))
         in
         Ok
           ( typing_context,
@@ -290,18 +293,15 @@ let rec generate_constraints
           expr_ty,
           expr_constraints,
           Pretyped_ast.Drop (loc, TyUnit, var_name, pretyped_expr) )
-  | Free (loc, value, expr) ->
-      generate_constraints_value_expr constructors_env typing_context value
-        ~verbose
-      >>= fun (free_ty, free_ty_constraints, pretyped_value) ->
+  | Free (loc, k, expr) ->
       generate_constraints constructors_env functions_env typing_context expr
         ~verbose
       >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
       Ok
         ( typing_context,
           expr_ty,
-          ((free_ty, TyInt) :: free_ty_constraints) @ expr_ty_constraints,
-          Pretyped_ast.Free (loc, expr_ty, pretyped_value, pretyped_expr) ))
+          expr_ty_constraints,
+          Pretyped_ast.Free (loc, expr_ty, k, pretyped_expr) ))
   >>= fun (typing_context, expr_tys, expr_constraints, pretyped_expr) ->
   Pprint_type_infer.pprint_type_infer_expr_verbose Fmt.stdout ~verbose expr
     typing_context expr_tys expr_constraints;
@@ -309,6 +309,7 @@ let rec generate_constraints
 
 and generate_constraints_value_expr
     (constructors_env : Type_defns_env.constructors_env)
+    (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (value : value) ~(verbose : bool) :
     (ty * constr list * Pretyped_ast.value) Or_error.t =
   let open Result in
@@ -316,9 +317,19 @@ and generate_constraints_value_expr
   | Unit loc -> Ok (TyUnit, [], Pretyped_ast.Unit (loc, TyUnit))
   | Integer (loc, i) -> Ok (TyInt, [], Pretyped_ast.Integer (loc, TyInt, i))
   | Boolean (loc, b) -> Ok (TyBool, [], Pretyped_ast.Boolean (loc, TyBool, b))
-  | Variable (loc, var) ->
-      Type_context_env.get_var_type typing_context var >>= fun var_type ->
-      Ok (var_type, [], Pretyped_ast.Variable (loc, var_type, var))
+  | Variable (loc, var) -> (
+      match Type_context_env.get_var_type typing_context var with
+      | Ok var_type ->
+          Ok (var_type, [], Pretyped_ast.Variable (loc, var_type, var))
+      | Error _ ->
+          let function_name =
+            Function_name.of_string (Var_name.to_string var)
+          in
+          let open Result in
+          Functions_env.get_function_signature loc function_name functions_env
+          >>= fun function_type ->
+          let function_ty = convert_ast_type_to_ty function_type in
+          Ok (function_ty, [], Pretyped_ast.Variable (loc, function_ty, var)))
   | Constructor (loc, constructor_name, constructor_values) ->
       let t = fresh () in
       Type_defns_env.get_constructor_by_name loc constructor_name
@@ -334,8 +345,8 @@ and generate_constraints_value_expr
               (acc_constraints, acc_pretyped_constructor_values)
             ->
             Or_error.ok_exn
-              ( generate_constraints_value_expr constructors_env typing_context
-                  constructor_value ~verbose
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context constructor_value ~verbose
               >>= fun ( constructor_value_ty,
                         constructor_value_constraints,
                         pretyped_constructor_value ) ->

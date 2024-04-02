@@ -1,4 +1,10 @@
 (library
  (name fip)
- (modules)
- (libraries core ast parsing))
+ (modules
+  fbip
+  borrowed_context
+  owned_context
+  reuse_credits
+  fip_ast
+  fip_rules_check)
+ (libraries core ast typing))

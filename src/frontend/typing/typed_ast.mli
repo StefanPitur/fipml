@@ -11,15 +11,15 @@ type expr =
   | UnboxedSingleton of loc * type_expr * value
   | UnboxedTuple of loc * type_expr * value list
   | Let of loc * type_expr * Var_name.t list * expr * expr
-  | FunApp of loc * type_expr * Var_name.t * expr list
-  | FunCall of loc * type_expr * Function_name.t * expr list
+  | FunApp of loc * type_expr * Var_name.t * value list
+  | FunCall of loc * type_expr * Function_name.t * value list
   | If of loc * type_expr * expr * expr
   | IfElse of loc * type_expr * expr * expr * expr
   | Match of loc * type_expr * Var_name.t * pattern_expr list
   | UnOp of loc * type_expr * unary_op * expr
   | BinaryOp of loc * type_expr * binary_op * expr * expr
   | Drop of loc * type_expr * Var_name.t * expr
-  | Free of loc * type_expr * value * expr
+  | Free of loc * type_expr * int * expr
 
 and pattern_expr = MPattern of loc * type_expr * matched_expr * expr
 
@@ -42,3 +42,6 @@ type program =
 
 val get_expr_type : expr -> type_expr
 (** Given an [expr], return its [type_expr] *)
+
+val get_matched_expr_vars : matched_expr -> Var_name.t list
+(** Given a [match_expr] return a list of the variables present in the pattern. *)
