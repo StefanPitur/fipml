@@ -97,6 +97,14 @@ and pprint_expr ppf ~indent expr =
       print_expr (Fmt.str "Free %i" k);
       Fmt.pf ppf "%sFree Expr@." indent;
       pprint_expr ppf ~indent:sub_expr_indent expr
+  | Weak (_, k, expr) ->
+      print_expr (Fmt.str "Weak %i" k);
+      Fmt.pf ppf "%sWeak Expr@." indent;
+      pprint_expr ppf ~indent:sub_expr_indent expr
+  | Inst (_, k, expr) ->
+      print_expr (Fmt.str "Inst %i" k);
+      Fmt.pf ppf "%sInst Expr@." indent;
+      pprint_expr ppf ~indent:sub_expr_indent expr
 
 and pprint_pattern_exprs ppf ~indent = function
   | [] ->

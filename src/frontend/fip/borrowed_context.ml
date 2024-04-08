@@ -30,6 +30,13 @@ let assert_in_borrowed_set ~(element : Var_name.t)
         (BorrowedVariableNotInContext (Var_name.to_string element))
   | true -> Ok ()
 
+let assert_elements_not_in_borrowed_set ~(elements : Var_name.t list)
+    ~(borrowed_set : BorrowedSet.t) : unit Or_error.t =
+  let elements_set = BorrowedSet.of_list elements in
+  match Set.are_disjoint borrowed_set elements_set with
+  | false -> Or_error.of_exn BorrowedContextsNotDisjoint
+  | true -> Ok ()
+
 let combine_borrowed_sets ~(borrowed_set1 : BorrowedSet.t)
     ~(borrowed_set2 : BorrowedSet.t) : BorrowedSet.t Or_error.t =
   match Set.are_disjoint borrowed_set1 borrowed_set2 with
@@ -53,3 +60,10 @@ let extend_borrowed_set_by_list ~(elements : Var_name.t list)
     ~(borrowed_set : BorrowedSet.t) : BorrowedSet.t Or_error.t =
   let elements_set = BorrowedSet.of_list elements in
   combine_borrowed_sets ~borrowed_set1:borrowed_set ~borrowed_set2:elements_set
+
+let pprint_borrowed_set (ppf : Format.formatter) ~(indent : string)
+    (borrowed_set : BorrowedSet.t) : unit =
+  let borrowed_list = Set.to_list borrowed_set in
+  let borrowed_strings = List.map borrowed_list ~f:Var_name.to_string in
+  let borrowed_string = String.concat ~sep:", " borrowed_strings in
+  Fmt.pf ppf "%sBorrowed - [%s]@." indent borrowed_string

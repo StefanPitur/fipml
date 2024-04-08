@@ -1,5 +1,6 @@
 open Ast.Ast_types
 open Borrowed_context
+open Core
 open Owned_context
 open Reuse_credits
 
@@ -99,6 +100,10 @@ type expr =
       * expr
   | Free of
       loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
+  | Weak of
+      loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
+  | Inst of
+      loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
 
 and pattern_expr =
   | MPattern of
@@ -115,9 +120,12 @@ val get_fip_contexts_from_value :
 val get_fip_contexts_from_expr :
   expr -> BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t
 
-val is_value_borrowed_or_top_level_function :
+val get_fip_contexts_from_pattern_expr :
+  pattern_expr -> BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t
+
+val is_value_borrowed_or_top_level_fip_function :
   loc ->
   value:Typing.Typed_ast.value ->
   borrowed_set:BorrowedSet.t ->
   functions_env:Typing.Functions_env.functions_env ->
-  (Var_name.t * int) option * bool
+  (Var_name.t * int) Or_error.t

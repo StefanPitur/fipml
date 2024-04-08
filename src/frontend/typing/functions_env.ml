@@ -4,16 +4,18 @@ open Core
 exception FunctionNotFound of string
 exception FunctionAlreadyExists of string
 exception FunctionMultipleInstancesFound
+exception FipFunctionExpected of string
 
 type function_env_entry =
-  | FunctionEnvEntry of Function_name.t * type_expr list * type_expr * int
+  | FunctionEnvEntry of
+      fip option * Function_name.t * type_expr list * type_expr
 
 type functions_env = function_env_entry list
 
 let filter_functions_env_by_name (function_name : Function_name.t)
     (functions_env : functions_env) : functions_env =
   List.filter functions_env
-    ~f:(fun (FunctionEnvEntry (function_env_entry_name, _, _, _)) ->
+    ~f:(fun (FunctionEnvEntry (_, function_env_entry_name, _, _)) ->
       Function_name.( = ) function_name function_env_entry_name)
 
 let assert_function_in_functions_env (loc : loc)
@@ -67,14 +69,20 @@ let get_function_signature (loc : loc) (function_name : Function_name.t)
     (functions_env : functions_env) : type_expr Or_error.t =
   let open Result in
   get_function_by_name loc function_name functions_env
-  >>= fun (FunctionEnvEntry (_, param_type_exprs, return_type_expr, _)) ->
+  >>= fun (FunctionEnvEntry (_, _, param_type_exprs, return_type_expr)) ->
   Ok
     (List.fold_right param_type_exprs ~init:return_type_expr
        ~f:(fun param_type_expr acc_type_expr ->
          TEArrow (loc, param_type_expr, acc_type_expr)))
 
-let get_function_allocation_credit loc (function_name : Function_name.t)
-    (functions_env : functions_env) : int =
+let get_fip_function_allocation_credit loc (function_name : Function_name.t)
+    (functions_env : functions_env) : int Or_error.t =
   match get_function_by_name loc function_name functions_env with
-  | Ok (FunctionEnvEntry (_, _, _, allocation_credit)) -> allocation_credit
-  | _ -> 0
+  | Ok (FunctionEnvEntry (fip_option, _, _, _)) -> (
+      match fip_option with
+      | Some (Fip n) | Some (Fbip n) -> Ok n
+      | None ->
+          Or_error.of_exn
+            (FipFunctionExpected (Function_name.to_string function_name)))
+  | _ ->
+      Or_error.of_exn (FunctionNotFound (Function_name.to_string function_name))

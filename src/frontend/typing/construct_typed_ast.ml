@@ -114,6 +114,14 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
       convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
       construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
       Ok (Typed_ast.Free (loc, ast_type, k, typed_expr))
+  | Pretyped_ast.Weak (loc, ty, k, pretyped_expr) ->
+      convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
+      construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
+      Ok (Typed_ast.Weak (loc, ast_type, k, typed_expr))
+  | Pretyped_ast.Inst (loc, ty, k, pretyped_expr) ->
+      convert_ty_to_ast_type (ty_subst substs ty) loc >>= fun ast_type ->
+      construct_typed_ast_expr pretyped_expr substs >>= fun typed_expr ->
+      Ok (Typed_ast.Inst (loc, ast_type, k, typed_expr))
 
 and construct_typed_ast_pattern
     (pretyped_pattern_expr : Pretyped_ast.pattern_expr) (substs : subst list) :

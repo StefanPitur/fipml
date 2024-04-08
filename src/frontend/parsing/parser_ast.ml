@@ -20,6 +20,8 @@ type expr =
   | BinaryOp of loc * binary_op * expr * expr
   | Drop of loc * Var_name.t * expr
   | Free of loc * int * expr
+  | Weak of loc * int * expr
+  | Inst of loc * int * expr
 
 (* Match Definitions *)
 and pattern_expr = MPattern of loc * matched_expr * expr

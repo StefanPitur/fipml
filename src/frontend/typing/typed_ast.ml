@@ -20,6 +20,8 @@ type expr =
   | BinaryOp of loc * type_expr * binary_op * expr * expr
   | Drop of loc * type_expr * Var_name.t * expr
   | Free of loc * type_expr * int * expr
+  | Weak of loc * type_expr * int * expr
+  | Inst of loc * type_expr * int * expr
 
 and pattern_expr = MPattern of loc * type_expr * matched_expr * expr
 
@@ -54,6 +56,8 @@ let get_expr_type (expr : expr) : type_expr =
   | BinaryOp (_, type_expr, _, _, _) -> type_expr
   | Drop (_, type_expr, _, _) -> type_expr
   | Free (_, type_expr, _, _) -> type_expr
+  | Weak (_, type_expr, _, _) -> type_expr
+  | Inst (_, type_expr, _, _) -> type_expr
 
 let rec get_matched_expr_vars (matched_expr : matched_expr) : Var_name.t list =
   match matched_expr with
@@ -64,3 +68,8 @@ let rec get_matched_expr_vars (matched_expr : matched_expr) : Var_name.t list =
         (fun matched_expr acc_var_names ->
           get_matched_expr_vars matched_expr @ acc_var_names)
         matched_exprs []
+
+let get_match_expr_reuse_credit (matched_expr : matched_expr) : int =
+  match matched_expr with
+  | MConstructor (_, _, _, matched_exprs) -> List.length matched_exprs
+  | _ -> 0

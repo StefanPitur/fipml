@@ -6,5 +6,6 @@
   owned_context
   reuse_credits
   fip_ast
+  pprint_fip_ast
   fip_rules_check)
  (libraries core ast typing))

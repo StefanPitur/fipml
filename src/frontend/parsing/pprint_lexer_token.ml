@@ -55,5 +55,7 @@ let pprint_lexer_token ppf token =
     | TYPE_UNIT -> "unit"
     | FREE -> "free"
     | DROP -> "drop"
+    | WEAK -> "weak"
+    | INST -> "inst"
     | FIP -> "fip"
     | FBIP -> "fbip")

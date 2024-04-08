@@ -32,17 +32,9 @@ let typecheck_function_defn (types_env : types_env)
       ~f:(fun (Ast.Ast_types.TParam (function_param_type, _, _)) ->
         function_param_type)
   in
-  let fip_allocation_credit =
-    match fip with
-    | Some (Ast.Ast_types.Fip n) | Some (Ast.Ast_types.Fbip n) -> n
-    | _ -> 0
-  in
   let extended_function_env =
     FunctionEnvEntry
-      ( function_name,
-        function_params_types,
-        function_return_type,
-        fip_allocation_credit )
+      (fip, function_name, function_params_types, function_return_type)
     :: functions_env
   in
   let function_typing_context : Type_infer_types.typing_context =

@@ -184,6 +184,14 @@ and pprint_typed_expr ppf ~indent expr =
       print_expr (Fmt.str "Free %i - %s" k (string_of_type type_expr));
       Fmt.pf ppf "%sFree Expr@." indent;
       pprint_typed_expr ppf ~indent:sub_expr_indent expr
+  | Weak (_, type_expr, k, expr) ->
+      print_expr (Fmt.str "Weak %i - %s" k (string_of_type type_expr));
+      Fmt.pf ppf "%sWeak Expr@." indent;
+      pprint_typed_expr ppf ~indent:sub_expr_indent expr
+  | Inst (_, type_expr, k, expr) ->
+      print_expr (Fmt.str "Inst %i - %s" k (string_of_type type_expr));
+      Fmt.pf ppf "%sInst Expr@." indent;
+      pprint_typed_expr ppf ~indent:sub_expr_indent expr
 
 and pprint_typed_program ppf
     (TProg (type_defns, program_type, function_defns, main_expr_optional)) =

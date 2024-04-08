@@ -53,6 +53,8 @@
 %token WITH
 %token DROP
 %token FREE
+%token WEAK
+%token INST
 %token FIP
 %token FBIP
 %token EOF
@@ -215,6 +217,8 @@ expr:
 /* Memory deallocation operators */
 | DROP; dropped_var_name=LID; SEMICOLON; expr=expr { Drop($startpos, Var_name.of_string dropped_var_name, expr) }
 | FREE; k=INT; SEMICOLON; expr=expr { Free($startpos, k, expr) }
+| WEAK; k=INT; SEMICOLON; expr=expr { Weak($startpos, k, expr) }
+| INST; k=INT; SEMICOLON; expr=expr { Inst($startpos, k, expr) }
 
 /* Function call / application */
 | fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, value); RPAREN {

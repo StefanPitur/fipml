@@ -5,8 +5,6 @@ open Typing
 open Reuse_credits
 open Result
 
-exception NonOwnedVariableNotFound
-
 let rec fip_rules_check_value (typed_value : Typed_ast.value)
     (borrowed_set : BorrowedSet.t) : Fip_ast.value =
   match typed_value with
@@ -102,16 +100,16 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       UnboxedTuple (loc, borrowed_set, owned_set, reuse_map, fip_values)
   | Let (loc, _, var_names, var_expr, expr) ->
       let fip_expr = fip_rules_check_expr expr borrowed_set functions_env in
-      let _, expr_owned_set, expr_reuse_map =
+      let _, expr_extended_owned_set, expr_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
-      let gamma_2 =
+      let expr_owned_set =
         Or_error.ok_exn
           (remove_elements_from_owned_set ~elements:var_names
-             ~owned_set:expr_owned_set)
+             ~owned_set:expr_extended_owned_set)
       in
       let var_expr_borrowed_set =
-        combine_owned_with_borrowed ~borrowed_set ~owned_set:gamma_2
+        combine_owned_with_borrowed ~borrowed_set ~owned_set:expr_owned_set
       in
       let fip_var_expr =
         fip_rules_check_expr var_expr var_expr_borrowed_set functions_env
@@ -125,7 +123,8 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       in
       let combined_owned_set =
         Or_error.ok_exn
-          (combine_owned_sets ~owned_set1:gamma_2 ~owned_set2:var_expr_owned_set)
+          (combine_owned_sets ~owned_set1:expr_owned_set
+             ~owned_set2:var_expr_owned_set)
       in
       Let
         ( loc,
@@ -159,6 +158,11 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       in
       FunApp (loc, borrowed_set, owned_set, reuse_map, fun_var, fip_values)
   | FunCall (loc, _, function_name, values) ->
+      let function_allocation_credit =
+        Or_error.ok_exn
+          (Functions_env.get_fip_function_allocation_credit loc function_name
+             functions_env)
+      in
       let owned_set, reuse_map, fip_values, values_acc_allocation_credit =
         List.fold_right values ~init:(OwnedSet.empty, ReuseMap.empty, [], 0)
           ~f:(fun
@@ -168,54 +172,42 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
                 acc_fip_values,
                 acc_allocation_credit )
             ->
-            let ( var_name_allocation_credit_option,
-                  is_value_borrowed_or_top_level_function ) =
-              Fip_ast.is_value_borrowed_or_top_level_function loc ~value
+            match
+              Fip_ast.is_value_borrowed_or_top_level_fip_function loc ~value
                 ~borrowed_set ~functions_env
-            in
-            if is_value_borrowed_or_top_level_function then
-              match var_name_allocation_credit_option with
-              | None -> raise NonOwnedVariableNotFound
-              | Some (var_name, allocation_credit) ->
-                  let fip_value =
-                    Fip_ast.Variable
-                      ( loc,
-                        borrowed_set,
-                        OwnedSet.empty,
-                        ReuseMap.empty,
-                        var_name )
-                  in
-                  ( acc_owned_set,
-                    acc_reuse_map,
-                    fip_value :: acc_fip_values,
-                    allocation_credit + acc_allocation_credit )
-            else
-              Or_error.ok_exn
-                (let fip_value = fip_rules_check_value value borrowed_set in
-                 let _, owned_set, reuse_map =
-                   Fip_ast.get_fip_contexts_from_value fip_value
-                 in
-                 let combined_reuse_map =
-                   combine_reuse_maps ~reuse_map1:acc_reuse_map
-                     ~reuse_map2:reuse_map
-                 in
-                 combine_owned_sets ~owned_set1:acc_owned_set
-                   ~owned_set2:owned_set
-                 >>= fun combined_owned_set ->
-                 Ok
-                   ( combined_owned_set,
-                     combined_reuse_map,
-                     fip_value :: acc_fip_values,
-                     acc_allocation_credit )))
-      in
-      let function_allocation_credit =
-        Functions_env.get_function_allocation_credit loc function_name
-          functions_env
+            with
+            | Ok (var_name, allocation_credit) ->
+                let fip_value =
+                  Fip_ast.Variable
+                    (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, var_name)
+                in
+                ( acc_owned_set,
+                  acc_reuse_map,
+                  fip_value :: acc_fip_values,
+                  allocation_credit + acc_allocation_credit )
+            | _ ->
+                Or_error.ok_exn
+                  (let fip_value = fip_rules_check_value value borrowed_set in
+                   let _, owned_set, reuse_map =
+                     Fip_ast.get_fip_contexts_from_value fip_value
+                   in
+                   let combined_reuse_map =
+                     combine_reuse_maps ~reuse_map1:acc_reuse_map
+                       ~reuse_map2:reuse_map
+                   in
+                   combine_owned_sets ~owned_set1:acc_owned_set
+                     ~owned_set2:owned_set
+                   >>= fun combined_owned_set ->
+                   Ok
+                     ( combined_owned_set,
+                       combined_reuse_map,
+                       fip_value :: acc_fip_values,
+                       acc_allocation_credit )))
       in
       let extended_reuse_map =
         extend_reuse_map_k_times
           ~reuse_size:(allocation_credit_size ())
-          ~reuse_var:(Ast.Ast_types.Var_name.of_string "fip")
+          ~reuse_var:(Ast.Ast_types.Var_name.of_string "_new")
           ~k:(values_acc_allocation_credit + function_allocation_credit)
           ~reuse_map
       in
@@ -275,21 +267,19 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       let _, else_owned_set, else_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_else_expr
       in
-
+      Or_error.ok_exn
+        (assert_owned_sets_are_equal ~owned_set1:then_owned_set
+           ~owned_set2:else_owned_set);
+      Or_error.ok_exn
+        (assert_reuse_maps_are_equal ~reuse_map1:then_reuse_map
+           ~reuse_map2:else_reuse_map);
       let combined_reuse_map =
-        combine_reuse_maps
-          ~reuse_map1:
-            (combine_reuse_maps ~reuse_map1:cond_reuse_map
-               ~reuse_map2:then_reuse_map)
-          ~reuse_map2:else_reuse_map
+        combine_reuse_maps ~reuse_map1:cond_reuse_map ~reuse_map2:then_reuse_map
       in
       let combined_owned_set =
         Or_error.ok_exn
-          ( combine_owned_sets ~owned_set1:cond_owned_set
-              ~owned_set2:then_owned_set
-          >>= fun cond_then_owned_set ->
-            combine_owned_sets ~owned_set1:cond_then_owned_set
-              ~owned_set2:else_owned_set )
+          (combine_owned_sets ~owned_set1:cond_owned_set
+             ~owned_set2:then_owned_set)
       in
       IfElse
         ( loc,
@@ -299,6 +289,153 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
           fip_cond_expr,
           fip_then_expr,
           fip_else_expr )
+  | Match (loc, _, matched_var, pattern_exprs) -> (
+      match assert_in_borrowed_set ~element:matched_var ~borrowed_set with
+      | Ok () -> (
+          let fip_pattern_exprs =
+            List.map pattern_exprs
+              ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
+                Or_error.ok_exn
+                  (let matched_expr_vars =
+                     Typed_ast.get_matched_expr_vars matched_expr
+                   in
+                   extend_borrowed_set_by_list ~elements:matched_expr_vars
+                     ~borrowed_set
+                   >>= fun extended_borrowed_set ->
+                   let fip_expr =
+                     fip_rules_check_expr typed_expr extended_borrowed_set
+                       functions_env
+                   in
+                   let _, owned_set, reuse_map =
+                     Fip_ast.get_fip_contexts_from_expr fip_expr
+                   in
+                   assert_elements_not_in_owned_set ~elements:matched_expr_vars
+                     ~owned_set
+                   >>= fun () ->
+                   Ok
+                     (Fip_ast.MPattern
+                        ( loc,
+                          borrowed_set,
+                          owned_set,
+                          reuse_map,
+                          matched_expr,
+                          fip_expr ))))
+          in
+          let fip_pattern_exprs_owned_sets =
+            List.map fip_pattern_exprs ~f:(fun fip_pattern_expr ->
+                let _, o, _ =
+                  Fip_ast.get_fip_contexts_from_pattern_expr fip_pattern_expr
+                in
+                o)
+          in
+          let fip_pattern_exprs_reuse_maps =
+            List.map fip_pattern_exprs ~f:(fun fip_pattern_expr ->
+                let _, _, r =
+                  Fip_ast.get_fip_contexts_from_pattern_expr fip_pattern_expr
+                in
+                r)
+          in
+          let fip_all_equal_owned_set =
+            List.all_equal fip_pattern_exprs_owned_sets ~equal:OwnedSet.equal
+          in
+          let fip_all_equal_reuse_map =
+            List.all_equal fip_pattern_exprs_reuse_maps
+              ~equal:reuse_map_equal_fn
+          in
+          match (fip_all_equal_owned_set, fip_all_equal_reuse_map) with
+          | Some fip_owned_set, Some fip_reuse_map ->
+              Match
+                ( loc,
+                  borrowed_set,
+                  fip_owned_set,
+                  fip_reuse_map,
+                  matched_var,
+                  fip_pattern_exprs )
+          | _ ->
+              raise
+                (Invalid_argument
+                   (Fmt.str
+                      "In a borrowed match, owned contexts should be equal on \
+                       all branches - %s."
+                      (Ast.Ast_types.string_of_loc loc))))
+      | _ -> (
+          let fip_pattern_exprs =
+            List.map pattern_exprs
+              ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
+                Or_error.ok_exn
+                  (let matched_expr_vars =
+                     Typed_ast.get_matched_expr_vars matched_expr
+                   in
+                   let match_expr_reuse_credit =
+                     Typed_ast.get_match_expr_reuse_credit matched_expr
+                   in
+                   assert_elements_not_in_borrowed_set
+                     ~elements:matched_expr_vars ~borrowed_set
+                   >>= fun () ->
+                   let fip_expr =
+                     fip_rules_check_expr typed_expr borrowed_set functions_env
+                   in
+                   let _, expr_owned_set, expr_reuse_map =
+                     Fip_ast.get_fip_contexts_from_expr fip_expr
+                   in
+                   remove_elements_from_owned_set ~elements:matched_expr_vars
+                     ~owned_set:expr_owned_set
+                   >>= fun owned_set ->
+                   consume_reuse_map ~reuse_size:match_expr_reuse_credit
+                     ~reuse_map:expr_reuse_map
+                   >>= fun reuse_map ->
+                   Ok
+                     (Fip_ast.MPattern
+                        ( loc,
+                          borrowed_set,
+                          owned_set,
+                          reuse_map,
+                          matched_expr,
+                          fip_expr ))))
+          in
+          let fip_pattern_exprs_owned_sets =
+            List.map fip_pattern_exprs ~f:(fun fip_pattern_expr ->
+                let _, o, _ =
+                  Fip_ast.get_fip_contexts_from_pattern_expr fip_pattern_expr
+                in
+                o)
+          in
+
+          let fip_pattern_exprs_reuse_maps =
+            List.map fip_pattern_exprs ~f:(fun fip_pattern_expr ->
+                let _, _, r =
+                  Fip_ast.get_fip_contexts_from_pattern_expr fip_pattern_expr
+                in
+                r)
+          in
+          let fip_all_equal_owned_set =
+            List.all_equal fip_pattern_exprs_owned_sets ~equal:OwnedSet.equal
+          in
+          let fip_all_equal_reuse_map =
+            List.all_equal fip_pattern_exprs_reuse_maps
+              ~equal:reuse_map_equal_fn
+          in
+          match (fip_all_equal_owned_set, fip_all_equal_reuse_map) with
+          | Some fip_owned_set, Some fip_reuse_map ->
+              let extended_owned_set =
+                Or_error.ok_exn
+                  (extend_owned_set ~element:matched_var
+                     ~owned_set:fip_owned_set)
+              in
+              DMatch
+                ( loc,
+                  borrowed_set,
+                  extended_owned_set,
+                  fip_reuse_map,
+                  matched_var,
+                  fip_pattern_exprs )
+          | _ ->
+              raise
+                (Invalid_argument
+                   (Fmt.str
+                      "In a borrowed match, owned contexts should be equal on \
+                       all branches - %s."
+                      (Ast.Ast_types.string_of_loc loc)))))
   | UnOp (loc, _, unary_op, expr) ->
       let fip_expr = fip_rules_check_expr expr borrowed_set functions_env in
       let _, owned_set, reuse_map =
@@ -349,8 +486,36 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
+      let extended_reuse_map =
+        extend_reuse_map ~reuse_size:k
+          ~reuse_var:(Ast.Ast_types.Var_name.of_string "_free")
+          ~reuse_map
+      in
+      Free (loc, borrowed_set, owned_set, extended_reuse_map, k, fip_expr)
+  | Weak (loc, _, k, expr) ->
+      let fip_expr = fip_rules_check_expr expr borrowed_set functions_env in
+      let _, owned_set, reuse_map =
+        Fip_ast.get_fip_contexts_from_expr fip_expr
+      in
+      let extended_reuse_map =
+        extend_reuse_map_k_times
+          ~reuse_size:(allocation_credit_size ())
+          ~reuse_var:(Ast.Ast_types.Var_name.of_string "_new")
+          ~k ~reuse_map
+      in
+      Weak (loc, borrowed_set, owned_set, extended_reuse_map, k, fip_expr)
+  | Inst (loc, _, k, expr) ->
+      let fip_expr = fip_rules_check_expr expr borrowed_set functions_env in
+      let _, owned_set, reuse_map =
+        Fip_ast.get_fip_contexts_from_expr fip_expr
+      in
       let shrinked_reuse_map =
         Or_error.ok_exn (consume_reuse_map ~reuse_size:k ~reuse_map)
       in
-      Free (loc, borrowed_set, owned_set, shrinked_reuse_map, k, fip_expr)
-  | _ -> raise (Invalid_argument "Match fip rules not implemented")
+      let update_reuse_map =
+        extend_reuse_map
+          ~reuse_size:(allocation_credit_size ())
+          ~reuse_var:(Ast.Ast_types.Var_name.of_string "_new")
+          ~reuse_map:shrinked_reuse_map
+      in
+      Inst (loc, borrowed_set, owned_set, update_reuse_map, k, fip_expr)

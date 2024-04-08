@@ -547,7 +547,8 @@ let%expect_test "Constraints Generation Expr: FunCall" =
   let functions_env =
     [
       Functions_env.FunctionEnvEntry
-        ( Function_name.of_string "mock_fun",
+        ( None,
+          Function_name.of_string "mock_fun",
           [
             TEInt mock_loc;
             TECustom (mock_loc, Type_name.of_string "custom_type");
@@ -557,8 +558,7 @@ let%expect_test "Constraints Generation Expr: FunCall" =
               [
                 TEInt mock_loc;
                 TECustom (mock_loc, Type_name.of_string "custom_type");
-              ] ),
-          0 );
+              ] ) );
     ]
   in
   (match
@@ -1406,3 +1406,117 @@ let%expect_test "Constraints Generation Expr: Free" =
     Free Expr
         Pretyped Expr: UnboxedSingleton - TyVar t14
             Value: Var: x - TyVar t14 |}]
+
+let%expect_test "Constraints Generation Expr: Weak" =
+  let expr_weak =
+    Weak
+      ( mock_loc,
+        2,
+        UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))
+      )
+  in
+  let typing_context =
+    [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
+  in
+  (match
+     Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr_weak ~verbose:true
+   with
+  | Error _ -> ()
+  | Ok (_, _, _, pretyped_expr) ->
+      Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
+        pretyped_expr);
+  [%expect
+    {|
+    Actual value:
+    Value: Var: x
+    => Value Ty:
+    TyVar t15
+    => Value Constraints:
+    -------------------------
+
+    Actual expr:
+    Expr: UnboxedSingleton
+        Value: Var: x
+
+    => Typing Context:
+    x : TyVar t15
+    => Expr Ty:
+    TyVar t15
+    => Expr Constraints:
+    -------------------------
+
+    Actual expr:
+    Expr: Weak 2
+    Weak Expr
+        Expr: UnboxedSingleton
+            Value: Var: x
+
+    => Typing Context:
+    x : TyVar t15
+    => Expr Ty:
+    TyVar t15
+    => Expr Constraints:
+    -------------------------
+
+    Pretyped Expr: Weak 2 - TyVar t15
+    Weak Expr
+        Pretyped Expr: UnboxedSingleton - TyVar t15
+            Value: Var: x - TyVar t15 |}]
+
+let%expect_test "Constraints Generation Expr: Inst" =
+  let expr_inst =
+    Inst
+      ( mock_loc,
+        2,
+        UnboxedSingleton (mock_loc, Variable (mock_loc, Var_name.of_string "x"))
+      )
+  in
+  let typing_context =
+    [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
+  in
+  (match
+     Type_infer_constraints_generator.generate_constraints [] [] typing_context
+       expr_inst ~verbose:true
+   with
+  | Error _ -> ()
+  | Ok (_, _, _, pretyped_expr) ->
+      Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
+        pretyped_expr);
+  [%expect
+    {|
+    Actual value:
+    Value: Var: x
+    => Value Ty:
+    TyVar t16
+    => Value Constraints:
+    -------------------------
+
+    Actual expr:
+    Expr: UnboxedSingleton
+        Value: Var: x
+
+    => Typing Context:
+    x : TyVar t16
+    => Expr Ty:
+    TyVar t16
+    => Expr Constraints:
+    -------------------------
+
+    Actual expr:
+    Expr: Inst 2
+    Inst Expr
+        Expr: UnboxedSingleton
+            Value: Var: x
+
+    => Typing Context:
+    x : TyVar t16
+    => Expr Ty:
+    TyVar t16
+    => Expr Constraints:
+    -------------------------
+
+    Pretyped Expr: Inst 2 - TyVar t16
+    Inst Expr
+        Pretyped Expr: UnboxedSingleton - TyVar t16
+            Value: Var: x - TyVar t16 |}]

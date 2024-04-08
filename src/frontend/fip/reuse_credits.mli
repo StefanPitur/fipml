@@ -35,3 +35,18 @@ val combine_reuse_maps :
   reuse_map2:reuse_map_entry ReuseMap.t ->
   reuse_map_entry ReuseMap.t
 (** Combines two ReuseMaps into one. *)
+
+val reuse_map_equal_fn :
+  reuse_map_entry ReuseMap.t -> reuse_map_entry ReuseMap.t -> bool
+
+val reuse_map_entry_equal_fn : reuse_map_entry -> reuse_map_entry -> bool
+
+val assert_reuse_maps_are_equal :
+  reuse_map1:reuse_map_entry ReuseMap.t ->
+  reuse_map2:reuse_map_entry ReuseMap.t ->
+  unit Or_error.t
+
+val string_of_reuse_map : reuse_map_entry ReuseMap.t -> string
+
+val pprint_reuse_map :
+  Format.formatter -> indent:string -> reuse_map_entry ReuseMap.t -> unit

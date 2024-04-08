@@ -1,7 +1,10 @@
 open Ast.Ast_types
 open Borrowed_context
+open Core
 open Owned_context
 open Reuse_credits
+
+exception VariableExpected
 
 type value =
   | Unit of loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t
@@ -99,6 +102,10 @@ type expr =
       * expr
   | Free of
       loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
+  | Weak of
+      loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
+  | Inst of
+      loc * BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t * int * expr
 
 and pattern_expr =
   | MPattern of
@@ -134,24 +141,27 @@ let get_fip_contexts_from_expr (expr : expr) :
   | BinaryOp (_, b, o, r, _, _, _) -> (b, o, r)
   | Drop (_, b, o, r, _, _) -> (b, o, r)
   | Free (_, b, o, r, _, _) -> (b, o, r)
+  | Weak (_, b, o, r, _, _) -> (b, o, r)
+  | Inst (_, b, o, r, _, _) -> (b, o, r)
 
-let is_value_borrowed_or_top_level_function (loc : loc)
+let get_fip_contexts_from_pattern_expr (pattern_expr : pattern_expr) :
+    BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t =
+  match pattern_expr with MPattern (_, b, o, r, _, _) -> (b, o, r)
+
+let is_value_borrowed_or_top_level_fip_function (loc : loc)
     ~(value : Typing.Typed_ast.value) ~(borrowed_set : BorrowedSet.t)
     ~(functions_env : Typing.Functions_env.functions_env) :
-    (Var_name.t * int) option * bool =
+    (Var_name.t * int) Or_error.t =
   match value with
   | Typing.Typed_ast.Variable (_, _, var_name) -> (
       match assert_in_borrowed_set ~element:var_name ~borrowed_set with
-      | Ok () -> (Some (var_name, 0), true)
-      | _ -> (
+      | Ok () -> Ok (var_name, 0)
+      | _ ->
           let function_name =
             Function_name.of_string (Var_name.to_string var_name)
           in
-          match
-            Typing.Functions_env.get_function_by_name loc function_name
-              functions_env
-          with
-          | Ok (FunctionEnvEntry (_, _, _, allocation_credit)) ->
-              (Some (var_name, allocation_credit), true)
-          | _ -> (None, false)))
-  | _ -> (None, false)
+          let open Result in
+          Typing.Functions_env.get_fip_function_allocation_credit loc
+            function_name functions_env
+          >>= fun allocation_credit -> Ok (var_name, allocation_credit))
+  | _ -> Or_error.of_exn VariableExpected

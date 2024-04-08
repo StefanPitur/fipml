@@ -20,6 +20,8 @@ type expr =
   | BinaryOp of loc * type_expr * binary_op * expr * expr
   | Drop of loc * type_expr * Var_name.t * expr
   | Free of loc * type_expr * int * expr
+  | Weak of loc * type_expr * int * expr
+  | Inst of loc * type_expr * int * expr
 
 and pattern_expr = MPattern of loc * type_expr * matched_expr * expr
 
@@ -45,3 +47,6 @@ val get_expr_type : expr -> type_expr
 
 val get_matched_expr_vars : matched_expr -> Var_name.t list
 (** Given a [match_expr] return a list of the variables present in the pattern. *)
+
+val get_match_expr_reuse_credit : matched_expr -> int
+(** Given a [match_expr] return the reuse credit available by destructive match. *)

@@ -78,6 +78,8 @@ rule token = parse
   | "fbip" { FBIP }
   | "drop" { DROP }
   | "free" { FREE }
+  | "weak" { WEAK }
+  | "inst" { INST }
   | integer_regex_expression { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | lid_regex_expression { LID (Lexing.lexeme lexbuf) }
   | uid_regex_expression { UID (Lexing.lexeme lexbuf) }

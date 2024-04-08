@@ -11,7 +11,11 @@ val extend_borrowed_set :
 
 val assert_in_borrowed_set :
   element:Var_name.t -> borrowed_set:BorrowedSet.t -> unit Or_error.t
-(** Assert an [element] is already in the [borrowed_context]. *)
+(** Assert an [element] is already in the [borrowed_set]. *)
+
+val assert_elements_not_in_borrowed_set :
+  elements:Var_name.t list -> borrowed_set:BorrowedSet.t -> unit Or_error.t
+(** Assert [elements] not in [borrowed_set] already. *)
 
 val combine_borrowed_sets :
   borrowed_set1:BorrowedSet.t ->
@@ -28,3 +32,6 @@ val extend_borrowed_set_by_list :
   borrowed_set:BorrowedSet.t ->
   BorrowedSet.t Or_error.t
 (** Given a bunch of [elements] and a borrowed context [borrowed_set], extend the context with the elements or throw error if duplicates exist. *)
+
+val pprint_borrowed_set :
+  Format.formatter -> indent:string -> BorrowedSet.t -> unit

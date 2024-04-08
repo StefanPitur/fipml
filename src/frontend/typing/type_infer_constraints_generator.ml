@@ -119,7 +119,7 @@ let rec generate_constraints
   | FunCall (loc, function_name, values) ->
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry
-                (_, function_args_types, function_return_type, _)) ->
+                (_, _, function_args_types, function_return_type)) ->
       if List.length values <> List.length function_args_types then
         Or_error.of_exn PartialFunctionApplicationNotAllowed
       else
@@ -301,7 +301,25 @@ let rec generate_constraints
         ( typing_context,
           expr_ty,
           expr_ty_constraints,
-          Pretyped_ast.Free (loc, expr_ty, k, pretyped_expr) ))
+          Pretyped_ast.Free (loc, expr_ty, k, pretyped_expr) )
+  | Weak (loc, k, expr) ->
+      generate_constraints constructors_env functions_env typing_context expr
+        ~verbose
+      >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
+      Ok
+        ( typing_context,
+          expr_ty,
+          expr_ty_constraints,
+          Pretyped_ast.Weak (loc, expr_ty, k, pretyped_expr) )
+  | Inst (loc, k, expr) ->
+      generate_constraints constructors_env functions_env typing_context expr
+        ~verbose
+      >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
+      Ok
+        ( typing_context,
+          expr_ty,
+          expr_ty_constraints,
+          Pretyped_ast.Inst (loc, expr_ty, k, pretyped_expr) ))
   >>= fun (typing_context, expr_tys, expr_constraints, pretyped_expr) ->
   Pprint_type_infer.pprint_type_infer_expr_verbose Fmt.stdout ~verbose expr
     typing_context expr_tys expr_constraints;
