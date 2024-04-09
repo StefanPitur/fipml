@@ -66,6 +66,7 @@ rule token = parse
   | "false" { FALSE }
   | "let" { LET }
   | "fun" { FUN }
+  | "and" { ANDFUN }
   | "in" { IN }
   | "type" { TYPE }
   | "match" { MATCH }

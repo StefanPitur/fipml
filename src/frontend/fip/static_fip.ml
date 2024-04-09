@@ -9,7 +9,7 @@ open Result
 exception UnableFbipCheck
 
 let fip
-    (TFun (_, _, fip_option, _, params, function_body) :
+    (TFun (_, _, _, fip_option, _, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
     Fip_ast.expr Or_error.t =
   match fip_option with

@@ -37,7 +37,8 @@ and type_constructor =
   | TTypeConstructor of loc * type_expr * Constructor_name.t * type_expr list
 
 type function_defn =
-  | TFun of loc * type_expr * fip option * Function_name.t * param list * expr
+  | TFun of
+      loc * type_expr * int * fip option * Function_name.t * param list * expr
 
 type program =
   | TProg of type_defn list * type_expr * function_defn list * expr option

@@ -7,6 +7,7 @@ let%expect_test "expression: fip function" =
     {|
     Program
         Function Name: my_fip_func
+        Mutually Recursive Group Id: 1
         Function Type - fip(0)
         Param Types:
             Type Expr: Int
@@ -25,6 +26,7 @@ let%expect_test "expression: fip function" =
     {|
       Program
           Function Name: my_fip_func
+          Mutually Recursive Group Id: 2
           Function Type - fip(1)
           Param Types:
               Type Expr: Int
@@ -43,6 +45,7 @@ let%expect_test "expression: fbip function" =
     {|
     Program
         Function Name: my_fip_func
+        Mutually Recursive Group Id: 3
         Function Type - fbip(0)
         Param Types:
             Type Expr: Int
@@ -61,6 +64,7 @@ let%expect_test "expression: fip function" =
     {|
       Program
           Function Name: my_fip_func
+          Mutually Recursive Group Id: 4
           Function Type - fbip(1)
           Param Types:
               Type Expr: Int

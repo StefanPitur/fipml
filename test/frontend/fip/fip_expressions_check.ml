@@ -13,12 +13,14 @@ let mock_function_type : fip = Fbip 0
 let functions_env : Functions_env.functions_env =
   [
     FunctionEnvEntry
-      ( Some (Fip 0),
+      ( 1,
+        Some (Fip 0),
         Function_name.of_string "add_fun",
         [ TEInt mock_loc ],
         TEInt mock_loc );
     FunctionEnvEntry
-      ( Some (Fip 0),
+      ( 2,
+        Some (Fip 0),
         Function_name.of_string "apply_fun",
         [ TEArrow (mock_loc, TEInt mock_loc, TEInt mock_loc); TEInt mock_loc ],
         TEInt mock_loc );

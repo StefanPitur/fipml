@@ -119,7 +119,7 @@ let rec generate_constraints
   | FunCall (loc, function_name, values) ->
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry
-                (_, _, function_args_types, function_return_type)) ->
+                (_, _, _, function_args_types, function_return_type)) ->
       if List.length values <> List.length function_args_types then
         Or_error.of_exn PartialFunctionApplicationNotAllowed
       else

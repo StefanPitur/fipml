@@ -10,6 +10,7 @@ let%expect_test "function definition with both borrowed and owned parameters" =
     {|
     Program
         Function Name: my_function
+        Mutually Recursive Group Id: 1
         Param Types:
             Type Expr: Int
             BorrowedParam: y1

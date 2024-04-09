@@ -44,6 +44,7 @@ let pprint_lexer_token ppf token =
     | FALSE -> "false"
     | LET -> "let"
     | FUN -> "fun"
+    | ANDFUN -> "and"
     | IN -> "in"
     | TYPE -> "type"
     | MATCH -> "match"

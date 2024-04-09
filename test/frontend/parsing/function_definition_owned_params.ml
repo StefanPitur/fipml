@@ -12,6 +12,7 @@ let%expect_test "function definition with owned parameters" =
     {|
     Program
         Function Name: function_name
+        Mutually Recursive Group Id: 1
         Param Types:
             Type Expr: Int
             OwnedParam: x

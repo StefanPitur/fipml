@@ -547,7 +547,8 @@ let%expect_test "Constraints Generation Expr: FunCall" =
   let functions_env =
     [
       Functions_env.FunctionEnvEntry
-        ( None,
+        ( 1,
+          None,
           Function_name.of_string "mock_fun",
           [
             TEInt mock_loc;

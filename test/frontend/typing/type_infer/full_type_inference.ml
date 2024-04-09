@@ -29,6 +29,7 @@ let%expect_test "Full Type Checking" =
     [
       TFun
         ( mock_loc,
+          1,
           Some (Fip 0),
           Function_name.of_string "add",
           [
@@ -159,12 +160,13 @@ let%expect_test "Full Type Checking" =
           Typed Program - Int
               Type Name: custom_type
               Type Constructors:
+                  Type Constructor Name: C1
+                      Type Expr: Int
                   Type Constructor Name: C2
                       Type Expr: Bool
                       Type Expr: custom_type
-                  Type Constructor Name: C1
-                      Type Expr: Int
               Fip(0) Function Name: add
+              Function Mutually Recursive Group Id - 1
               Return Type: Int
               Param List:
                   Type Expr: Int

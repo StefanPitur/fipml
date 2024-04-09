@@ -26,6 +26,7 @@ and pprint_typed_function_defn ppf ~indent
     (TFun
       ( _,
         function_return_type,
+        function_mutually_recursive_group_id,
         fip_option,
         function_name,
         function_args,
@@ -34,6 +35,8 @@ and pprint_typed_function_defn ppf ~indent
   Fmt.pf ppf "%s%sFunction Name: %s@." indent
     (string_of_fip_option fip_option)
     (Function_name.to_string function_name);
+  Fmt.pf ppf "%sFunction Mutually Recursive Group Id - %i@." indent
+    function_mutually_recursive_group_id;
   Fmt.pf ppf "%sReturn Type: %s@." indent (string_of_type function_return_type);
   Fmt.pf ppf "%sParam List:@." indent;
   Ast.Pprint_ast_types.pprint_params ppf ~indent:sub_expr_indent function_args;

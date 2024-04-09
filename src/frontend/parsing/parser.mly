@@ -1,7 +1,11 @@
 %{
   open Ast.Ast_types
   open Parser_ast
-  (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
+
+  let mutually_recursive_group_id = ref 0
+  let incr_mutually_recursive_group_id () =
+    mutually_recursive_group_id := !mutually_recursive_group_id + 1
+  let get_mutually_recursive_group_id () = !mutually_recursive_group_id
 %}
 
 /* Tokens Definition */
@@ -46,6 +50,7 @@
 %token FALSE
 %token LET
 %token FUN
+%token ANDFUN
 %token IN
 %token TYPE
 %token MATCH
@@ -139,20 +144,35 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    TFun($startpos, Some (Fip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id (), Some (Fip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    TFun($startpos, Some (Fip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id (), Some (Fip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    TFun($startpos, Some (Fbip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    TFun($startpos, Some (Fbip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
-    TFun($startpos, None, Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), None, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
 
 function_return_type:

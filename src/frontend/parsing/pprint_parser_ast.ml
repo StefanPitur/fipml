@@ -152,10 +152,18 @@ and pprint_type_constructor ppf ~indent
 
 (* Pretty-printing Function Definition *)
 and pprint_function_defn ppf ~indent
-    (TFun (_, fip, function_name, function_params, body_expr, return_type)) =
+    (TFun
+      ( _,
+        mut_rec_groupd_id,
+        fip,
+        function_name,
+        function_params,
+        body_expr,
+        return_type )) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sFunction Name: %s@." indent
     (Function_name.to_string function_name);
+  Fmt.pf ppf "%sMutually Recursive Group Id: %i@." indent mut_rec_groupd_id;
   (match fip with
   | Some (Fip n) ->
       Fmt.pf ppf "%sFunction Type - fip(%s)@." indent (string_of_int n)

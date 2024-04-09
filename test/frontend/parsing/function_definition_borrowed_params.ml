@@ -11,6 +11,7 @@ let%expect_test "function definition with borrowed parameters" =
     {|
     Program
         Function Name: function_name
+        Mutually Recursive Group Id: 1
         Param Types:
             Type Expr: Int
             BorrowedParam: x
