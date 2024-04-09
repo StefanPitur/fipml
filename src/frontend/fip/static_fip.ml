@@ -14,7 +14,7 @@ let fip
     Fip_ast.expr Or_error.t =
   match fip_option with
   | None -> Or_error.of_exn UnableFbipCheck
-  | Some (Fip n) | Some (Fbip n) ->
+  | Some (Fip n as function_type) | Some (Fbip n as function_type) ->
       let borrowed_set, owned_set =
         List.fold params ~init:(BorrowedSet.empty, OwnedSet.empty)
           ~f:(fun
@@ -43,8 +43,8 @@ let fip
           ~reuse_var:(Ast_types.Var_name.of_string "_new")
           ~k:n ~reuse_map:ReuseMap.empty
       in
-      Fip_rules_check.fip_rules_check_expr function_body borrowed_set
-        functions_env
+      Fip_rules_check.fip_rules_check_expr function_type function_body
+        borrowed_set functions_env
       >>= fun fip_function_body ->
       let _, fip_owned_set, fip_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_function_body

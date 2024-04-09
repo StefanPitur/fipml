@@ -3,6 +3,7 @@ open Core
 open Typing
 
 val fip_rules_check_expr :
+  Ast.Ast_types.fip ->
   Typed_ast.expr ->
   BorrowedSet.t ->
   Functions_env.functions_env ->
