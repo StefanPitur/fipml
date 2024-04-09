@@ -1,7 +1,7 @@
 open Core
 open Typing
 
-val fbip :
+val fip :
   Typed_ast.function_defn ->
   Functions_env.functions_env ->
   Fip_ast.expr Or_error.t

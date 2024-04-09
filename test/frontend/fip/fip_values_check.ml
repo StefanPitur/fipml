@@ -1,4 +1,5 @@
 open Ast.Ast_types
+open Core
 open Fip.Fip_rules_check
 open Fip.Borrowed_context
 open Fip.Pprint_fip_ast
@@ -9,7 +10,9 @@ let mock_loc : Lexing.position =
 
 let%expect_test "FIP rules for values : Unit" =
   let value_unit = Typed_ast.Unit (mock_loc, TEUnit mock_loc) in
-  let fip_value = fip_rules_check_value value_unit BorrowedSet.empty in
+  let fip_value =
+    Or_error.ok_exn (fip_rules_check_value value_unit BorrowedSet.empty)
+  in
   pprint_fip_value Fmt.stdout ~indent:"" fip_value;
   [%expect
     {|
@@ -21,7 +24,9 @@ let%expect_test "FIP rules for values : Unit" =
 
 let%expect_test "FIP rules for values : Integer/Boolean" =
   let value_integer = Typed_ast.Integer (mock_loc, TEInt mock_loc, 0) in
-  let fip_value = fip_rules_check_value value_integer BorrowedSet.empty in
+  let fip_value =
+    Or_error.ok_exn (fip_rules_check_value value_integer BorrowedSet.empty)
+  in
   pprint_fip_value Fmt.stdout ~indent:"" fip_value;
   [%expect
     {|
@@ -35,7 +40,9 @@ let%expect_test "FIP rules for values : Variable" =
   let value_var =
     Typed_ast.Variable (mock_loc, TEBool mock_loc, Var_name.of_string "x")
   in
-  let fip_value = fip_rules_check_value value_var BorrowedSet.empty in
+  let fip_value =
+    Or_error.ok_exn (fip_rules_check_value value_var BorrowedSet.empty)
+  in
   pprint_fip_value Fmt.stdout ~indent:"" fip_value;
   [%expect
     {|
@@ -53,7 +60,9 @@ let%expect_test "FIP rules for values : Atom" =
         Constructor_name.of_string "Atom",
         [] )
   in
-  let fip_value = fip_rules_check_value value_atom BorrowedSet.empty in
+  let fip_value =
+    Or_error.ok_exn (fip_rules_check_value value_atom BorrowedSet.empty)
+  in
   pprint_fip_value Fmt.stdout ~indent:"" fip_value;
   [%expect
     {|
@@ -79,7 +88,9 @@ let%expect_test "FIP rules for values : Complex Constructor" =
           Typed_ast.Variable (mock_loc, TEInt mock_loc, Var_name.of_string "x");
         ] )
   in
-  let fip_value = fip_rules_check_value value_complex BorrowedSet.empty in
+  let fip_value =
+    Or_error.ok_exn (fip_rules_check_value value_complex BorrowedSet.empty)
+  in
   pprint_fip_value Fmt.stdout ~indent:"" fip_value;
   [%expect
     {|

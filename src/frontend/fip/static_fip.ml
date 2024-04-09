@@ -4,10 +4,11 @@ open Core
 open Owned_context
 open Typing
 open Reuse_credits
+open Result
 
 exception UnableFbipCheck
 
-let fbip
+let fip
     (TFun (_, _, fip_option, _, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
     Fip_ast.expr Or_error.t =
@@ -42,10 +43,9 @@ let fbip
           ~reuse_var:(Ast_types.Var_name.of_string "_new")
           ~k:n ~reuse_map:ReuseMap.empty
       in
-      let fip_function_body =
-        Fip_rules_check.fip_rules_check_expr function_body borrowed_set
-          functions_env
-      in
+      Fip_rules_check.fip_rules_check_expr function_body borrowed_set
+        functions_env
+      >>= fun fip_function_body ->
       let _, fip_owned_set, fip_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_function_body
       in

@@ -1,7 +1,7 @@
 (library
  (name fip)
  (modules
-  fbip
+  static_fip
   borrowed_context
   owned_context
   reuse_credits
