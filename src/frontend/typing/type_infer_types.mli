@@ -13,7 +13,7 @@ type ty =
   | TyBool
   | TyCustom of Type_name.t
   | TyArrow of ty * ty
-  | TyTuple of ty * ty
+  | TyTuple of ty list
 
 type subst = string * ty
 type constr = ty * ty
@@ -28,11 +28,11 @@ val convert_ty_to_ast_type : ty -> loc -> type_expr Or_error.t
 val fresh : unit -> ty
 (** Generates new fresh ty variable for type inference *)
 
-val zip_lists : 'a list -> 'b list -> ('a * 'b) list Or_error.t
-(** Zips two lists together so they may be iterated over at the same time *)
-
 val pop_last_element_from_list : 'a list -> ('a * 'a list) Or_error.t
 (** Pops last element from list *)
 
 val ty_equal : ty -> ty -> bool
 (** Checks if the two provides tys are equal *)
+
+val get_ty_function_signature : ty -> (ty list * ty) Or_error.t
+(** Given a function encoded in [ty], returns its signature *)

@@ -1,10 +1,10 @@
 let%expect_test "function definition with owned parameters" =
   let source_code =
     "\n\
-    \    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type) : \
-     unit = begin\n\
+    \    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type ) \
+     : [unit * int * custom_type * bool * ((int -> int) -> int)] = {\n\
     \      ()\n\
-    \    end\n\
+    \    }\n\
     \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
@@ -12,15 +12,17 @@ let%expect_test "function definition with owned parameters" =
     {|
     Program
         Function Name: function_name
-        Return Type: Unit
-        Param List:
+        Mutually Recursive Group Id: 1
+        Param Types:
             Type Expr: Int
-            Param: x
+            OwnedParam: x
             Type Expr: Bool
-            Param: y
+            OwnedParam: y
             Type Expr: Unit
-            Param: z
+            OwnedParam: z
             Type Expr: custom_type
-            Param: t
-            Function Body Block
-                Expr: Unit |}]
+            OwnedParam: t
+        Return Type: (Unit * Int * custom_type * Bool * ((Int -> Int) -> Int))
+        Function Body Expr
+            Expr: UnboxedSingleton
+                Value: Unit |}]

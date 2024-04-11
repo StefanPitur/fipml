@@ -1,10 +1,10 @@
 let%expect_test "function definition with polymorphic parameters" =
   let source_code =
     "\n\
-    \    fun my_poly_function (x : 'a option) (^y : int custom_type) : 'a \
-     custom_type option = begin \n\
+    \    fun my_poly_function (x : 'a option) ^(y : int custom_type) : 'a \
+     custom_type option = { \n\
     \      () \n\
-    \    end\n\
+    \    }\n\
     \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
@@ -12,11 +12,13 @@ let%expect_test "function definition with polymorphic parameters" =
     {|
     Program
         Function Name: my_poly_function
-        Return Type: (('a) custom_type) option
-        Param List:
+        Mutually Recursive Group Id: 1
+        Param Types:
             Type Expr: ('a) option
-            Param: x
+            OwnedParam: x
             Type Expr: (Int) custom_type
             BorrowedParam: y
-            Function Body Block
-                Expr: Unit |}]
+        Return Type: (('a) custom_type) option
+        Function Body Expr
+            Expr: UnboxedSingleton
+                Value: Unit |}]

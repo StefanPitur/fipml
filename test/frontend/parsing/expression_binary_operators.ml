@@ -20,101 +20,126 @@ let%expect_test "expression: binary operators" =
   in
   let source_codes =
     List.map
-      (fun binary_op ->
-        "begin expr1 " ^ string_of_binary_op binary_op ^ "expr2 end")
+      (fun binary_op -> "{ var1 " ^ string_of_binary_op binary_op ^ "var2 }")
       binary_operators
   in
   List.iter Pprint_parser_ast.pprint_parser_ast source_codes;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Binary Op: +
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: -
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: *
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: /
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: %
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: <
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: >
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: <=
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: >=
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: ==
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: !=
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: &&
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2
+                Expr: UnboxedSingleton
+                    Value: Var: var2
     Program
-        Main Block
+        Main
             Binary Op: ||
                 LeftExpr
-                Expr: Var: expr1
+                Expr: UnboxedSingleton
+                    Value: Var: var1
                 RightExpr
-                Expr: Var: expr2 |}]
+                Expr: UnboxedSingleton
+                    Value: Var: var2 |}]

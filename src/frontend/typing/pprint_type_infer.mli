@@ -14,11 +14,10 @@ val pprint_type_infer_expr_verbose :
   constr list ->
   unit
 
-val pprint_type_infer_block_expr_verbose :
+val pprint_type_infer_value_verbose :
   Format.formatter ->
   verbose:bool ->
-  Parsing.Parser_ast.block_expr ->
-  typing_context ->
+  Parsing.Parser_ast.value ->
   ty ->
   constr list ->
   unit

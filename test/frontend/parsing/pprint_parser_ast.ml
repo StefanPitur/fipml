@@ -1,6 +1,9 @@
+open Core
+
 let pprint_parser_ast source_code =
-  let program =
+  match
     Parsing.Lex_and_parse.parse_source_code_with_error
       (Lexing.from_string source_code)
-  in
-  Parsing.Pprint_parser_ast.pprint_program Fmt.stdout program
+  with
+  | Ok program -> Parsing.Pprint_parser_ast.pprint_program Fmt.stdout program
+  | Error error -> print_string (Error.to_string_hum error)

@@ -121,7 +121,7 @@ let rec typecheck_type_constructors (types_env : types_env)
         type_constructor
       >>= fun (constructors_env, typed_ast_type_constructor) ->
       typecheck_type_constructors types_env constructors_env
-        (typed_ast_type_constructor :: typed_ast_type_constructors)
+        (typed_ast_type_constructors @ [ typed_ast_type_constructor ])
         custom_base_type type_constructors
 
 let typecheck_type_defn (types_env : types_env)

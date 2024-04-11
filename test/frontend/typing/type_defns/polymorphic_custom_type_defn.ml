@@ -90,6 +90,6 @@ let%expect_test "typing type defn: polymorphic custom type" =
         Type Poly Params:
             Type Poly Param: 'a
         Type Constructors:
+            Type Constructor Name: None
             Type Constructor Name: Some
-                Type Expr: ('a) option
-            Type Constructor Name: None |}]
+                Type Expr: ('a) option |}]

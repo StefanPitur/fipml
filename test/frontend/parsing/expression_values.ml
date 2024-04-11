@@ -1,22 +1,52 @@
 open Core
 
 let%expect_test "expression: value" =
-  let values = [ "()"; "1"; "true"; "false" ] in
-  let source_codes =
-    List.map values ~f:(fun value -> "begin " ^ value ^ " end")
+  let values =
+    [
+      "SimpleConstructor";
+      "ComplexConstructor(1, SimpleConstructor)";
+      "()";
+      "1";
+      "true";
+      "false";
+      "x";
+    ]
   in
+  let source_codes = List.map values ~f:(fun value -> "{ " ^ value ^ " }") in
   List.iter source_codes ~f:Pprint_parser_ast.pprint_parser_ast;
   [%expect
     {|
     Program
-        Main Block
-            Expr: Unit
+        Main
+            Expr: UnboxedSingleton
+                Value: Constructor: SimpleConstructor
+                    ()
     Program
-        Main Block
-            Expr: Int: 1
+        Main
+            Expr: UnboxedSingleton
+                Value: Constructor: ComplexConstructor
+                    ConstructorArg
+                        Value: Int: 1
+                    ConstructorArg
+                        Value: Constructor: SimpleConstructor
+                            ()
     Program
-        Main Block
-            Expr: Bool: true
+        Main
+            Expr: UnboxedSingleton
+                Value: Unit
     Program
-        Main Block
-            Expr: Bool: false |}]
+        Main
+            Expr: UnboxedSingleton
+                Value: Int: 1
+    Program
+        Main
+            Expr: UnboxedSingleton
+                Value: Bool: true
+    Program
+        Main
+            Expr: UnboxedSingleton
+                Value: Bool: false
+    Program
+        Main
+            Expr: UnboxedSingleton
+                Value: Var: x |}]

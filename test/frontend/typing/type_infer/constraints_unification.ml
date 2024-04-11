@@ -5,13 +5,13 @@ open Typing.Type_infer_constraints_unification
 open Typing.Type_infer_types
 
 let%expect_test "Occurs testing" =
-  print_string (string_of_bool (occurs "t1" (TyVar "t1")));
+  print_string (string_of_bool (occurs "t1" (TyArrow (TyVar "t1", TyInt))));
   [%expect {| true |}]
 
 let%expect_test "Subst testing" =
   let substs : subst list = [ ("t1", TyInt) ] in
-  pprint_ty Fmt.stdout (ty_subst substs (TyVar "t1"));
-  [%expect {| TyInt |}]
+  pprint_ty Fmt.stdout (ty_subst substs (TyArrow (TyVar "t1", TyVar "t2")));
+  [%expect {| TyArrow (TyInt -> TyVar t2) |}]
 
 let%expect_test "small unification" =
   let constraints : constr list =
