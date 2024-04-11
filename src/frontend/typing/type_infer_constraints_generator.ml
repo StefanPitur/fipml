@@ -3,119 +3,82 @@ open Core
 open Parsing.Parser_ast
 open Type_infer_types
 
-(*
-  Implementation notes:
-  - nothing on tuples actually works, need to implement tuples  
-  - typing context is not passed between successive expressions in block_expr 
-*)
+exception TyNotMatching
+exception PartialFunctionApplicationNotAllowed
 
-let rec generate_constraints_block_expr
+let rec generate_constraints
     (constructors_env : Type_defns_env.constructors_env)
-    (functions_env : Functions_env.functions_env)
-    (typing_context : typing_context)
-    (Block (loc, exprs) as block_expr : block_expr) ~(verbose : bool) :
-    (typing_context * ty * constr list * Pretyped_ast.block_expr) Or_error.t =
-  let open Result in
-  pop_last_element_from_list exprs >>= fun (last_expr, exprs) ->
-  Ok
-    (List.fold_left exprs ~init:([], [])
-       ~f:(fun (acc_constraints, acc_pretyped_exprs) expr ->
-         Or_error.ok_exn
-           ( generate_constraints constructors_env functions_env typing_context
-               expr ~verbose
-           >>= fun (_, expr_type, expr_constraints, pretyped_expr) ->
-             Ok
-               ( ((expr_type, TyUnit) :: expr_constraints) @ acc_constraints,
-                 pretyped_expr :: acc_pretyped_exprs ) )))
-  >>= fun (block_expr_constraints, pretyped_block_exprs) ->
-  generate_constraints constructors_env functions_env typing_context last_expr
-    ~verbose
-  >>= fun (_, block_type, last_expr_constraints, pretyped_last_expr) ->
-  let block_expr_constraints = last_expr_constraints @ block_expr_constraints in
-  Pprint_type_infer.pprint_type_infer_block_expr_verbose Fmt.stdout ~verbose
-    block_expr typing_context block_type block_expr_constraints;
-  Ok
-    ( typing_context,
-      block_type,
-      block_expr_constraints,
-      Pretyped_ast.Block
-        (loc, block_type, pretyped_block_exprs @ [ pretyped_last_expr ]) )
-
-and generate_constraints (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (expr : expr) ~(verbose : bool) :
     (typing_context * ty * constr list * Pretyped_ast.expr) Or_error.t =
   let open Result in
   (match expr with
-  | Unit loc -> Ok (typing_context, TyUnit, [], Pretyped_ast.Unit (loc, TyUnit))
-  | Integer (loc, i) ->
-      Ok (typing_context, TyInt, [], Pretyped_ast.Integer (loc, TyInt, i))
-  | Boolean (loc, b) ->
-      Ok (typing_context, TyBool, [], Pretyped_ast.Boolean (loc, TyBool, b))
-  | Option (loc, expr) -> (
-      let t = fresh () in
-      match expr with
-      | None -> Ok (typing_context, t, [], Pretyped_ast.Option (loc, t, None))
-      | Some expr ->
-          generate_constraints constructors_env functions_env typing_context
-            expr ~verbose
-          >>= fun (_, expr_type, expr_constrs, pretyped_expr) ->
-          Ok
-            ( typing_context,
-              t,
-              (t, TyOption expr_type) :: expr_constrs,
-              Pretyped_ast.Option (loc, t, Some pretyped_expr) ))
-  | Variable (loc, var) ->
-      Type_context_env.get_var_type typing_context var >>= fun var_type ->
+  | UnboxedSingleton (loc, value) ->
+      generate_constraints_value_expr constructors_env functions_env
+        typing_context value ~verbose
+      >>= fun (value_ty, value_constraints, pretyped_value) ->
       Ok
         ( typing_context,
-          var_type,
-          [],
-          Pretyped_ast.Variable (loc, var_type, var) )
-  | Constructor (loc, constructor_name, constructor_exprs) ->
-      let t = fresh () in
-      Type_defns_env.get_constructor_by_name loc constructor_name
-        constructors_env
-      >>= fun (ConstructorEnvEntry
-                (constructor_type, _, constructor_param_types)) ->
-      zip_lists constructor_exprs constructor_param_types
-      (* Maybe this should be a fold_right, based on how we determine pretyped_params *)
-      >>| List.fold_left ~init:([], [])
-            ~f:(fun
-                (acc_constraints, acc_pretyped_params)
-                (constructor_expr, constructor_param_type)
-              ->
-              Or_error.ok_exn
-                ( generate_constraints constructors_env functions_env
-                    typing_context constructor_expr ~verbose
-                >>= fun (_, param_type, param_constraints, pretyped_param) ->
-                  Ok
-                    ( (param_type, convert_ast_type_to_ty constructor_param_type)
-                      :: param_constraints
-                      @ acc_constraints,
-                      acc_pretyped_params @ [ pretyped_param ] ) ))
-      >>= fun (params_contraints, pretyped_params) ->
+          value_ty,
+          value_constraints,
+          Pretyped_ast.UnboxedSingleton (loc, value_ty, pretyped_value) )
+  | UnboxedTuple (loc, values) ->
+      let values_types, values_constraints, values_pretyped =
+        List.fold_right values ~init:([], [], [])
+          ~f:(fun value (acc_types, acc_constraints, acc_pretyped_values) ->
+            Or_error.ok_exn
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context value ~verbose
+              >>= fun (value_ty, value_constraints, pretyped_value) ->
+                Ok
+                  ( value_ty :: acc_types,
+                    value_constraints @ acc_constraints,
+                    pretyped_value :: acc_pretyped_values ) ))
+      in
       Ok
         ( typing_context,
-          t,
-          (t, TyCustom constructor_type) :: params_contraints,
-          Pretyped_ast.Constructor (loc, t, constructor_name, pretyped_params)
+          TyTuple values_types,
+          values_constraints,
+          Pretyped_ast.UnboxedTuple (loc, TyTuple values_types, values_pretyped)
         )
-  (* TODO: Implement Tuples, they're not in the language right now as a type*)
-  | Tuple (loc, _, _) ->
-      Ok
-        ( typing_context,
-          TyCustom (Type_name.of_string "_undefined"),
-          [],
-          Pretyped_ast.Unit (loc, TyCustom (Type_name.of_string "_undefined"))
-        )
-  (* Note that we do not care about Polymorphic - Let, as we only allow top-level functions *)
-  | Let (loc, var_name, var_expr, expr) ->
+  (* Note that we do not care about Polymorphic - Let (at the moment...), as we only allow top-level functions *)
+  | Let (loc, var_names, vars_expr, expr) ->
       generate_constraints constructors_env functions_env typing_context
-        var_expr ~verbose
-      >>= fun (_, var_type, var_constrs, pretyped_var) ->
-      let extended_typing_context =
-        Type_context_env.extend_typing_context typing_context var_name var_type
+        vars_expr ~verbose
+      >>= fun (_, var_type, var_constrs, pretyped_vars) ->
+      let extended_typing_context, extra_tyvar_constraints =
+        Or_error.ok_exn
+          (match var_type with
+          | TyTuple tys ->
+              if List.length var_names = 1 then Or_error.of_exn TyNotMatching
+              else
+                Ok
+                  ( List.fold2_exn var_names tys ~init:typing_context
+                      ~f:(fun typing_context var_name var_type ->
+                        Or_error.ok_exn
+                          (Type_context_env.extend_typing_context typing_context
+                             var_name var_type)),
+                    [] )
+          | TyVar _ when List.length var_names <> 1 ->
+              let typing_context, fresh_tys =
+                List.fold_right var_names ~init:(typing_context, [])
+                  ~f:(fun var_name (typing_context, fresh_tys) ->
+                    let fresh_ty = fresh () in
+                    ( Or_error.ok_exn
+                        (Type_context_env.extend_typing_context typing_context
+                           var_name fresh_ty),
+                      fresh_ty :: fresh_tys ))
+              in
+              Ok (typing_context, [ (TyTuple fresh_tys, var_type) ])
+          | _ -> (
+              match var_names with
+              | [ var_name ] ->
+                  Ok
+                    ( Or_error.ok_exn
+                        (Type_context_env.extend_typing_context typing_context
+                           var_name var_type),
+                      [] )
+              | _ -> Or_error.of_exn TyNotMatching))
       in
       generate_constraints constructors_env functions_env
         extended_typing_context expr ~verbose
@@ -123,47 +86,145 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
       Ok
         ( typing_context,
           expr_type,
-          expr_constrs @ var_constrs,
+          expr_constrs @ extra_tyvar_constraints @ var_constrs,
           Pretyped_ast.Let
-            (loc, var_type, var_name, pretyped_var, expr_type, pretyped_expr) )
+            (loc, expr_type, var_names, pretyped_vars, pretyped_expr) )
+  | FunApp (loc, app_var_name, app_values) ->
+      Type_context_env.get_var_type typing_context app_var_name
+      >>= fun app_var_ty ->
+      get_ty_function_signature app_var_ty
+      >>= fun (app_params_tys, app_return_ty) ->
+      let app_params_constraints, app_params_pretyped =
+        List.fold_right2_exn app_params_tys app_values ~init:([], [])
+          ~f:(fun
+              app_param_ty
+              app_value
+              (acc_params_constraints, acc_params_pretyped)
+            ->
+            Or_error.ok_exn
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context app_value ~verbose
+              >>= fun (value_ty, value_constraints, pretyped_value) ->
+                Ok
+                  ( ((value_ty, app_param_ty) :: value_constraints)
+                    @ acc_params_constraints,
+                    pretyped_value :: acc_params_pretyped ) ))
+      in
+      Ok
+        ( typing_context,
+          app_return_ty,
+          app_params_constraints,
+          Pretyped_ast.FunApp
+            (loc, app_return_ty, app_var_name, app_params_pretyped) )
+  | FunCall (loc, function_name, values) ->
+      Functions_env.get_function_by_name loc function_name functions_env
+      >>= fun (FunctionEnvEntry
+                (_, _, _, function_args_types, function_return_type)) ->
+      if List.length values <> List.length function_args_types then
+        Or_error.of_exn PartialFunctionApplicationNotAllowed
+      else
+        let args_constraints, args_pretyped =
+          List.fold_right2_exn function_args_types values ~init:([], [])
+            ~f:(fun
+                function_arg_type
+                value
+                (acc_constraints, acc_pretyped_values)
+              ->
+              Or_error.ok_exn
+                ( generate_constraints_value_expr constructors_env functions_env
+                    typing_context value ~verbose
+                >>= fun (value_ty, value_constraints, pretyped_value) ->
+                  Ok
+                    ( (convert_ast_type_to_ty function_arg_type, value_ty)
+                      :: value_constraints
+                      @ acc_constraints,
+                      pretyped_value :: acc_pretyped_values ) ))
+        in
+        Ok
+          ( typing_context,
+            convert_ast_type_to_ty function_return_type,
+            args_constraints,
+            Pretyped_ast.FunCall
+              ( loc,
+                convert_ast_type_to_ty function_return_type,
+                function_name,
+                args_pretyped ) )
   | If (loc, expr_cond, expr_then) ->
       let t = fresh () in
       generate_constraints constructors_env functions_env typing_context
         expr_cond ~verbose
       >>= fun (_, expr_cond_type, expr_cond_constrs, pretyped_expr) ->
-      generate_constraints_block_expr constructors_env functions_env
-        typing_context expr_then ~verbose
-      >>= fun (_, expr_then_type, expr_then_constrs, pretyped_block_expr) ->
+      generate_constraints constructors_env functions_env typing_context
+        expr_then ~verbose
+      >>= fun (_, expr_then_type, expr_then_constrs, pretyped_then_expr) ->
       Ok
         ( typing_context,
           t,
           [ (expr_cond_type, TyBool); (t, expr_then_type) ]
           @ expr_cond_constrs @ expr_then_constrs,
-          Pretyped_ast.If (loc, t, pretyped_expr, pretyped_block_expr) )
+          Pretyped_ast.If (loc, t, pretyped_expr, pretyped_then_expr) )
   | IfElse (loc, expr_cond, expr_then, expr_else) ->
       let t = fresh () in
       generate_constraints constructors_env functions_env typing_context
         expr_cond ~verbose
       >>= fun (_, expr_cond_type, expr_cond_constrs, pretyped_expr) ->
-      generate_constraints_block_expr constructors_env functions_env
-        typing_context expr_then ~verbose
-      >>= fun (_, expr_then_type, expr_then_constrs, pretyped_block_expr_then)
-        ->
-      generate_constraints_block_expr constructors_env functions_env
-        typing_context expr_else ~verbose
-      >>= fun (_, expr_else_type, expr_else_constrs, pretyped_block_expr_else)
-        ->
+      generate_constraints constructors_env functions_env typing_context
+        expr_then ~verbose
+      >>= fun (_, expr_then_type, expr_then_constrs, pretyped_expr_then) ->
+      generate_constraints constructors_env functions_env typing_context
+        expr_else ~verbose
+      >>= fun (_, expr_else_type, expr_else_constrs, pretyped_expr_else) ->
       Ok
         ( typing_context,
           t,
           [ (expr_cond_type, TyBool); (t, expr_then_type); (t, expr_else_type) ]
           @ expr_cond_constrs @ expr_then_constrs @ expr_else_constrs,
           Pretyped_ast.IfElse
-            ( loc,
-              t,
-              pretyped_expr,
-              pretyped_block_expr_then,
-              pretyped_block_expr_else ) )
+            (loc, t, pretyped_expr, pretyped_expr_then, pretyped_expr_else) )
+  | Match (loc, var_name, pattern_exprs) ->
+      let t = fresh () in
+      Type_context_env.get_var_type typing_context var_name
+      >>= fun matched_var_type ->
+      Ok
+        (List.fold_right pattern_exprs ~init:([], [])
+           ~f:(fun
+               (MPattern (loc, matched_expr, pattern_expr))
+               (acc_constraints, acc_pretyped_pattern_exprs)
+             ->
+             Or_error.ok_exn
+               ( generate_constraints_matched_expr constructors_env matched_expr
+                   ~verbose
+               >>= fun ( matched_typing_context,
+                         matched_expr_type,
+                         match_expr_constraints,
+                         pretyped_matched_expr ) ->
+                 let combined_typing_contexts =
+                   Or_error.ok_exn
+                     (Type_context_env.combine_typing_contexts
+                        matched_typing_context typing_context)
+                 in
+                 generate_constraints constructors_env functions_env
+                   combined_typing_contexts pattern_expr ~verbose
+                 >>= fun ( _,
+                           pattern_expr_type,
+                           pattern_expr_constraints,
+                           pretyped_pattern_expr ) ->
+                 Ok
+                   ( (matched_var_type, matched_expr_type)
+                     :: (t, pattern_expr_type) :: match_expr_constraints
+                     @ pattern_expr_constraints @ acc_constraints,
+                     Pretyped_ast.MPattern
+                       ( loc,
+                         pattern_expr_type,
+                         pretyped_matched_expr,
+                         pretyped_pattern_expr )
+                     :: acc_pretyped_pattern_exprs ) )))
+      >>= fun (match_expr_constraints, pretyped_pattern_exprs) ->
+      Ok
+        ( typing_context,
+          t,
+          match_expr_constraints,
+          Pretyped_ast.Match (loc, t, var_name, pretyped_pattern_exprs) )
   | UnOp (loc, unary_op, expr) -> (
       generate_constraints constructors_env functions_env typing_context expr
         ~verbose
@@ -180,15 +241,7 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
             ( typing_context,
               expr_type,
               (expr_type, TyBool) :: expr_constrs,
-              Pretyped_ast.UnOp (loc, expr_type, UnOpNot, pretyped_expr) )
-      (* TODO: Implement after Tuple *)
-      | UnOpFst | UnOpSnd ->
-          Ok
-            ( typing_context,
-              TyCustom (Type_name.of_string "_undefined"),
-              [],
-              Pretyped_ast.Unit
-                (loc, TyCustom (Type_name.of_string "_undefined")) ))
+              Pretyped_ast.UnOp (loc, expr_type, UnOpNot, pretyped_expr) ))
   | BinaryOp (loc, binary_op, expr1, expr2) -> (
       generate_constraints constructors_env functions_env typing_context expr1
         ~verbose
@@ -229,138 +282,113 @@ and generate_constraints (constructors_env : Type_defns_env.constructors_env)
               @ expr2_constrs,
               Pretyped_ast.BinaryOp
                 (loc, TyBool, binary_op, pretyped_expr1, pretyped_expr2) ))
-  | FunApp (loc, function_name, function_params) ->
-      let open Result in
-      Functions_env.get_function_by_name loc function_name functions_env
-      >>= fun (FunctionEnvEntry (_, function_args_types, function_return_type))
-        ->
-      if List.length function_args_types <> List.length function_params then
-        Or_error.of_exn PartialFunctionApplicationNotAllowed
-      else
-        zip_lists function_args_types function_params
-        >>| List.fold_left ~init:([], [])
-              ~f:(fun
-                  (acc_constraints, acc_pretyped_params)
-                  (function_arg_type, function_param)
-                ->
-                Or_error.ok_exn
-                  ( generate_constraints constructors_env functions_env
-                      typing_context function_param ~verbose
-                  >>= fun ( _,
-                            function_param_type,
-                            function_param_constraints,
-                            pretyped_param ) ->
-                    Ok
-                      ( ( convert_ast_type_to_ty function_arg_type,
-                          function_param_type )
-                        :: function_param_constraints
-                        @ acc_constraints,
-                        acc_pretyped_params @ [ pretyped_param ] ) ))
-        >>= fun (function_args_constraints, pretyped_args) ->
-        Ok
-          ( typing_context,
-            convert_ast_type_to_ty function_return_type,
-            function_args_constraints,
-            Pretyped_ast.FunApp
-              ( loc,
-                convert_ast_type_to_ty function_return_type,
-                function_name,
-                pretyped_args ) )
-  | Match (loc, var_name, pattern_exprs) ->
-      let t = fresh () in
-      Type_context_env.get_var_type typing_context var_name
-      >>= fun matched_var_type ->
-      Ok
-        (List.fold_left pattern_exprs ~init:([], [])
-           ~f:(fun
-               (acc_constraints, acc_pretyped_pattern_exprs)
-               (MPattern (loc, matched_expr, block_expr))
-             ->
-             Or_error.ok_exn
-               ( generate_constraints_matched_expr constructors_env []
-                   matched_expr ~verbose
-               >>= fun ( matched_typing_context,
-                         matched_expr_type,
-                         match_expr_constraints,
-                         pretyped_matched_expr ) ->
-                 let union_typing_contexts =
-                   Type_context_env.prepend_typing_contexts
-                     matched_typing_context typing_context
-                 in
-                 generate_constraints_block_expr constructors_env functions_env
-                   union_typing_contexts block_expr ~verbose
-                 >>= fun ( _,
-                           block_expr_type,
-                           block_expr_constraints,
-                           pretyped_block_expr ) ->
-                 Ok
-                   ( (matched_var_type, matched_expr_type)
-                     :: (t, block_expr_type) :: match_expr_constraints
-                     @ block_expr_constraints @ acc_constraints,
-                     Pretyped_ast.MPattern
-                       ( loc,
-                         block_expr_type,
-                         pretyped_matched_expr,
-                         pretyped_block_expr )
-                     :: acc_pretyped_pattern_exprs ) )))
-      >>= fun (match_expr_constraints, pretyped_pattern_exprs) ->
+  | Drop (loc, var_name, expr) ->
+      Type_context_env.remove_var_from_typing_context typing_context var_name
+      >>= fun extended_typing_context ->
+      generate_constraints constructors_env functions_env
+        extended_typing_context expr ~verbose
+      >>= fun (_, expr_ty, expr_constraints, pretyped_expr) ->
       Ok
         ( typing_context,
-          t,
-          match_expr_constraints,
-          Pretyped_ast.Match (loc, t, var_name, pretyped_pattern_exprs) )
-  | DMatch (loc, var_name, pattern_exprs) ->
-      let t = fresh () in
-      Type_context_env.get_var_type typing_context var_name
-      >>= fun matched_var_type ->
-      Ok
-        (List.fold_left pattern_exprs ~init:([], [])
-           ~f:(fun
-               (acc_constraints, acc_pretyped_pattern_exprs)
-               (MPattern (loc, matched_expr, block_expr))
-             ->
-             Or_error.ok_exn
-               ( generate_constraints_matched_expr constructors_env []
-                   matched_expr ~verbose
-               >>= fun ( matched_typing_context,
-                         matched_expr_type,
-                         match_expr_constraints,
-                         pretyped_matched_expr ) ->
-                 let union_typing_contexts =
-                   Type_context_env.prepend_typing_contexts
-                     matched_typing_context typing_context
-                 in
-                 generate_constraints_block_expr constructors_env functions_env
-                   union_typing_contexts block_expr ~verbose
-                 >>= fun ( _,
-                           block_expr_type,
-                           block_expr_constraints,
-                           pretyped_block_expr ) ->
-                 Ok
-                   ( (matched_var_type, matched_expr_type)
-                     :: (t, block_expr_type) :: match_expr_constraints
-                     @ block_expr_constraints @ acc_constraints,
-                     Pretyped_ast.MPattern
-                       ( loc,
-                         block_expr_type,
-                         pretyped_matched_expr,
-                         pretyped_block_expr )
-                     :: acc_pretyped_pattern_exprs ) )))
-      >>= fun (match_expr_constraints, pretyped_pattern_exprs) ->
+          expr_ty,
+          expr_constraints,
+          Pretyped_ast.Drop (loc, TyUnit, var_name, pretyped_expr) )
+  | Free (loc, k, expr) ->
+      generate_constraints constructors_env functions_env typing_context expr
+        ~verbose
+      >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
       Ok
         ( typing_context,
-          t,
-          match_expr_constraints,
-          Pretyped_ast.DMatch (loc, t, var_name, pretyped_pattern_exprs) ))
-  >>= fun (typing_context, expr_ty, expr_constraints, pretyped_expr) ->
+          expr_ty,
+          expr_ty_constraints,
+          Pretyped_ast.Free (loc, expr_ty, k, pretyped_expr) )
+  | Weak (loc, k, expr) ->
+      generate_constraints constructors_env functions_env typing_context expr
+        ~verbose
+      >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
+      Ok
+        ( typing_context,
+          expr_ty,
+          expr_ty_constraints,
+          Pretyped_ast.Weak (loc, expr_ty, k, pretyped_expr) )
+  | Inst (loc, k, expr) ->
+      generate_constraints constructors_env functions_env typing_context expr
+        ~verbose
+      >>= fun (_, expr_ty, expr_ty_constraints, pretyped_expr) ->
+      Ok
+        ( typing_context,
+          expr_ty,
+          expr_ty_constraints,
+          Pretyped_ast.Inst (loc, expr_ty, k, pretyped_expr) ))
+  >>= fun (typing_context, expr_tys, expr_constraints, pretyped_expr) ->
   Pprint_type_infer.pprint_type_infer_expr_verbose Fmt.stdout ~verbose expr
-    typing_context expr_ty expr_constraints;
-  Ok (typing_context, expr_ty, expr_constraints, pretyped_expr)
+    typing_context expr_tys expr_constraints;
+  Ok (typing_context, expr_tys, expr_constraints, pretyped_expr)
+
+and generate_constraints_value_expr
+    (constructors_env : Type_defns_env.constructors_env)
+    (functions_env : Functions_env.functions_env)
+    (typing_context : typing_context) (value : value) ~(verbose : bool) :
+    (ty * constr list * Pretyped_ast.value) Or_error.t =
+  let open Result in
+  (match value with
+  | Unit loc -> Ok (TyUnit, [], Pretyped_ast.Unit (loc, TyUnit))
+  | Integer (loc, i) -> Ok (TyInt, [], Pretyped_ast.Integer (loc, TyInt, i))
+  | Boolean (loc, b) -> Ok (TyBool, [], Pretyped_ast.Boolean (loc, TyBool, b))
+  | Variable (loc, var) -> (
+      match Type_context_env.get_var_type typing_context var with
+      | Ok var_type ->
+          Ok (var_type, [], Pretyped_ast.Variable (loc, var_type, var))
+      | Error _ ->
+          let function_name =
+            Function_name.of_string (Var_name.to_string var)
+          in
+          let open Result in
+          Functions_env.get_function_signature loc function_name functions_env
+          >>= fun function_type ->
+          let function_ty = convert_ast_type_to_ty function_type in
+          Ok (function_ty, [], Pretyped_ast.Variable (loc, function_ty, var)))
+  | Constructor (loc, constructor_name, constructor_values) ->
+      let t = fresh () in
+      Type_defns_env.get_constructor_by_name loc constructor_name
+        constructors_env
+      >>= fun (ConstructorEnvEntry
+                (constructor_type, _, constructor_param_types)) ->
+      let params_contraints, pretyped_params =
+        List.fold_right2_exn constructor_values constructor_param_types
+          ~init:([], [])
+          ~f:(fun
+              constructor_value
+              constructor_value_type
+              (acc_constraints, acc_pretyped_constructor_values)
+            ->
+            Or_error.ok_exn
+              ( generate_constraints_value_expr constructors_env functions_env
+                  typing_context constructor_value ~verbose
+              >>= fun ( constructor_value_ty,
+                        constructor_value_constraints,
+                        pretyped_constructor_value ) ->
+                Ok
+                  ( ( constructor_value_ty,
+                      convert_ast_type_to_ty constructor_value_type )
+                    :: constructor_value_constraints
+                    @ acc_constraints,
+                    pretyped_constructor_value
+                    :: acc_pretyped_constructor_values ) ))
+      in
+      Ok
+        ( t,
+          (t, TyCustom constructor_type) :: params_contraints,
+          Pretyped_ast.Constructor (loc, t, constructor_name, pretyped_params)
+        ))
+  >>= fun (value_ty, value_constraints, pretyped_value) ->
+  Pprint_type_infer.pprint_type_infer_value_verbose Fmt.stdout ~verbose value
+    value_ty value_constraints;
+  Ok (value_ty, value_constraints, pretyped_value)
 
 and generate_constraints_matched_expr
     (constructors_env : Type_defns_env.constructors_env)
-    (matched_typing_context : typing_context) (matched_expr : matched_expr)
-    ~(verbose : bool) :
+    (matched_expr : matched_expr) ~(verbose : bool) :
     (typing_context * ty * constr list * Pretyped_ast.matched_expr) Or_error.t =
   match matched_expr with
   | MUnderscore loc ->
@@ -368,80 +396,48 @@ and generate_constraints_matched_expr
       Ok ([], t, [], Pretyped_ast.MUnderscore (loc, t))
   | MVariable (loc, matched_var_name) ->
       let t = fresh () in
-      let open Result in
-      let extended_typing_context =
-        Type_context_env.extend_typing_context matched_typing_context
-          matched_var_name t
-      in
       Ok
-        ( extended_typing_context,
+        ( [ Type_context_env.TypingContextEntry (matched_var_name, t) ],
           t,
           [],
           Pretyped_ast.MVariable (loc, t, matched_var_name) )
-  | MTuple (loc, matched_expr_fst, matched_expr_snd) ->
-      let t = fresh () in
-      let open Result in
-      generate_constraints_matched_expr constructors_env matched_typing_context
-        matched_expr_fst ~verbose
-      >>= fun ( matched_typing_context_fst,
-                matched_expr_fst_type,
-                matched_expr_fst_contraints,
-                pretyped_matched_expr_fst ) ->
-      generate_constraints_matched_expr constructors_env matched_typing_context
-        matched_expr_snd ~verbose
-      >>= fun ( matched_typing_context_snd,
-                matched_expr_snd_type,
-                matched_expr_snd_contraints,
-                pretyped_matched_expr_snd ) ->
-      let union_matched_typing_context =
-        Type_context_env.prepend_typing_contexts matched_typing_context_fst
-          matched_typing_context_snd
-      in
-      Ok
-        ( union_matched_typing_context,
-          t,
-          (t, TyTuple (matched_expr_fst_type, matched_expr_snd_type))
-          :: matched_expr_fst_contraints
-          @ matched_expr_snd_contraints,
-          Pretyped_ast.MTuple
-            (loc, t, pretyped_matched_expr_fst, pretyped_matched_expr_snd) )
   | MConstructor (loc, constructor_name, matched_exprs) ->
       let open Result in
       Type_defns_env.get_constructor_by_name loc constructor_name
         constructors_env
       >>= fun (Type_defns_env.ConstructorEnvEntry
                 (constructor_type_name, _, constructor_arg_types)) ->
-      zip_lists matched_exprs constructor_arg_types
-      >>= fun matched_expr_types ->
-      Ok
-        (List.fold_left matched_expr_types
-           ~init:(matched_typing_context, [], [])
-           ~f:(fun
-               ( acc_matched_typing_context,
-                 acc_matched_expr_constraints,
-                 acc_pretyped_matched_expr )
-               (matched_expr, matched_expr_type)
-             ->
-             Or_error.ok_exn
-               ( generate_constraints_matched_expr constructors_env
-                   acc_matched_typing_context matched_expr ~verbose
-               >>= fun ( matched_typing_context,
-                         matched_expr_ty,
-                         matched_expr_constraints,
-                         pretyped_matched_expr ) ->
-                 let union_matched_typing_context =
-                   Type_context_env.prepend_typing_contexts
-                     acc_matched_typing_context matched_typing_context
-                 in
-                 Ok
-                   ( union_matched_typing_context,
-                     (matched_expr_ty, convert_ast_type_to_ty matched_expr_type)
-                     :: matched_expr_constraints
-                     @ acc_matched_expr_constraints,
-                     pretyped_matched_expr :: acc_pretyped_matched_expr ) )))
-      >>= fun ( matched_typing_context,
-                matched_expr_constraints,
-                pretyped_matched_exprs ) ->
+      let ( matched_typing_context,
+            matched_expr_constraints,
+            pretyped_matched_exprs ) =
+        List.fold_right2_exn matched_exprs constructor_arg_types
+          ~init:([], [], [])
+          ~f:(fun
+              matched_expr
+              matched_expr_type
+              ( acc_matched_typing_context,
+                acc_matched_expr_constraints,
+                acc_pretyped_matched_expr )
+            ->
+            Or_error.ok_exn
+              ( generate_constraints_matched_expr constructors_env matched_expr
+                  ~verbose
+              >>= fun ( matched_typing_context,
+                        matched_expr_ty,
+                        matched_expr_constraints,
+                        pretyped_matched_expr ) ->
+                let combined_matched_typing_context =
+                  Or_error.ok_exn
+                    (Type_context_env.combine_typing_contexts
+                       matched_typing_context acc_matched_typing_context)
+                in
+                Ok
+                  ( combined_matched_typing_context,
+                    (matched_expr_ty, convert_ast_type_to_ty matched_expr_type)
+                    :: matched_expr_constraints
+                    @ acc_matched_expr_constraints,
+                    pretyped_matched_expr :: acc_pretyped_matched_expr ) ))
+      in
       Ok
         ( matched_typing_context,
           TyCustom constructor_type_name,
@@ -451,21 +447,3 @@ and generate_constraints_matched_expr
               TyCustom constructor_type_name,
               constructor_name,
               pretyped_matched_exprs ) )
-  | MOption (loc, matched_expr) -> (
-      let t = fresh () in
-      match matched_expr with
-      | None ->
-          Ok (matched_typing_context, t, [], Pretyped_ast.MOption (loc, t, None))
-      | Some matched_expr ->
-          let open Result in
-          generate_constraints_matched_expr constructors_env
-            matched_typing_context matched_expr ~verbose
-          >>= fun ( matched_typing_context,
-                    match_expr_type,
-                    match_expr_constraints,
-                    pretyped_matched_expr ) ->
-          Ok
-            ( matched_typing_context,
-              t,
-              (t, TyOption match_expr_type) :: match_expr_constraints,
-              Pretyped_ast.MOption (loc, t, Some pretyped_matched_expr) ))

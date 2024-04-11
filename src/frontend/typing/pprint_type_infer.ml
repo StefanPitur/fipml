@@ -8,12 +8,12 @@ let rec string_of_ty (ty : ty) : string =
   | TyUnit -> "TyUnit"
   | TyInt -> "TyInt"
   | TyBool -> "TyBool"
-  | TyOption ty -> "TyOption " ^ string_of_ty ty
   | TyCustom type_name -> "TyCustom " ^ Type_name.to_string type_name
   | TyArrow (in_ty, out_ty) ->
       Fmt.str "TyArrow (%s -> %s)" (string_of_ty in_ty) (string_of_ty out_ty)
-  | TyTuple (fst_ty, snd_ty) ->
-      Fmt.str "TyTuple (%s, %s)" (string_of_ty fst_ty) (string_of_ty snd_ty)
+  | TyTuple tys ->
+      Fmt.str "TyTuple (%s)"
+        (String.concat ~sep:", " (List.map tys ~f:string_of_ty))
 
 let pprint_ty (ppf : Format.formatter) (ty : ty) : unit =
   Fmt.pf ppf "%s@." (string_of_ty ty)
@@ -49,21 +49,17 @@ let pprint_type_infer_expr_verbose (ppf : Format.formatter) ~(verbose : bool)
     pprint_constraints ppf expr_constraints;
     Fmt.pf ppf "-------------------------\n@.")
 
-let pprint_type_infer_block_expr_verbose (ppf : Format.formatter)
-    ~(verbose : bool) (block_expr : Parsing.Parser_ast.block_expr)
-    (typing_context : typing_context) (block_ty : ty)
-    (block_contraints : constr list) : unit =
+let pprint_type_infer_value_verbose (ppf : Format.formatter) ~(verbose : bool)
+    (value : Parsing.Parser_ast.value) (value_ty : ty)
+    (value_constraints : constr list) : unit =
   if not verbose then ()
   else (
-    Fmt.pf ppf "Block expr:@.";
-    Parsing.Pprint_parser_ast.pprint_block_expr ppf ~indent:"" ~block_name:""
-      block_expr;
-    Fmt.pf ppf "\n=> Typing Context:@.";
-    pprint_typing_context ppf typing_context;
-    Fmt.pf ppf "=> Block Expr Ty:@.";
-    pprint_ty ppf block_ty;
-    Fmt.pf ppf "=> Block Expr Constraints:@.";
-    pprint_constraints ppf block_contraints;
+    Fmt.pf ppf "Actual value:@.";
+    Parsing.Pprint_parser_ast.pprint_value ppf ~indent:"" value;
+    Fmt.pf ppf "=> Value Ty:@.";
+    pprint_ty ppf value_ty;
+    Fmt.pf ppf "=> Value Constraints:@.";
+    pprint_constraints ppf value_constraints;
     Fmt.pf ppf "-------------------------\n@.")
 
 let pprint_substs (ppf : Format.formatter) (substs : subst list) : unit =

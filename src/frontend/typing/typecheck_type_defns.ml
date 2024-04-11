@@ -8,8 +8,6 @@ let rec typecheck_type_constructor_arg (types_env : types_env)
   match constructor_arg with
   | Ast_types.TECustom (loc, custom_arg_type) ->
       assert_custom_type_in_types_env loc custom_arg_type types_env
-  | Ast_types.TEOption (_, option_arg_type) ->
-      typecheck_type_constructor_arg types_env option_arg_type
   | Ast_types.TEArrow (_, input_type, output_type) ->
       let open Result in
       typecheck_type_constructor_arg types_env input_type >>= fun () ->
@@ -59,7 +57,7 @@ let rec typecheck_type_constructors (types_env : types_env)
         type_constructor
       >>= fun (constructors_env, typed_ast_type_constructor) ->
       typecheck_type_constructors types_env constructors_env
-        (typed_ast_type_constructor :: typed_ast_type_constructors)
+        (typed_ast_type_constructors @ [ typed_ast_type_constructor ])
         constructors_type type_constructors
 
 let typecheck_type_defn (types_env : types_env)
