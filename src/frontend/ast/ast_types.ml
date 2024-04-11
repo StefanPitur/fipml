@@ -54,6 +54,7 @@ let rec equal_type_expr (type_expr1 : type_expr) (type_expr2 : type_expr) : bool
   | TEUnit _, TEUnit _ | TEInt _, TEInt _ | TEBool _, TEBool _ -> true
   | ( TECustom (_, custom_type_polys1, custom_type1),
       TECustom (_, custom_type_polys2, custom_type2) ) ->
+      (* This isn't really correct at the moment. *)
       Int.( = )
         (List.length custom_type_polys1)
         (List.length custom_type_polys2)

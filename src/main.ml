@@ -4,7 +4,7 @@ open Core;;
      { pos_fname = "mock"; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
    ;; *)
 
-let channel = In_channel.create "src/main.fipml" in
+let channel = In_channel.create "src/poly.fipml" in
 match
   Parsing.Lex_and_parse.parse_source_code_with_error
     (Lexing.from_channel channel)

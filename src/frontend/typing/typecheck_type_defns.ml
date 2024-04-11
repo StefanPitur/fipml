@@ -16,7 +16,6 @@ let assert_poly_parameters_unique (poly_params : Ast_types.type_expr list) :
           | TEPoly (_, poly_id_1), TEPoly (_, poly_id_2) ->
               Ok (Bool.to_int (String.( <> ) poly_id_1 poly_id_2))
           | _ ->
-              print_string "err";
               Or_error.of_exn PolymorphicTypeExpressionExpected))
   with
   | None -> Ok ()
@@ -66,6 +65,7 @@ let rec typecheck_type_constructor_arg (types_env : types_env)
       >>= fun () ->
       typecheck_type_constructor_arg types_env custom_base_type_poly_params
         output_type
+  | Ast_types.TETuple _ -> Or_error.of_exn (UndefinedPolymorphicTypeVariable "TETuple not implemented yet")
   | _ -> Ok ()
 
 let rec typecheck_type_constructor_args (types_env : types_env)
@@ -133,8 +133,8 @@ let typecheck_type_defn (types_env : types_env)
   let open Result in
   assert_poly_parameters_unique type_poly_params >>= fun () ->
   let type_env_entry = TypesEnvEntry (type_poly_params, type_name) in
-  let extended_types_env = type_env_entry :: types_env in
   assert_custom_type_not_in_types_env loc type_env_entry types_env >>= fun () ->
+  let extended_types_env = type_env_entry :: types_env in
   typecheck_type_constructors extended_types_env constructors_env []
     custom_base_type type_constructors
   >>= fun (constructors_env, typed_ast_type_constructors) ->
@@ -160,7 +160,7 @@ let rec typecheck_type_defns_wrapper (types_env : types_env)
       typecheck_type_defn types_env constructors_env type_defn
       >>= fun (types_env, constructors_env, typed_ast_type_defn) ->
       typecheck_type_defns_wrapper types_env constructors_env
-        (typed_ast_type_defn :: typed_ast_type_defns)
+        (typed_ast_type_defns @ [ typed_ast_type_defn ])
         type_defns
 
 let typecheck_type_defns (type_defns : Parser_ast.type_defn list) :

@@ -3,7 +3,7 @@ type 'a option =
 | Some of 'a
 
 type ('a, 'b) custom_type =
-| C of 'a option * 'b
+| C of int * 'b option * 'a * (int, 'a) custom_type
 
 /*
 fun add_y (x : int custom_type option) (y : int) : int = begin

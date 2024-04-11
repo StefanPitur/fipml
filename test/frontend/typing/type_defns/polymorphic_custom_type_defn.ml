@@ -16,12 +16,7 @@ let%expect_test "typing type defn: polymorphic custom type" =
           TTypeConstructor
             ( mock_loc,
               Constructor_name.of_string "Some",
-              [
-                TECustom
-                  ( mock_loc,
-                    [ TEPoly (mock_loc, "'a") ],
-                    Type_name.of_string "option" );
-              ] );
+              [ TEPoly (mock_loc, "'a") ] );
         ] )
   in
   let custom_type =
@@ -69,7 +64,7 @@ let%expect_test "typing type defn: polymorphic custom type" =
             Type Expr: Int
     Constructor Type : option
         Type Constructor Name: Some
-            Type Expr: ('a) option
+            Type Expr: 'a
     Constructor Type : option
         Type Constructor Name: None |}];
   Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout
@@ -77,6 +72,13 @@ let%expect_test "typing type defn: polymorphic custom type" =
   [%expect
     {|
     Typed Program - Unit
+        Type Name: option
+        Type Poly Params:
+            Type Poly Param: 'a
+        Type Constructors:
+            Type Constructor Name: None
+            Type Constructor Name: Some
+                Type Expr: 'a
         Type Name: custom_type
         Type Poly Params:
             Type Poly Param: 'a
@@ -85,11 +87,4 @@ let%expect_test "typing type defn: polymorphic custom type" =
             Type Constructor Name: C
                 Type Expr: ('a, 'b) custom_type
                 Type Expr: ((Unit -> 'a)) option
-                Type Expr: Int
-        Type Name: option
-        Type Poly Params:
-            Type Poly Param: 'a
-        Type Constructors:
-            Type Constructor Name: None
-            Type Constructor Name: Some
-                Type Expr: ('a) option |}]
+                Type Expr: Int |}]
