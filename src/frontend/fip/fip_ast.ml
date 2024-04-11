@@ -149,7 +149,8 @@ let get_fip_contexts_from_pattern_expr (pattern_expr : pattern_expr) :
   match pattern_expr with MPattern (_, b, o, r, _, _) -> (b, o, r)
 
 let is_value_borrowed_or_top_level_fip_function (loc : loc)
-    ~(value : Typing.Typed_ast.value) ~(borrowed_set : BorrowedSet.t)
+    ~(value : Typing.Typed_ast.value) ~(required_fip_type : fip)
+    ~(borrowed_set : BorrowedSet.t)
     ~(functions_env : Typing.Functions_env.functions_env) :
     (Var_name.t * int) Or_error.t =
   match value with
@@ -161,6 +162,9 @@ let is_value_borrowed_or_top_level_fip_function (loc : loc)
             Function_name.of_string (Var_name.to_string var_name)
           in
           let open Result in
+          Typing.Functions_env.assert_function_has_required_fip_type loc
+            required_fip_type function_name functions_env
+          >>= fun () ->
           Typing.Functions_env.get_fip_function_allocation_credit loc
             function_name functions_env
           >>= fun allocation_credit -> Ok (var_name, allocation_credit))

@@ -114,6 +114,31 @@ let get_fip_function_allocation_credit loc (function_name : Function_name.t)
   | _ ->
       Or_error.of_exn (FunctionNotFound (Function_name.to_string function_name))
 
+let assert_function_has_required_fip_type (loc : loc) (required_fip_type : fip)
+    (function_name : Function_name.t) (functions_env : functions_env) :
+    unit Or_error.t =
+  let open Result in
+  get_function_by_name loc function_name functions_env
+  >>= fun (FunctionEnvEntry (_, fip_option, _, _, _)) ->
+  match fip_option with
+  | None ->
+      let error_string =
+        Fmt.str "Expected fun of fip type %s at %s@."
+          (string_of_fip_option (Some required_fip_type))
+          (string_of_loc loc)
+      in
+      raise (FipFunctionExpected error_string)
+  | Some fip -> (
+      match (required_fip_type, fip) with
+      | Fip _, Fip _ | Fbip _, Fbip _ -> Ok ()
+      | _ ->
+          let error_string =
+            Fmt.str "Expected fun of fip type %s at %s@."
+              (string_of_fip_option (Some required_fip_type))
+              (string_of_loc loc)
+          in
+          raise (FipFunctionExpected error_string))
+
 let pprint_functions_env (ppf : Format.formatter)
     (functions_env : functions_env) : unit =
   List.iter functions_env

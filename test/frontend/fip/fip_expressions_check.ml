@@ -1,14 +1,13 @@
 open Ast.Ast_types
 open Core
 open Fip.Fip_rules_check
+open Fip.Fbip_rules_check
 open Fip.Borrowed_context
 open Fip.Pprint_fip_ast
 open Typing
 
 let mock_loc : Lexing.position =
   { pos_fname = "mock"; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
-
-let mock_function_type : fip = Fbip 0
 
 let functions_env : Functions_env.functions_env =
   [
@@ -34,9 +33,7 @@ let%expect_test "FIP rules for expressions : UnboxedSingleton" =
         Typed_ast.Variable (mock_loc, TEInt mock_loc, Var_name.of_string "x") )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -63,9 +60,7 @@ let%expect_test "FIP rules for expressions : UnboxedTuple" =
         ] )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -133,9 +128,7 @@ let%expect_test "FIP rules for expressions : Let" =
             ] ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -199,7 +192,7 @@ let%expect_test "FIP rules for expressions : FunApp" =
   in
   let fip_expr =
     Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr
+      (fip_rules_check_expr expr
          (BorrowedSet.singleton (Var_name.of_string "y"))
          functions_env)
   in
@@ -234,9 +227,7 @@ let%expect_test "FIP rules for expressions : FunCall" =
         ] )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -277,9 +268,7 @@ let%expect_test "FIP rules for expressions : If" =
               (mock_loc, TEInt mock_loc, Var_name.of_string "x2") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -333,9 +322,7 @@ let%expect_test "FIP rules for expressions : IfElse" =
               (mock_loc, TEInt mock_loc, Var_name.of_string "x2") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -425,7 +412,7 @@ let%expect_test "FIP rules for expressions : Match (borrowed)" =
   in
   let fip_expr =
     Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr
+      (fip_rules_check_expr expr
          (BorrowedSet.singleton (Var_name.of_string "y"))
          functions_env)
   in
@@ -525,9 +512,7 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
         ] )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -597,9 +582,7 @@ let%expect_test "FIP rules for expressions : UnOp" =
             Variable (mock_loc, TEBool mock_loc, Var_name.of_string "x") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -636,9 +619,7 @@ let%expect_test "FIP rules for expressions : BinOp" =
             Variable (mock_loc, TEBool mock_loc, Var_name.of_string "x2") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -682,9 +663,7 @@ let%expect_test "FIP rules for expressions : Drop" =
               (mock_loc, TEInt mock_loc, Var_name.of_string "x2") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fbip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -718,9 +697,7 @@ let%expect_test "FIP rules for expressions : Free" =
               (mock_loc, TEInt mock_loc, Var_name.of_string "x1") ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fbip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -760,9 +737,7 @@ let%expect_test "FIP rules for expressions : Weak" =
                 ] ) ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect
@@ -808,9 +783,7 @@ let%expect_test "FIP rules for expressions : Inst" =
                 ] ) ) )
   in
   let fip_expr =
-    Or_error.ok_exn
-      (fip_rules_check_expr mock_function_type expr BorrowedSet.empty
-         functions_env)
+    Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
   in
   pprint_fip_expr Fmt.stdout ~indent:"" fip_expr;
   [%expect

@@ -6,14 +6,14 @@ open Typing
 open Reuse_credits
 open Result
 
-exception UnableFipCheck
+exception UnableFbipCheck
 
-let fip
+let fbip
     (TFun (_, _, _, fip_option, _, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
     Fip_ast.expr Or_error.t =
   match fip_option with
-  | Some (Fip n) ->
+  | Some (Fbip n) ->
       let borrowed_set, owned_set =
         List.fold params ~init:(BorrowedSet.empty, OwnedSet.empty)
           ~f:(fun
@@ -54,5 +54,5 @@ let fip
       in
       if owned_set_restriction && reuse_map_restriction then
         Ok fip_function_body
-      else Or_error.of_exn UnableFipCheck
-  | _ -> Or_error.of_exn UnableFipCheck
+      else Or_error.of_exn UnableFbipCheck
+  | _ -> Or_error.of_exn UnableFbipCheck

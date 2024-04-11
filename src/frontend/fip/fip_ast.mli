@@ -126,6 +126,7 @@ val get_fip_contexts_from_pattern_expr :
 val is_value_borrowed_or_top_level_fip_function :
   loc ->
   value:Typing.Typed_ast.value ->
+  required_fip_type:fip ->
   borrowed_set:BorrowedSet.t ->
   functions_env:Typing.Functions_env.functions_env ->
   (Var_name.t * int) Or_error.t
