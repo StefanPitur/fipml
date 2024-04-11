@@ -77,7 +77,6 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
-%right ARROW
 %nonassoc SEMICOLON
 
 /* Starting non-terminal, endpoint for calling the parser */
