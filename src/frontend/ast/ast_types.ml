@@ -52,14 +52,17 @@ let rec equal_type_expr (type_expr1 : type_expr) (type_expr2 : type_expr) : bool
     =
   match (type_expr1, type_expr2) with
   | TEUnit _, TEUnit _ | TEInt _, TEInt _ | TEBool _, TEBool _ -> true
-  | TECustom (_, custom_type_polys1, custom_type1), TECustom (_, custom_type_polys2, custom_type2) ->
-      Int.( = ) (List.length custom_type_polys1) (List.length custom_type_polys2) &&
-      Type_name.( = ) custom_type1 custom_type2
+  | ( TECustom (_, custom_type_polys1, custom_type1),
+      TECustom (_, custom_type_polys2, custom_type2) ) ->
+      Int.( = )
+        (List.length custom_type_polys1)
+        (List.length custom_type_polys2)
+      && Type_name.( = ) custom_type1 custom_type2
   | ( TEArrow (_, in_type_expr1, out_type_expr1),
       TEArrow (_, in_type_expr2, out_type_expr2) ) ->
       equal_type_expr in_type_expr1 in_type_expr2
       && equal_type_expr out_type_expr1 out_type_expr2
-  | ( TETuple (_, type_exprs1), TETuple (_, type_exprs2) ) ->
+  | TETuple (_, type_exprs1), TETuple (_, type_exprs2) ->
       List.for_all2_exn type_exprs1 type_exprs2 ~f:equal_type_expr
   | _ -> false
 
