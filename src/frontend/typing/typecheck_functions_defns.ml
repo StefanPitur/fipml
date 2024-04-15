@@ -15,7 +15,6 @@ let typecheck_function_signature (types_env : types_env)
       Or_error.ok_exn (assert_type_defined type_expr types_env));
   assert_type_defined function_return_type types_env
 
-(* Handles all functions as being recursive, regardless of them being annotate as such or not *)
 let typecheck_function_defn (types_env : types_env)
     (constructors_env : constructors_env)
     (function_defns : Parsing.Parser_ast.function_defn list)
@@ -31,7 +30,7 @@ let typecheck_function_defn (types_env : types_env)
       Parser_ast.function_defn) :
     (functions_env * Typed_ast.function_defn) Or_error.t =
   let open Result in
-  typecheck_function_signature types_env function_defn >>= fun _ ->
+  typecheck_function_signature types_env function_defn >>= fun () ->
   let extended_functions_env =
     if group_id > !current_mutually_recursive_group_id then (
       current_mutually_recursive_group_id :=

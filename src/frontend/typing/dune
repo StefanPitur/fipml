@@ -10,10 +10,8 @@
   type_defns_env
   pprint_typed_ast
   type_context_env
-  type_infer
   type_infer_types
-  type_infer_constraints_generator
-  type_infer_constraints_unification
+  type_infer
   functions_env
   pprint_type_infer
   pprint_pretyped_ast)

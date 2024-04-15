@@ -12,9 +12,6 @@ type constructor_env_entry =
   | ConstructorEnvEntry of Type_name.t * Constructor_name.t * type_expr list
 
 type constructors_env = constructor_env_entry list
-
-(* A type entry in types_env should only be a possibly polymorphic custom type.
-   Therefore, type_expr list should only be a TEPoly list actually *)
 type types_env_entry = TypesEnvEntry of type_expr list * Type_name.t
 type types_env = types_env_entry list
 
@@ -122,9 +119,16 @@ let rec assert_type_defined (type_expr : type_expr) (types_env : types_env) :
       assert_type_defined in_type_expr types_env >>= fun _ ->
       assert_type_defined out_type_expr types_env
   | TECustom (loc, custom_type_expr_poly_params, custom_type_name) ->
+      let open Result in
       assert_custom_type_in_types_env loc
         (TypesEnvEntry (custom_type_expr_poly_params, custom_type_name))
         types_env
+      >>= fun () ->
+      List.iter custom_type_expr_poly_params
+        ~f:(fun custom_type_expr_poly_param ->
+          Or_error.ok_exn
+            (assert_type_defined custom_type_expr_poly_param types_env));
+      Ok ()
   | TETuple (_, type_exprs) ->
       Ok
         (List.iter type_exprs ~f:(fun type_expr ->

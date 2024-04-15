@@ -15,8 +15,7 @@ let assert_poly_parameters_unique (poly_params : Ast_types.type_expr list) :
           (match (poly_param_1, poly_param_2) with
           | TEPoly (_, poly_id_1), TEPoly (_, poly_id_2) ->
               Ok (Bool.to_int (String.( <> ) poly_id_1 poly_id_2))
-          | _ ->
-              Or_error.of_exn PolymorphicTypeExpressionExpected))
+          | _ -> Or_error.of_exn PolymorphicTypeExpressionExpected))
   with
   | None -> Ok ()
   | Some dup_poly_param ->
@@ -48,14 +47,13 @@ let rec typecheck_type_constructor_arg (types_env : types_env)
   match constructor_arg with
   | Ast_types.TEPoly _ ->
       assert_poly_parameter_defined constructor_arg custom_base_type_poly_params
-  | Ast_types.TECustom (loc, custom_arg_type_poly_params, custom_arg_type) ->
-      List.iter custom_arg_type_poly_params
-        ~f:(fun custom_arg_type_poly_param ->
+  | Ast_types.TECustom (loc, custom_arg_type_params, custom_arg_type) ->
+      List.iter custom_arg_type_params ~f:(fun custom_arg_type_param ->
           Or_error.ok_exn
             (typecheck_type_constructor_arg types_env
-               custom_base_type_poly_params custom_arg_type_poly_param));
+               custom_base_type_poly_params custom_arg_type_param));
       let custom_arg_types_env_entry =
-        TypesEnvEntry (custom_arg_type_poly_params, custom_arg_type)
+        TypesEnvEntry (custom_arg_type_params, custom_arg_type)
       in
       assert_custom_type_in_types_env loc custom_arg_types_env_entry types_env
   | Ast_types.TEArrow (_, input_type, output_type) ->
@@ -65,7 +63,12 @@ let rec typecheck_type_constructor_arg (types_env : types_env)
       >>= fun () ->
       typecheck_type_constructor_arg types_env custom_base_type_poly_params
         output_type
-  | Ast_types.TETuple _ -> Or_error.of_exn (UndefinedPolymorphicTypeVariable "TETuple not implemented yet")
+  | Ast_types.TETuple (_, type_exprs) ->
+      Ok
+        (List.iter type_exprs ~f:(fun type_expr ->
+             Or_error.ok_exn
+               (typecheck_type_constructor_arg types_env
+                  custom_base_type_poly_params type_expr)))
   | _ -> Ok ()
 
 let rec typecheck_type_constructor_args (types_env : types_env)

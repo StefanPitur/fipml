@@ -8,7 +8,16 @@ let rec string_of_ty (ty : ty) : string =
   | TyUnit -> "TyUnit"
   | TyInt -> "TyInt"
   | TyBool -> "TyBool"
-  | TyCustom type_name -> "TyCustom " ^ Type_name.to_string type_name
+  | TyPoly (type_vars, ty) ->
+      Fmt.str "TyPoly - for all (%s). %s"
+        (String.concat ~sep:", " type_vars)
+        (string_of_ty ty)
+  | TyCustom (ty_custom_args, type_name) ->
+      let ty_custom_args_string =
+        String.concat ~sep:", " (List.map ty_custom_args ~f:string_of_ty)
+      in
+      Fmt.str "TyCustom (%s) %s" ty_custom_args_string
+        (Type_name.to_string type_name)
   | TyArrow (in_ty, out_ty) ->
       Fmt.str "TyArrow (%s -> %s)" (string_of_ty in_ty) (string_of_ty out_ty)
   | TyTuple tys ->
