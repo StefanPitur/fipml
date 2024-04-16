@@ -45,7 +45,8 @@ let%expect_test "Polymorphic Function Definition" =
   | Error err -> print_string (Error.to_string_hum err)
   | Ok typed_program ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
-      [%expect {|
+      [%expect
+        {|
         Typed Program - Bool
             Function Name: poly_id
             Function Mutually Recursive Group Id - 1
