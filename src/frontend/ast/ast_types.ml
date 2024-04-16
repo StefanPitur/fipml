@@ -65,6 +65,7 @@ let rec equal_type_expr (type_expr1 : type_expr) (type_expr2 : type_expr) : bool
       && equal_type_expr out_type_expr1 out_type_expr2
   | TETuple (_, type_exprs1), TETuple (_, type_exprs2) ->
       List.for_all2_exn type_exprs1 type_exprs2 ~f:equal_type_expr
+  | TEPoly (_, poly_id1), TEPoly (_, poly_id2) -> String.(=) poly_id1 poly_id2
   | _ -> false
 
 type param = TParam of type_expr * Var_name.t * borrowed option

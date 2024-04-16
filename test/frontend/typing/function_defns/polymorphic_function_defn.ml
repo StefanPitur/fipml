@@ -2,19 +2,25 @@ open Ast.Ast_types
 open Core
 open Parsing.Parser_ast
 open Typing
-open Typing.Functions_env
 
 let mock_loc : Lexing.position =
   { pos_fname = "mock"; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
 
 let%expect_test "Polymorphic Function Definition" =
-  let functions_env =
+  let parsed_function_defns =
     [
-      FunctionEnvEntry
-        ( 0,
+      TFun
+        ( mock_loc,
+          1,
           None,
           Function_name.of_string "poly_id",
-          [ TEPoly (mock_loc, "'a"); TEInt mock_loc; TEPoly (mock_loc, "'b") ],
+          [
+            TParam (TEPoly (mock_loc, "'a"), Var_name.of_string "x", None);
+            TParam (TEInt mock_loc, Var_name.of_string "y", None);
+            TParam (TEPoly (mock_loc, "'b"), Var_name.of_string "z", None);
+          ],
+          UnboxedSingleton
+            (mock_loc, Variable (mock_loc, Var_name.of_string "z")),
           TEPoly (mock_loc, "'b") );
     ]
   in
@@ -26,101 +32,44 @@ let%expect_test "Polymorphic Function Definition" =
         FunCall
           ( mock_loc,
             Function_name.of_string "poly_id",
-            [ Variable (mock_loc, Var_name.of_string "x"); Integer (mock_loc, 0); Boolean (mock_loc, true) ] ) )
+            [
+              Variable (mock_loc, Var_name.of_string "x");
+              Integer (mock_loc, 0);
+              Boolean (mock_loc, true);
+            ] ) )
   in
-  match
-    Type_infer.type_infer [] [] functions_env [] parsed_main ~verbose:true
-  with
+  let parsed_prog =
+    TProg (mock_loc, [], parsed_function_defns, Some parsed_main)
+  in
+  match Typecheck_program.typecheck_program parsed_prog with
   | Error err -> print_string (Error.to_string_hum err)
-  | Ok typed_main_expr ->
-      Pprint_typed_ast.pprint_typed_expr Fmt.stdout ~indent:"" typed_main_expr;
+  | Ok typed_program ->
+      Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect {|
-        Actual value:
-        Value: Unit
-        => Value Ty:
-        TyUnit
-        => Value Constraints:
-        -------------------------
-
-        Actual expr:
-        Expr: UnboxedSingleton
-            Value: Unit
-
-        => Typing Context:
-        => Expr Ty:
-        TyUnit
-        => Expr Constraints:
-        -------------------------
-
-        Actual value:
-        Value: Bool: true
-        => Value Ty:
-        TyBool
-        => Value Constraints:
-        -------------------------
-
-        Actual value:
-        Value: Int: 0
-        => Value Ty:
-        TyInt
-        => Value Constraints:
-        -------------------------
-
-        Actual value:
-        Value: Var: x
-        => Value Ty:
-        TyUnit
-        => Value Constraints:
-        -------------------------
-
-        Actual expr:
-        Expr: FunCall
+        Typed Program - Bool
             Function Name: poly_id
-            FunCall Args:
-                Value: Var: x
-                Value: Int: 0
-                Value: Bool: true
-
-        => Typing Context:
-        x : TyPoly - for all (). TyUnit
-        => Expr Ty:
-        TyVar t2
-        => Expr Constraints:
-        (TyVar t1, TyUnit)
-        (TyInt, TyInt)
-        (TyVar t2, TyBool)
-        -------------------------
-
-        Actual expr:
-        Expr: Let vars: (x) =
-            Expr: UnboxedSingleton
-                Value: Unit
-            Expr: FunCall
-                Function Name: poly_id
-                FunCall Args:
-                    Value: Var: x
-                    Value: Int: 0
-                    Value: Bool: true
-
-        => Typing Context:
-        x : TyPoly - for all (). TyUnit
-        => Expr Ty:
-        TyVar t2
-        => Expr Constraints:
-        (TyVar t1, TyUnit)
-        (TyInt, TyInt)
-        (TyVar t2, TyBool)
-        -------------------------
-
-        Typed Expr: Let vars: (x) =
-            Typed Expr: UnboxedSingleton - Unit
-                Value: Unit - Unit
-        Typed Expr: Let expr - Bool
-            Typed Expr: FunCall - Bool
-                Function Name: poly_id
-                FunctionArg
-                    Value: Var: x - Unit
-                FunctionArg
-                    Value: Int: 0 - Int
-                FunctionArg
-                    Value: Bool: true - Bool |}]
+            Function Mutually Recursive Group Id - 1
+            Return Type: t2
+            Param List:
+                Type Expr: 'a
+                OwnedParam: x
+                Type Expr: Int
+                OwnedParam: y
+                Type Expr: 'b
+                OwnedParam: z
+            Function Body:
+                Typed Expr: UnboxedSingleton - t2
+                    Value: Var: z - t2
+            Typed Main
+            Typed Expr: Let vars: (x) =
+                Typed Expr: UnboxedSingleton - Unit
+                    Value: Unit - Unit
+            Typed Expr: Let expr - Bool
+                Typed Expr: FunCall - Bool
+                    Function Name: poly_id
+                    FunctionArg
+                        Value: Var: x - Unit
+                    FunctionArg
+                        Value: Int: 0 - Int
+                    FunctionArg
+                        Value: Bool: true - Bool |}]
