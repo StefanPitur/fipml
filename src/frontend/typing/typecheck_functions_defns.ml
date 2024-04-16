@@ -48,7 +48,7 @@ let typecheck_function_defn (types_env : types_env)
           (Ast.Ast_types.TParam (function_param_type, function_param_var, _)) ->
         Type_context_env.TypingContextEntry
           ( function_param_var,
-            Type_infer_types.convert_ast_type_to_ty function_param_type ))
+            Type_infer_types.convert_ast_type_to_ty function_param_type [] ))
   in
   type_infer types_env constructors_env extended_functions_env
     function_typing_context function_body ~verbose:false

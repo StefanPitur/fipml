@@ -59,6 +59,26 @@ let assert_custom_type_not_in_types_env (loc : loc)
       in
       Or_error.of_exn (TypeAlreadyExists error_string)
 
+let get_custom_type_entry_by_name (loc : loc) (types_env : types_env)
+    (type_name : Type_name.t) : types_env_entry Or_error.t =
+  match
+    List.filter types_env ~f:(fun (TypesEnvEntry (_, type_entry_name)) ->
+        Type_name.( = ) type_entry_name type_name)
+  with
+  | [] ->
+      let error_string =
+        Fmt.str "%s. Type with name %s not found" (string_of_loc loc)
+          (Type_name.to_string type_name)
+      in
+      Or_error.of_exn (TypeNotFound error_string)
+  | [ type_env_entry ] -> Ok type_env_entry
+  | _ ->
+      let error_string =
+        Fmt.str "%s. Duplicate type names found for %s" (string_of_loc loc)
+          (Type_name.to_string type_name)
+      in
+      Or_error.of_exn (TypeAlreadyExists error_string)
+
 let filter_constructors_env_by_name (constructor_name : Constructor_name.t)
     (constructors_env : constructors_env) : constructors_env =
   List.filter constructors_env

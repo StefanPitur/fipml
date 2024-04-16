@@ -5,7 +5,9 @@ exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
 exception PartialFunctionApplicationNotAllowed
 exception FailureConvertTyToAstType
+exception FailureConvertAstToTyType
 exception FunctionExpected
+exception PolyTypeVarExpected
 
 type ty =
   | TyVar of string
@@ -69,25 +71,33 @@ let fresh =
     index := !index + 1;
     TyVar ("t" ^ string_of_int !index)
 
-let rec convert_ast_type_to_ty (type_expr : type_expr) : ty =
+let rec convert_ast_type_to_ty (type_expr : type_expr)
+    (type_scheme_assoc_list : (string * ty) list) : ty =
   match type_expr with
   | TEUnit _ -> TyUnit
   | TEInt _ -> TyInt
   | TEBool _ -> TyBool
-  | TEPoly _ ->
-      print_string "converted TEPoly to TyPoly - check if correct\n";
-      fresh ()
+  | TEPoly (_, type_scheme_poly_string) -> (
+      match
+        List.Assoc.find ~equal:String.( = ) type_scheme_assoc_list
+          type_scheme_poly_string
+      with
+      | Some ty -> ty
+      | None -> raise FailureConvertAstToTyType)
   | TECustom (_, custom_type_args, custom_type_name) ->
       let ty_custom_args =
-        List.map custom_type_args ~f:convert_ast_type_to_ty
+        List.map custom_type_args ~f:(fun custom_type_arg ->
+            convert_ast_type_to_ty custom_type_arg type_scheme_assoc_list)
       in
       TyCustom (ty_custom_args, custom_type_name)
   | TEArrow (_, input_type_expr, output_type_expr) ->
       TyArrow
-        ( convert_ast_type_to_ty input_type_expr,
-          convert_ast_type_to_ty output_type_expr )
+        ( convert_ast_type_to_ty input_type_expr type_scheme_assoc_list,
+          convert_ast_type_to_ty output_type_expr type_scheme_assoc_list )
   | TETuple (_, type_exprs) ->
-      TyTuple (List.map type_exprs ~f:convert_ast_type_to_ty)
+      TyTuple
+        (List.map type_exprs ~f:(fun type_expr ->
+             convert_ast_type_to_ty type_expr type_scheme_assoc_list))
 
 let rec convert_ty_to_ast_type (ty : ty) (loc : loc) : type_expr Or_error.t =
   match ty with
@@ -134,3 +144,16 @@ let get_ty_function_signature (ty : ty) : (ty list * ty) Or_error.t =
       in
       Ok (ty_params, ty_return)
   | _ -> Or_error.of_exn FunctionExpected
+
+let rec get_type_scheme_assoc_list (type_scheme_vars : type_expr list) :
+    (string * ty) list Or_error.t =
+  match type_scheme_vars with
+  | [] -> Ok []
+  | type_scheme_var :: type_scheme_vars -> (
+      match type_scheme_var with
+      | TEPoly (_, type_scheme_var_string) ->
+          let acc_type_scheme_assoc_list =
+            Or_error.ok_exn (get_type_scheme_assoc_list type_scheme_vars)
+          in
+          Ok ((type_scheme_var_string, fresh ()) :: acc_type_scheme_assoc_list)
+      | _ -> Or_error.of_exn PolyTypeVarExpected)

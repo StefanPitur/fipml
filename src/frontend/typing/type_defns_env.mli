@@ -29,6 +29,12 @@ val assert_custom_type_in_types_env :
 val assert_custom_type_not_in_types_env :
   Ast_types.loc -> types_env_entry -> types_env -> unit Or_error.t
 
+val get_custom_type_entry_by_name :
+  Ast_types.loc ->
+  types_env ->
+  Ast_types.Type_name.t ->
+  types_env_entry Or_error.t
+
 val assert_constructor_in_constructors_env :
   Ast_types.loc ->
   Ast_types.Constructor_name.t ->

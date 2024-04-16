@@ -1,20 +1,12 @@
-type 'a option =
+type 'a option = 
 | None
 | Some of 'a
 
-type ('a, 'b) custom_type =
-| C of int * 'b option * 'a * (int, 'a) custom_type
-
-/*
-fun add_y (x : int custom_type option) (y : int) : int = begin
-  match x with
-  | None -> begin (); 1 end
-  | Some (C (x)) -> begin x end
-  endmatch
-end
-
-begin
+{
   let x = None in
-  add_y (Some (C(2)), 5)
-end
-*/
+  match x with
+  | None -> { 0 }
+  | Some (y) -> { y + 1 }
+  | Some (_) -> { 3 }
+  endmatch
+}

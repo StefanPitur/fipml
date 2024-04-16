@@ -13,6 +13,7 @@ val type_infer :
 (** Type Inference for functions and main expression *)
 
 val generate_constraints :
+  Type_defns_env.types_env ->
   Type_defns_env.constructors_env ->
   Functions_env.functions_env ->
   typing_context ->
@@ -23,6 +24,7 @@ val generate_constraints :
 (** Call constraints generation on expression *)
 
 val generate_constraints_value_expr :
+  Type_defns_env.types_env ->
   Type_defns_env.constructors_env ->
   Functions_env.functions_env ->
   typing_context ->

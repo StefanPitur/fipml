@@ -29,7 +29,7 @@ val ty_subst : subst list -> ty -> ty
 val ty_subst_context : typing_context -> subst list -> typing_context
 (** Apply the substitutions to all the types within the typing context. *)
 
-val convert_ast_type_to_ty : type_expr -> ty
+val convert_ast_type_to_ty : type_expr -> (string * ty) list -> ty
 (** Converts AST type into Ty used for type inference *)
 
 val convert_ty_to_ast_type : ty -> loc -> type_expr Or_error.t
@@ -46,3 +46,6 @@ val ty_equal : ty -> ty -> bool
 
 val get_ty_function_signature : ty -> (ty list * ty) Or_error.t
 (** Given a function encoded in [ty], returns its signature *)
+
+val get_type_scheme_assoc_list : type_expr list -> (string * ty) list Or_error.t
+(** Given a custom type, return a map for it's type variables within the type scheme to TyVars. *)

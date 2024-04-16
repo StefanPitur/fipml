@@ -11,7 +11,9 @@ let mock_loc : Lexing.position =
 (* Expect Tests for value constraints generation *)
 let%expect_test "Constraints Generation Value: Unit" =
   let value_unit = Unit mock_loc in
-  (match generate_constraints_value_expr [] [] [] value_unit ~verbose:true with
+  (match
+     generate_constraints_value_expr [] [] [] [] value_unit ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, pretyped_value) ->
       Pprint_pretyped_ast.pprint_pretyped_value Fmt.stdout ~indent:""
@@ -29,7 +31,9 @@ let%expect_test "Constraints Generation Value: Unit" =
 
 let%expect_test "Constraints Generation Value: Int" =
   let value_int = Integer (mock_loc, 0) in
-  (match generate_constraints_value_expr [] [] [] value_int ~verbose:true with
+  (match
+     generate_constraints_value_expr [] [] [] [] value_int ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, pretyped_value) ->
       Pprint_pretyped_ast.pprint_pretyped_value Fmt.stdout ~indent:""
@@ -49,6 +53,9 @@ let%expect_test "Constraints Generation Value: Atom Constructor" =
   let value_atom =
     Constructor (mock_loc, Constructor_name.of_string "AtomConstructor", [])
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -58,7 +65,7 @@ let%expect_test "Constraints Generation Value: Atom Constructor" =
     ]
   in
   (match
-     generate_constraints_value_expr constructors_env [] [] value_atom
+     generate_constraints_value_expr types_env constructors_env [] [] value_atom
        ~verbose:true
    with
   | Error _ -> ()
@@ -86,6 +93,9 @@ let%expect_test "Constraints Generation Value: Complex Constructor" =
         Constructor_name.of_string "Constructor",
         [ Integer (mock_loc, 0) ] )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -95,8 +105,8 @@ let%expect_test "Constraints Generation Value: Complex Constructor" =
     ]
   in
   (match
-     generate_constraints_value_expr constructors_env [] [] value_constructor
-       ~verbose:true
+     generate_constraints_value_expr types_env constructors_env [] []
+       value_constructor ~verbose:true
    with
   | Error _ -> ()
   | Ok (_, _, pretyped_value) ->
@@ -126,13 +136,112 @@ let%expect_test "Constraints Generation Value: Complex Constructor" =
             ConstructorArg
             Value: Int: 0 - TyInt |}]
 
+let%expect_test "Constraints Generation Value: Polymorphic Complex Constructor"
+    =
+  let value_constructor =
+    Constructor
+      ( mock_loc,
+        Constructor_name.of_string "Constructor",
+        [
+          Unit mock_loc;
+          Integer (mock_loc, 1);
+          Constructor (mock_loc, Constructor_name.of_string "Atom", []);
+        ] )
+  in
+  let types_env =
+    [
+      Type_defns_env.TypesEnvEntry
+        ( [ TEPoly (mock_loc, "'a"); TEPoly (mock_loc, "'b") ],
+          Type_name.of_string "custom_type" );
+    ]
+  in
+  let constructors_env =
+    [
+      Type_defns_env.ConstructorEnvEntry
+        ( Type_name.of_string "custom_type",
+          Constructor_name.of_string "Atom",
+          [] );
+      Type_defns_env.ConstructorEnvEntry
+        ( Type_name.of_string "custom_type",
+          Constructor_name.of_string "Constructor",
+          [
+            TEPoly (mock_loc, "'b");
+            TEInt mock_loc;
+            TECustom
+              ( mock_loc,
+                [ TEBool mock_loc; TEPoly (mock_loc, "'a") ],
+                Type_name.of_string "custom_type" );
+          ] );
+    ]
+  in
+  (match
+     generate_constraints_value_expr types_env constructors_env [] []
+       value_constructor ~verbose:true
+   with
+  | Error _ -> ()
+  | Ok (_, _, pretyped_value) ->
+      Pprint_pretyped_ast.pprint_pretyped_value Fmt.stdout ~indent:""
+        pretyped_value);
+  [%expect
+    {|
+    Actual value:
+    Value: Constructor: Atom
+        ()
+    => Value Ty:
+    TyVar t6
+    => Value Constraints:
+    (TyVar t6, TyCustom (TyVar t8, TyVar t7) custom_type)
+    -------------------------
+
+    Actual value:
+    Value: Int: 1
+    => Value Ty:
+    TyInt
+    => Value Constraints:
+    -------------------------
+
+    Actual value:
+    Value: Unit
+    => Value Ty:
+    TyUnit
+    => Value Constraints:
+    -------------------------
+
+    Actual value:
+    Value: Constructor: Constructor
+        ConstructorArg
+            Value: Unit
+        ConstructorArg
+            Value: Int: 1
+        ConstructorArg
+            Value: Constructor: Atom
+                ()
+    => Value Ty:
+    TyVar t3
+    => Value Constraints:
+    (TyVar t3, TyCustom (TyVar t5, TyVar t4) custom_type)
+    (TyUnit, TyVar t4)
+    (TyInt, TyInt)
+    (TyVar t6, TyCustom (TyBool, TyVar t5) custom_type)
+    (TyVar t6, TyCustom (TyVar t8, TyVar t7) custom_type)
+    -------------------------
+
+    Value: Constructor: Constructor - TyVar t3
+            ConstructorArg
+            Value: Unit - TyUnit
+            ConstructorArg
+            Value: Int: 1 - TyInt
+            ConstructorArg
+            Value: Constructor: Atom - TyVar t6
+                () |}]
+
 let%expect_test "Constraints Generation Value: Variable" =
   let value_var = Variable (mock_loc, Var_name.of_string "x") in
   let typing_context =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", TyInt) ]
   in
   (match
-     generate_constraints_value_expr [] [] typing_context value_var
+     generate_constraints_value_expr [] [] [] typing_context value_var
        ~verbose:true
    with
   | Error _ -> ()
@@ -163,6 +272,9 @@ let%expect_test "Constraints Generation Expr: UnboxedSingleton" =
               Variable (mock_loc, Var_name.of_string "x");
             ] ) )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -175,8 +287,8 @@ let%expect_test "Constraints Generation Expr: UnboxedSingleton" =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", TyInt) ]
   in
   (match
-     generate_constraints constructors_env [] typing_context expr_singleton
-       ~verbose:true
+     generate_constraints types_env constructors_env [] typing_context
+       expr_singleton ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -205,9 +317,9 @@ let%expect_test "Constraints Generation Expr: UnboxedSingleton" =
         ConstructorArg
             Value: Var: x
     => Value Ty:
-    TyVar t3
+    TyVar t9
     => Value Constraints:
-    (TyVar t3, TyCustom () custom_type)
+    (TyVar t9, TyCustom () custom_type)
     (TyBool, TyBool)
     (TyInt, TyInt)
     -------------------------
@@ -223,15 +335,15 @@ let%expect_test "Constraints Generation Expr: UnboxedSingleton" =
     => Typing Context:
     x : TyInt
     => Expr Ty:
-    TyVar t3
+    TyVar t9
     => Expr Constraints:
-    (TyVar t3, TyCustom () custom_type)
+    (TyVar t9, TyCustom () custom_type)
     (TyBool, TyBool)
     (TyInt, TyInt)
     -------------------------
 
-    Pretyped Expr: UnboxedSingleton - TyVar t3
-        Value: Constructor: C - TyVar t3
+    Pretyped Expr: UnboxedSingleton - TyVar t9
+        Value: Constructor: C - TyVar t9
                 ConstructorArg
                 Value: Bool: true - TyBool
                 ConstructorArg
@@ -251,6 +363,9 @@ let%expect_test "Constraints Generation Expr: UnboxedTuple" =
           Variable (mock_loc, Var_name.of_string "y");
         ] )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -266,8 +381,8 @@ let%expect_test "Constraints Generation Expr: UnboxedTuple" =
     ]
   in
   (match
-     generate_constraints constructors_env [] typing_context expr_tuple
-       ~verbose:true
+     generate_constraints types_env constructors_env [] typing_context
+       expr_tuple ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -294,9 +409,9 @@ let%expect_test "Constraints Generation Expr: UnboxedTuple" =
         ConstructorArg
             Value: Var: x
     => Value Ty:
-    TyVar t4
+    TyVar t10
     => Value Constraints:
-    (TyVar t4, TyCustom () custom_type)
+    (TyVar t10, TyCustom () custom_type)
     (TyBool, TyBool)
     -------------------------
 
@@ -327,16 +442,16 @@ let%expect_test "Constraints Generation Expr: UnboxedTuple" =
     x : TyBool
     y : TyInt
     => Expr Ty:
-    TyTuple (TyUnit, TyBool, TyVar t4, TyInt)
+    TyTuple (TyUnit, TyBool, TyVar t10, TyInt)
     => Expr Constraints:
-    (TyVar t4, TyCustom () custom_type)
+    (TyVar t10, TyCustom () custom_type)
     (TyBool, TyBool)
     -------------------------
 
-    Pretyped Expr: UnboxedTuple - TyTuple (TyUnit, TyBool, TyVar t4, TyInt)
+    Pretyped Expr: UnboxedTuple - TyTuple (TyUnit, TyBool, TyVar t10, TyInt)
         Value: Unit - TyUnit
         Value: Bool: true - TyBool
-        Value: Constructor: C - TyVar t4
+        Value: Constructor: C - TyVar t10
                 ConstructorArg
                 Value: Var: x - TyBool
         Value: Var: y - TyInt |}]
@@ -355,7 +470,7 @@ let%expect_test "Constraints Generation Expr: Let" =
               Variable (mock_loc, Var_name.of_string "y");
             ] ) )
   in
-  (match generate_constraints [] [] [] expr_let ~verbose:true with
+  (match generate_constraints [] [] [] [] expr_let ~verbose:true with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -450,6 +565,9 @@ let%expect_test "Constraints Generation Expr: FunApp" =
           Variable (mock_loc, Var_name.of_string "x");
         ] )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let typing_context =
     [
       Type_context_env.TypingContextEntry
@@ -472,7 +590,8 @@ let%expect_test "Constraints Generation Expr: FunApp" =
     ]
   in
   (match
-     generate_constraints [] [] typing_context expr_funapp ~verbose:true
+     generate_constraints types_env [] [] typing_context expr_funapp
+       ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -530,6 +649,9 @@ let%expect_test "Constraints Generation Expr: FunCall" =
             (mock_loc, Constructor_name.of_string "C", [ Unit mock_loc ]);
         ] )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -557,8 +679,8 @@ let%expect_test "Constraints Generation Expr: FunCall" =
     ]
   in
   (match
-     generate_constraints constructors_env functions_env [] expr_funcall
-       ~verbose:true
+     generate_constraints types_env constructors_env functions_env []
+       expr_funcall ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -578,9 +700,9 @@ let%expect_test "Constraints Generation Expr: FunCall" =
         ConstructorArg
             Value: Unit
     => Value Ty:
-    TyVar t5
+    TyVar t11
     => Value Constraints:
-    (TyVar t5, TyCustom () custom_type)
+    (TyVar t11, TyCustom () custom_type)
     (TyUnit, TyUnit)
     -------------------------
 
@@ -605,8 +727,8 @@ let%expect_test "Constraints Generation Expr: FunCall" =
     TyTuple (TyInt, TyCustom () custom_type)
     => Expr Constraints:
     (TyInt, TyInt)
-    (TyCustom () custom_type, TyVar t5)
-    (TyVar t5, TyCustom () custom_type)
+    (TyCustom () custom_type, TyVar t11)
+    (TyVar t11, TyCustom () custom_type)
     (TyUnit, TyUnit)
     -------------------------
 
@@ -615,7 +737,7 @@ let%expect_test "Constraints Generation Expr: FunCall" =
         FunctionArg
             Value: Int: 0 - TyInt
         FunctionArg
-            Value: Constructor: C - TyVar t5
+            Value: Constructor: C - TyVar t11
                     ConstructorArg
                     Value: Unit - TyUnit |}]
 
@@ -637,7 +759,7 @@ let%expect_test "Constraints Generation Expr: If" =
       Type_context_env.TypingContextEntry (Var_name.of_string "y", TyInt);
     ]
   in
-  (match generate_constraints [] [] typing_context expr_if ~verbose:true with
+  (match generate_constraints [] [] [] typing_context expr_if ~verbose:true with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -703,13 +825,13 @@ let%expect_test "Constraints Generation Expr: If" =
     x : TyBool
     y : TyInt
     => Expr Ty:
-    TyVar t6
+    TyVar t12
     => Expr Constraints:
     (TyBool, TyBool)
-    (TyVar t6, TyTuple (TyBool, TyInt))
+    (TyVar t12, TyTuple (TyBool, TyInt))
     -------------------------
 
-    Pretyped Expr: If - TyVar t6
+    Pretyped Expr: If - TyVar t12
         Pretyped Expr: UnboxedSingleton - TyBool
             Value: Var: x - TyBool
     Then
@@ -738,7 +860,7 @@ let%expect_test "Constraints Generation Expr: IfElse" =
     ]
   in
   (match
-     generate_constraints [] [] typing_context expr_if_else ~verbose:true
+     generate_constraints [] [] [] typing_context expr_if_else ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -836,14 +958,14 @@ let%expect_test "Constraints Generation Expr: IfElse" =
     x : TyBool
     y : TyInt
     => Expr Ty:
-    TyVar t7
+    TyVar t13
     => Expr Constraints:
     (TyBool, TyBool)
-    (TyVar t7, TyTuple (TyBool, TyInt))
-    (TyVar t7, TyTuple (TyBool, TyInt))
+    (TyVar t13, TyTuple (TyBool, TyInt))
+    (TyVar t13, TyTuple (TyBool, TyInt))
     -------------------------
 
-    Pretyped Expr: IfElse - TyVar t7
+    Pretyped Expr: IfElse - TyVar t13
         Pretyped Expr: UnboxedSingleton - TyBool
             Value: Var: x - TyBool
     Then
@@ -899,6 +1021,9 @@ let%expect_test "Constraints Generation Expr: Match" =
                   ] ) );
         ] )
   in
+  let types_env =
+    [ Type_defns_env.TypesEnvEntry ([], Type_name.of_string "custom_type") ]
+  in
   let constructors_env =
     [
       Type_defns_env.ConstructorEnvEntry
@@ -922,8 +1047,8 @@ let%expect_test "Constraints Generation Expr: Match" =
     ]
   in
   (match
-     generate_constraints constructors_env [] typing_context expr_match
-       ~verbose:true
+     generate_constraints types_env constructors_env [] typing_context
+       expr_match ~verbose:true
    with
   | Error err -> Fmt.pf Fmt.stdout "%s" (Error.to_string_hum err)
   | Ok (_, _, _, _, pretyped_expr) ->
@@ -934,7 +1059,7 @@ let%expect_test "Constraints Generation Expr: Match" =
     Actual value:
     Value: Var: y
     => Value Ty:
-    TyVar t10
+    TyVar t16
     => Value Constraints:
     -------------------------
 
@@ -951,10 +1076,10 @@ let%expect_test "Constraints Generation Expr: Match" =
         Value: Var: y
 
     => Typing Context:
-    y : TyVar t10
+    y : TyVar t16
     x : TyCustom () custom_type
     => Expr Ty:
-    TyTuple (TyInt, TyVar t10)
+    TyTuple (TyInt, TyVar t16)
     => Expr Constraints:
     -------------------------
 
@@ -968,7 +1093,7 @@ let%expect_test "Constraints Generation Expr: Match" =
     Actual value:
     Value: Var: y
     => Value Ty:
-    TyVar t11
+    TyVar t17
     => Value Constraints:
     -------------------------
 
@@ -978,10 +1103,10 @@ let%expect_test "Constraints Generation Expr: Match" =
         Value: Bool: true
 
     => Typing Context:
-    y : TyVar t11
+    y : TyVar t17
     x : TyCustom () custom_type
     => Expr Ty:
-    TyTuple (TyVar t11, TyBool)
+    TyTuple (TyVar t17, TyBool)
     => Expr Constraints:
     -------------------------
 
@@ -1040,44 +1165,44 @@ let%expect_test "Constraints Generation Expr: Match" =
     => Typing Context:
     x : TyCustom () custom_type
     => Expr Ty:
-    TyVar t8
+    TyVar t14
     => Expr Constraints:
-    (TyCustom () custom_type, TyVar t12)
-    (TyVar t8, TyTuple (TyInt, TyBool))
+    (TyCustom () custom_type, TyVar t18)
+    (TyVar t14, TyTuple (TyInt, TyBool))
     (TyCustom () custom_type, TyCustom () custom_type)
-    (TyVar t8, TyTuple (TyVar t11, TyBool))
-    (TyVar t11, TyInt)
+    (TyVar t14, TyTuple (TyVar t17, TyBool))
+    (TyVar t17, TyInt)
     (TyCustom () custom_type, TyCustom () custom_type)
-    (TyVar t8, TyTuple (TyInt, TyVar t10))
-    (TyVar t10, TyBool)
+    (TyVar t14, TyTuple (TyInt, TyVar t16))
+    (TyVar t16, TyBool)
     (TyCustom () custom_type, TyCustom () custom_type)
-    (TyVar t9, TyInt)
+    (TyVar t15, TyInt)
     -------------------------
 
-    Pretyped Expr: Match - TyVar t8
+    Pretyped Expr: Match - TyVar t14
         Match Var: x
         PatternExpr - TyTuple (TyInt, TyBool)
-            Pretyped MatchedExpr - TyVar t12: Underscore
+            Pretyped MatchedExpr - TyVar t18: Underscore
         PatternMatchExpr
             Pretyped Expr: UnboxedTuple - TyTuple (TyInt, TyBool)
                 Value: Int: 0 - TyInt
                 Value: Bool: true - TyBool
-        PatternExpr - TyTuple (TyVar t11, TyBool)
+        PatternExpr - TyTuple (TyVar t17, TyBool)
             Pretyped MatchedExpr - TyCustom () custom_type: C1
-                Pretyped MatchedExpr - TyVar t11: Var y
+                Pretyped MatchedExpr - TyVar t17: Var y
         PatternMatchExpr
-            Pretyped Expr: UnboxedTuple - TyTuple (TyVar t11, TyBool)
-                Value: Var: y - TyVar t11
+            Pretyped Expr: UnboxedTuple - TyTuple (TyVar t17, TyBool)
+                Value: Var: y - TyVar t17
                 Value: Bool: true - TyBool
-        PatternExpr - TyTuple (TyInt, TyVar t10)
+        PatternExpr - TyTuple (TyInt, TyVar t16)
             Pretyped MatchedExpr - TyCustom () custom_type: C2
-                Pretyped MatchedExpr - TyVar t10: Var y
+                Pretyped MatchedExpr - TyVar t16: Var y
                 Pretyped MatchedExpr - TyCustom () custom_type: C1
-                    Pretyped MatchedExpr - TyVar t9: Underscore
+                    Pretyped MatchedExpr - TyVar t15: Underscore
         PatternMatchExpr
-            Pretyped Expr: UnboxedTuple - TyTuple (TyInt, TyVar t10)
+            Pretyped Expr: UnboxedTuple - TyTuple (TyInt, TyVar t16)
                 Value: Int: 1 - TyInt
-                Value: Var: y - TyVar t10 |}]
+                Value: Var: y - TyVar t16 |}]
 
 let%expect_test "Constraints Generation Expr: UnOp" =
   let expr_neg =
@@ -1102,13 +1227,17 @@ let%expect_test "Constraints Generation Expr: UnOp" =
         (Var_name.of_string "y", Type_infer_types.TyBool);
     ]
   in
-  (match generate_constraints [] [] typing_context expr_neg ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_neg ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
         pretyped_expr);
   Fmt.pf Fmt.stdout "\n";
-  (match generate_constraints [] [] typing_context expr_not ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_not ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -1205,7 +1334,7 @@ let%expect_test "Constraints Generation Expr: BinOp" =
       )
   in
   (match
-     generate_constraints [] [] typing_context_ints bin_op_plus_expr
+     generate_constraints [] [] [] typing_context_ints bin_op_plus_expr
        ~verbose:true
    with
   | Error _ -> ()
@@ -1291,7 +1420,9 @@ let%expect_test "Constraints Generation Expr: Drop" =
       Type_context_env.TypingContextEntry (Var_name.of_string "y", fresh ());
     ]
   in
-  (match generate_constraints [] [] typing_context expr_drop ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_drop ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -1301,7 +1432,7 @@ let%expect_test "Constraints Generation Expr: Drop" =
     Actual value:
     Value: Var: y
     => Value Ty:
-    TyVar t13
+    TyVar t19
     => Value Constraints:
     -------------------------
 
@@ -1310,9 +1441,9 @@ let%expect_test "Constraints Generation Expr: Drop" =
         Value: Var: y
 
     => Typing Context:
-    y : TyVar t13
+    y : TyVar t19
     => Expr Ty:
-    TyVar t13
+    TyVar t19
     => Expr Constraints:
     -------------------------
 
@@ -1323,15 +1454,15 @@ let%expect_test "Constraints Generation Expr: Drop" =
 
     => Typing Context:
     x : TyInt
-    y : TyVar t13
+    y : TyVar t19
     => Expr Ty:
-    TyVar t13
+    TyVar t19
     => Expr Constraints:
     -------------------------
 
     Pretyped Expr: Drop x - TyUnit Expr:
-        Pretyped Expr: UnboxedSingleton - TyVar t13
-            Value: Var: y - TyVar t13 |}]
+        Pretyped Expr: UnboxedSingleton - TyVar t19
+            Value: Var: y - TyVar t19 |}]
 
 let%expect_test "Constraints Generation Expr: Free" =
   let expr_free =
@@ -1344,7 +1475,9 @@ let%expect_test "Constraints Generation Expr: Free" =
   let typing_context =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
   in
-  (match generate_constraints [] [] typing_context expr_free ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_free ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -1354,7 +1487,7 @@ let%expect_test "Constraints Generation Expr: Free" =
     Actual value:
     Value: Var: x
     => Value Ty:
-    TyVar t14
+    TyVar t20
     => Value Constraints:
     -------------------------
 
@@ -1363,9 +1496,9 @@ let%expect_test "Constraints Generation Expr: Free" =
         Value: Var: x
 
     => Typing Context:
-    x : TyVar t14
+    x : TyVar t20
     => Expr Ty:
-    TyVar t14
+    TyVar t20
     => Expr Constraints:
     -------------------------
 
@@ -1376,16 +1509,16 @@ let%expect_test "Constraints Generation Expr: Free" =
             Value: Var: x
 
     => Typing Context:
-    x : TyVar t14
+    x : TyVar t20
     => Expr Ty:
-    TyVar t14
+    TyVar t20
     => Expr Constraints:
     -------------------------
 
-    Pretyped Expr: Free 2 - TyVar t14
+    Pretyped Expr: Free 2 - TyVar t20
     Free Expr
-        Pretyped Expr: UnboxedSingleton - TyVar t14
-            Value: Var: x - TyVar t14 |}]
+        Pretyped Expr: UnboxedSingleton - TyVar t20
+            Value: Var: x - TyVar t20 |}]
 
 let%expect_test "Constraints Generation Expr: Weak" =
   let expr_weak =
@@ -1398,7 +1531,9 @@ let%expect_test "Constraints Generation Expr: Weak" =
   let typing_context =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
   in
-  (match generate_constraints [] [] typing_context expr_weak ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_weak ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -1408,7 +1543,7 @@ let%expect_test "Constraints Generation Expr: Weak" =
     Actual value:
     Value: Var: x
     => Value Ty:
-    TyVar t15
+    TyVar t21
     => Value Constraints:
     -------------------------
 
@@ -1417,9 +1552,9 @@ let%expect_test "Constraints Generation Expr: Weak" =
         Value: Var: x
 
     => Typing Context:
-    x : TyVar t15
+    x : TyVar t21
     => Expr Ty:
-    TyVar t15
+    TyVar t21
     => Expr Constraints:
     -------------------------
 
@@ -1430,16 +1565,16 @@ let%expect_test "Constraints Generation Expr: Weak" =
             Value: Var: x
 
     => Typing Context:
-    x : TyVar t15
+    x : TyVar t21
     => Expr Ty:
-    TyVar t15
+    TyVar t21
     => Expr Constraints:
     -------------------------
 
-    Pretyped Expr: Weak 2 - TyVar t15
+    Pretyped Expr: Weak 2 - TyVar t21
     Weak Expr
-        Pretyped Expr: UnboxedSingleton - TyVar t15
-            Value: Var: x - TyVar t15 |}]
+        Pretyped Expr: UnboxedSingleton - TyVar t21
+            Value: Var: x - TyVar t21 |}]
 
 let%expect_test "Constraints Generation Expr: Inst" =
   let expr_inst =
@@ -1452,7 +1587,9 @@ let%expect_test "Constraints Generation Expr: Inst" =
   let typing_context =
     [ Type_context_env.TypingContextEntry (Var_name.of_string "x", fresh ()) ]
   in
-  (match generate_constraints [] [] typing_context expr_inst ~verbose:true with
+  (match
+     generate_constraints [] [] [] typing_context expr_inst ~verbose:true
+   with
   | Error _ -> ()
   | Ok (_, _, _, _, pretyped_expr) ->
       Pprint_pretyped_ast.pprint_pretyped_expr Fmt.stdout ~indent:""
@@ -1462,7 +1599,7 @@ let%expect_test "Constraints Generation Expr: Inst" =
     Actual value:
     Value: Var: x
     => Value Ty:
-    TyVar t16
+    TyVar t22
     => Value Constraints:
     -------------------------
 
@@ -1471,9 +1608,9 @@ let%expect_test "Constraints Generation Expr: Inst" =
         Value: Var: x
 
     => Typing Context:
-    x : TyVar t16
+    x : TyVar t22
     => Expr Ty:
-    TyVar t16
+    TyVar t22
     => Expr Constraints:
     -------------------------
 
@@ -1484,13 +1621,13 @@ let%expect_test "Constraints Generation Expr: Inst" =
             Value: Var: x
 
     => Typing Context:
-    x : TyVar t16
+    x : TyVar t22
     => Expr Ty:
-    TyVar t16
+    TyVar t22
     => Expr Constraints:
     -------------------------
 
-    Pretyped Expr: Inst 2 - TyVar t16
+    Pretyped Expr: Inst 2 - TyVar t22
     Inst Expr
-        Pretyped Expr: UnboxedSingleton - TyVar t16
-            Value: Var: x - TyVar t16 |}]
+        Pretyped Expr: UnboxedSingleton - TyVar t22
+            Value: Var: x - TyVar t22 |}]
