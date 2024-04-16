@@ -190,7 +190,7 @@ let%expect_test "Constraints Generation Value: Polymorphic Complex Constructor"
     => Value Ty:
     TyVar t6
     => Value Constraints:
-    (TyVar t6, TyCustom (TyVar t8, TyVar t7) custom_type)
+    (TyVar t6, TyCustom (TyVar t7, TyVar t8) custom_type)
     -------------------------
 
     Actual value:
@@ -219,11 +219,11 @@ let%expect_test "Constraints Generation Value: Polymorphic Complex Constructor"
     => Value Ty:
     TyVar t3
     => Value Constraints:
-    (TyVar t3, TyCustom (TyVar t5, TyVar t4) custom_type)
-    (TyUnit, TyVar t4)
+    (TyVar t3, TyCustom (TyVar t4, TyVar t5) custom_type)
+    (TyUnit, TyVar t5)
     (TyInt, TyInt)
-    (TyVar t6, TyCustom (TyBool, TyVar t5) custom_type)
-    (TyVar t6, TyCustom (TyVar t8, TyVar t7) custom_type)
+    (TyVar t6, TyCustom (TyBool, TyVar t4) custom_type)
+    (TyVar t6, TyCustom (TyVar t7, TyVar t8) custom_type)
     -------------------------
 
     Value: Constructor: Constructor - TyVar t3

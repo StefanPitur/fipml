@@ -7,7 +7,6 @@ exception PartialFunctionApplicationNotAllowed
 exception FailureConvertTyToAstType
 exception FailureConvertAstToTyType
 exception FunctionExpected
-exception PolyTypeVarExpected
 
 type ty =
   | TyVar of string
@@ -145,15 +144,21 @@ let get_ty_function_signature (ty : ty) : (ty list * ty) Or_error.t =
       Ok (ty_params, ty_return)
   | _ -> Or_error.of_exn FunctionExpected
 
-let rec get_type_scheme_assoc_list (type_scheme_vars : type_expr list) :
-    (string * ty) list Or_error.t =
-  match type_scheme_vars with
-  | [] -> Ok []
-  | type_scheme_var :: type_scheme_vars -> (
-      match type_scheme_var with
-      | TEPoly (_, type_scheme_var_string) ->
-          let acc_type_scheme_assoc_list =
-            Or_error.ok_exn (get_type_scheme_assoc_list type_scheme_vars)
-          in
-          Ok ((type_scheme_var_string, fresh ()) :: acc_type_scheme_assoc_list)
-      | _ -> Or_error.of_exn PolyTypeVarExpected)
+let rec get_type_vars_from_type_expr (type_expr : type_expr) : string list =
+  match type_expr with
+  | TEUnit _ | TEInt _ | TEBool _ -> []
+  | TEPoly (_, type_var_poly) -> [ type_var_poly ]
+  | TECustom (_, type_exprs, _) | TETuple (_, type_exprs) ->
+      List.concat (List.map type_exprs ~f:get_type_vars_from_type_expr)
+  | TEArrow (_, in_type_expr, out_type_expr) ->
+      get_type_vars_from_type_expr in_type_expr
+      @ get_type_vars_from_type_expr out_type_expr
+
+let get_type_scheme_assoc_list (type_scheme_vars : type_expr list) :
+    (string * ty) list =
+  let type_vars =
+    List.dedup_and_sort
+      (List.concat (List.map type_scheme_vars ~f:get_type_vars_from_type_expr))
+      ~compare:String.compare
+  in
+  List.map type_vars ~f:(fun type_var -> (type_var, fresh ()))

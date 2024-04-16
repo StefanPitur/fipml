@@ -312,7 +312,8 @@ let%expect_test "Full Type Checking - Let-Polymorphism constructors and match \
   | Error err -> print_string (Error.to_string_hum err)
   | Ok typed_program ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
-      [%expect {|
+      [%expect
+        {|
         Typed Program - Int
             Type Name: option
             Type Poly Params:

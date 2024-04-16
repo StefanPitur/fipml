@@ -47,5 +47,5 @@ val ty_equal : ty -> ty -> bool
 val get_ty_function_signature : ty -> (ty list * ty) Or_error.t
 (** Given a function encoded in [ty], returns its signature *)
 
-val get_type_scheme_assoc_list : type_expr list -> (string * ty) list Or_error.t
-(** Given a custom type, return a map for it's type variables within the type scheme to TyVars. *)
+val get_type_scheme_assoc_list : type_expr list -> (string * ty) list
+(** Given [type_expr list], return an association list for its type variables within the type scheme to TyVars. *)

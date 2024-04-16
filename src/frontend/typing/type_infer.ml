@@ -166,11 +166,6 @@ and generate_constraints (types_env : types_env)
                        (generalise sub_typing_context var_name sub_var_type))
               | _ -> Or_error.of_exn TyNotMatching))
       in
-
-      (* Fmt.pf Fmt.stdout "Let-Poly@.";
-         Fmt.pf Fmt.stdout "sub_var_type = %s@." (Pprint_type_infer.string_of_ty sub_var_type);
-         Pprint_type_infer.pprint_typing_context Fmt.stdout extended_typing_context;
-         Fmt.pf Fmt.stdout "FIND ME\n===================@."; *)
       generate_constraints types_env constructors_env functions_env
         extended_typing_context expr ~verbose
       >>= fun (_, expr_type, expr_constrs, expr_substs, pretyped_expr) ->
@@ -215,6 +210,10 @@ and generate_constraints (types_env : types_env)
       if List.length values <> List.length function_args_types then
         Or_error.of_exn PartialFunctionApplicationNotAllowed
       else
+        let type_scheme_assoc_list =
+          get_type_scheme_assoc_list
+            (function_args_types @ [ function_return_type ])
+        in
         let args_constraints, args_pretyped =
           List.fold_right2_exn function_args_types values ~init:([], [])
             ~f:(fun
@@ -227,19 +226,22 @@ and generate_constraints (types_env : types_env)
                     functions_env typing_context value ~verbose
                 >>= fun (value_ty, value_constraints, pretyped_value) ->
                   Ok
-                    ( (convert_ast_type_to_ty function_arg_type [], value_ty)
+                    ( ( convert_ast_type_to_ty function_arg_type
+                          type_scheme_assoc_list,
+                        value_ty )
                       :: value_constraints
                       @ acc_constraints,
                       pretyped_value :: acc_pretyped_values ) ))
         in
         Ok
           ( typing_context,
-            convert_ast_type_to_ty function_return_type [],
+            convert_ast_type_to_ty function_return_type type_scheme_assoc_list,
             args_constraints,
             [],
             Pretyped_ast.FunCall
               ( loc,
-                convert_ast_type_to_ty function_return_type [],
+                convert_ast_type_to_ty function_return_type
+                  type_scheme_assoc_list,
                 function_name,
                 args_pretyped ) )
   | If (loc, expr_cond, expr_then) ->
@@ -487,8 +489,9 @@ and generate_constraints_value_expr (types_env : types_env)
       Type_defns_env.get_custom_type_entry_by_name loc types_env
         constructor_type
       >>= fun (TypesEnvEntry (type_scheme_poly_exprs, _)) ->
-      get_type_scheme_assoc_list type_scheme_poly_exprs
-      >>= fun type_scheme_assoc_list ->
+      let type_scheme_assoc_list =
+        get_type_scheme_assoc_list type_scheme_poly_exprs
+      in
       let params_contraints, pretyped_params =
         List.fold_right2_exn constructor_values constructor_param_types
           ~init:([], [])
@@ -550,8 +553,9 @@ and generate_constraints_matched_expr (types_env : types_env)
       Type_defns_env.get_custom_type_entry_by_name loc types_env
         constructor_type_name
       >>= fun (TypesEnvEntry (type_scheme_poly_exprs, _)) ->
-      get_type_scheme_assoc_list type_scheme_poly_exprs
-      >>= fun type_scheme_assoc_list ->
+      let type_scheme_assoc_list =
+        get_type_scheme_assoc_list type_scheme_poly_exprs
+      in
       let ( matched_typing_context,
             matched_expr_constraints,
             pretyped_matched_exprs ) =
