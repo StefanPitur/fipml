@@ -1,5 +1,4 @@
 open Core
-open Type_infer_constraints_unification
 open Type_infer_types
 open Result
 

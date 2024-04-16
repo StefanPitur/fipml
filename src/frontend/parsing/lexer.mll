@@ -72,6 +72,7 @@ rule token = parse
   | "match" { MATCH }
   | "endmatch" { ENDMATCH }
   | "with" { WITH }
+  | "'" lid_regex_expression { TYPE_POLY (Lexing.lexeme_start_p lexbuf, Lexing.lexeme lexbuf) }
   | "int" { TYPE_INT }
   | "bool" { TYPE_BOOL }
   | "unit" { TYPE_UNIT }

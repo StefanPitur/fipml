@@ -88,7 +88,7 @@ let%expect_test "FIP rules for expressions : Let" =
         TETuple
           ( mock_loc,
             [
-              TECustom (mock_loc, Type_name.of_string "custom_type");
+              TECustom (mock_loc, [], Type_name.of_string "custom_type");
               TEInt mock_loc;
             ] ),
         [ Var_name.of_string "x1"; Var_name.of_string "x2" ],
@@ -98,13 +98,13 @@ let%expect_test "FIP rules for expressions : Let" =
               ( mock_loc,
                 [
                   TEInt mock_loc;
-                  TECustom (mock_loc, Type_name.of_string "custom_type");
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type");
                 ] ),
             [
               Typed_ast.Integer (mock_loc, TEInt mock_loc, 0);
               Typed_ast.Constructor
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Constructor_name.of_string "C",
                   [ Typed_ast.Boolean (mock_loc, TEBool mock_loc, true) ] );
             ] ),
@@ -113,13 +113,13 @@ let%expect_test "FIP rules for expressions : Let" =
             TETuple
               ( mock_loc,
                 [
-                  TECustom (mock_loc, Type_name.of_string "custom_type");
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type");
                   TEInt mock_loc;
                 ] ),
             [
               Typed_ast.Variable
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Var_name.of_string "x2" );
               Typed_ast.Variable
                 (mock_loc, TEUnit mock_loc, Var_name.of_string "x1");
@@ -369,31 +369,31 @@ let%expect_test "FIP rules for expressions : Match (borrowed)" =
   let expr =
     Typed_ast.Match
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         Var_name.of_string "y",
         [
           Typed_ast.MPattern
             ( mock_loc,
-              TECustom (mock_loc, Type_name.of_string "custom_type"),
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
               Typed_ast.MConstructor
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Constructor_name.of_string "Atom",
                   [] ),
               UnboxedSingleton
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Typed_ast.Constructor
                     ( mock_loc,
-                      TECustom (mock_loc, Type_name.of_string "custom_type"),
+                      TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                       Constructor_name.of_string "Atom",
                       [] ) ) );
           Typed_ast.MPattern
             ( mock_loc,
-              TECustom (mock_loc, Type_name.of_string "custom_type"),
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
               Typed_ast.MConstructor
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Constructor_name.of_string "C",
                   [
                     Typed_ast.MVariable
@@ -402,10 +402,10 @@ let%expect_test "FIP rules for expressions : Match (borrowed)" =
                   ] ),
               UnboxedSingleton
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Typed_ast.Constructor
                     ( mock_loc,
-                      TECustom (mock_loc, Type_name.of_string "custom_type"),
+                      TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                       Constructor_name.of_string "Atom",
                       [] ) ) );
         ] )
@@ -466,31 +466,31 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
   let expr =
     Typed_ast.Match
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         Var_name.of_string "x",
         [
           Typed_ast.MPattern
             ( mock_loc,
-              TECustom (mock_loc, Type_name.of_string "custom_type"),
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
               Typed_ast.MConstructor
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Constructor_name.of_string "Atom",
                   [] ),
               UnboxedSingleton
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Typed_ast.Constructor
                     ( mock_loc,
-                      TECustom (mock_loc, Type_name.of_string "custom_type"),
+                      TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                       Constructor_name.of_string "Atom",
                       [] ) ) );
           Typed_ast.MPattern
             ( mock_loc,
-              TECustom (mock_loc, Type_name.of_string "custom_type"),
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
               Typed_ast.MConstructor
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Constructor_name.of_string "C",
                   [
                     Typed_ast.MVariable
@@ -499,10 +499,10 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
                   ] ),
               UnboxedSingleton
                 ( mock_loc,
-                  TECustom (mock_loc, Type_name.of_string "custom_type"),
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                   Typed_ast.Constructor
                     ( mock_loc,
-                      TECustom (mock_loc, Type_name.of_string "custom_type"),
+                      TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                       Constructor_name.of_string "C",
                       [
                         Typed_ast.Variable
@@ -722,14 +722,14 @@ let%expect_test "FIP rules for expressions : Weak" =
   let expr =
     Typed_ast.Weak
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         2,
         Typed_ast.UnboxedSingleton
           ( mock_loc,
-            TECustom (mock_loc, Type_name.of_string "custom_type"),
+            TECustom (mock_loc, [], Type_name.of_string "custom_type"),
             Typed_ast.Constructor
               ( mock_loc,
-                TECustom (mock_loc, Type_name.of_string "custom_type"),
+                TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                 Constructor_name.of_string "C",
                 [
                   Typed_ast.Variable
@@ -768,14 +768,14 @@ let%expect_test "FIP rules for expressions : Inst" =
   let expr =
     Typed_ast.Inst
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         1,
         Typed_ast.UnboxedSingleton
           ( mock_loc,
-            TECustom (mock_loc, Type_name.of_string "custom_type"),
+            TECustom (mock_loc, [], Type_name.of_string "custom_type"),
             Typed_ast.Constructor
               ( mock_loc,
-                TECustom (mock_loc, Type_name.of_string "custom_type"),
+                TECustom (mock_loc, [], Type_name.of_string "custom_type"),
                 Constructor_name.of_string "C",
                 [
                   Typed_ast.Variable

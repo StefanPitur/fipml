@@ -56,7 +56,7 @@ let%expect_test "FIP rules for values : Atom" =
   let value_atom =
     Typed_ast.Constructor
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         Constructor_name.of_string "Atom",
         [] )
   in
@@ -76,13 +76,13 @@ let%expect_test "FIP rules for values : Complex Constructor" =
   let value_complex =
     Typed_ast.Constructor
       ( mock_loc,
-        TECustom (mock_loc, Type_name.of_string "custom_type"),
+        TECustom (mock_loc, [], Type_name.of_string "custom_type"),
         Constructor_name.of_string "ComplexConstructor",
         [
           Typed_ast.Boolean (mock_loc, TEBool mock_loc, true);
           Typed_ast.Constructor
             ( mock_loc,
-              TECustom (mock_loc, Type_name.of_string "custom_type"),
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
               Constructor_name.of_string "Atom",
               [] );
           Typed_ast.Variable (mock_loc, TEInt mock_loc, Var_name.of_string "x");

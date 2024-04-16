@@ -65,6 +65,7 @@
 %token EOF
 
 /* Types Tokens */
+%token<Lexing.position * string> TYPE_POLY
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
@@ -76,7 +77,6 @@
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
-%right ARROW
 %nonassoc SEMICOLON
 
 /* Starting non-terminal, endpoint for calling the parser */
@@ -113,8 +113,10 @@ type_expr:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
-| in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
+| poly=TYPE_POLY { let (poly_pos, poly_id) = poly in TEPoly (poly_pos, poly_id) }
+| custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
+| poly_param=type_expr; custom_type=LID { TECustom($startpos, [poly_param], Type_name.of_string custom_type) }
+| LPAREN; poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, poly_params, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 
@@ -122,7 +124,15 @@ type_expr:
 // Type Definition Structure Production Rules 
 type_defn:
 | TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, Type_name.of_string type_name, type_constructors) 
+    TType($startpos, [], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; poly=TYPE_POLY; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let (poly_pos, poly_id) = poly in
+    TType($startpos, [TEPoly (poly_pos, poly_id)], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, TYPE_POLY); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let poly_type_exprs = List.map (fun (poly_pos, poly_id) -> TEPoly (poly_pos, poly_id)) polys in
+    TType($startpos, poly_type_exprs, Type_name.of_string type_name, type_constructors) 
   }
 
 

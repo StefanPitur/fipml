@@ -32,7 +32,8 @@ and matched_expr =
   | MConstructor of loc * Constructor_name.t * matched_expr list
 
 (* Type Definitions *)
-type type_defn = TType of loc * Type_name.t * type_constructor list
+type type_defn =
+  | TType of loc * type_expr list * Type_name.t * type_constructor list
 
 and type_constructor =
   | TTypeConstructor of loc * Constructor_name.t * type_expr list

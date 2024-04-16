@@ -1,18 +1,25 @@
-fun is_even (x : int) : bool = {
-  let pred_x = x - 1 in
-  if x > 0 then { is_odd (pred_x) } else { true } endif
-}
+type custom_type =
+| C1 of int
+| C2 of bool * custom_type
 
-and fun is_odd (x : int) : bool = {
-  let pred_x = x - 1 in
-  if x > 0 then { is_even (pred_x) } else { false } endif
-}
-
-fun add (x : int) (y : int) : int = {
+fip fun add (x : int) ^(y : int) : int = {
   x + y
 }
 
 {
-  let sum_x_y = add (4, 5) in
-  is_even (sum_x_y)
+  let x = 5 in
+  let y = C1 (10) in
+  let (z1, z2) = 
+    match y with
+    | _ -> { let res = add (0, x) in (res, true) }
+    | C1 (t) -> { let res = add (t, x) in (res, true) }
+    | C2 (t, c1) -> {
+        match c1 with
+        | C1 (_) -> { let res = add (2, x) in (res, t) }
+        | _ -> { (0, false) }
+        endmatch
+      }
+    endmatch
+  in
+  if z2 then { z1 } else { x } endif
 }

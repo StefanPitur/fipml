@@ -11,6 +11,7 @@ let%expect_test "Full Type Checking" =
     [
       TType
         ( mock_loc,
+          [],
           Type_name.of_string "custom_type",
           [
             TTypeConstructor
@@ -20,7 +21,7 @@ let%expect_test "Full Type Checking" =
                 Constructor_name.of_string "C2",
                 [
                   TEBool mock_loc;
-                  TECustom (mock_loc, Type_name.of_string "custom_type");
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type");
                 ] );
           ] );
     ]
@@ -159,6 +160,7 @@ let%expect_test "Full Type Checking" =
         {|
           Typed Program - Int
               Type Name: custom_type
+              Type Poly Params:
               Type Constructors:
                   Type Constructor Name: C1
                       Type Expr: Int
@@ -249,3 +251,102 @@ let%expect_test "Full Type Checking" =
                           Else
                               Typed Expr: UnboxedSingleton - Int
                                   Value: Var: x - Int |}]
+
+let%expect_test "Full Type Checking - Let-Polymorphism constructors and match \
+                 expressions" =
+  let parsed_typed_defns =
+    [
+      TType
+        ( mock_loc,
+          [ TEPoly (mock_loc, "'a") ],
+          Type_name.of_string "option",
+          [
+            TTypeConstructor (mock_loc, Constructor_name.of_string "None", []);
+            TTypeConstructor
+              ( mock_loc,
+                Constructor_name.of_string "Some",
+                [ TEPoly (mock_loc, "'a") ] );
+          ] );
+    ]
+  in
+  let parsed_main =
+    Let
+      ( mock_loc,
+        [ Var_name.of_string "x" ],
+        UnboxedSingleton
+          ( mock_loc,
+            Constructor (mock_loc, Constructor_name.of_string "None", []) ),
+        Match
+          ( mock_loc,
+            Var_name.of_string "x",
+            [
+              MPattern
+                ( mock_loc,
+                  MConstructor (mock_loc, Constructor_name.of_string "None", []),
+                  UnboxedSingleton (mock_loc, Integer (mock_loc, 0)) );
+              MPattern
+                ( mock_loc,
+                  MConstructor
+                    ( mock_loc,
+                      Constructor_name.of_string "Some",
+                      [ MVariable (mock_loc, Var_name.of_string "y") ] ),
+                  BinaryOp
+                    ( mock_loc,
+                      BinOpPlus,
+                      UnboxedSingleton
+                        (mock_loc, Variable (mock_loc, Var_name.of_string "y")),
+                      UnboxedSingleton (mock_loc, Integer (mock_loc, 1)) ) );
+              MPattern
+                ( mock_loc,
+                  MConstructor
+                    ( mock_loc,
+                      Constructor_name.of_string "Some",
+                      [ MUnderscore mock_loc ] ),
+                  UnboxedSingleton (mock_loc, Integer (mock_loc, 3)) );
+            ] ) )
+  in
+  let parsed_prog =
+    TProg (mock_loc, parsed_typed_defns, [], Some parsed_main)
+  in
+  match Typecheck_program.typecheck_program parsed_prog with
+  | Error err -> print_string (Error.to_string_hum err)
+  | Ok typed_program ->
+      Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
+      [%expect
+        {|
+        Typed Program - Int
+            Type Name: option
+            Type Poly Params:
+                Type Poly Param: 'a
+            Type Constructors:
+                Type Constructor Name: None
+                Type Constructor Name: Some
+                    Type Expr: 'a
+            Typed Main
+            Typed Expr: Let vars: (x) =
+                Typed Expr: UnboxedSingleton - (t9) option
+                    Value: Constructor: None - (t9) option
+                        ()
+            Typed Expr: Let expr - Int
+                Typed Expr: Match - Int
+                    Match Var: x
+                    PatternExpr - Int
+                        Typed MatchedExpr - (Int) option : None
+                    PatternMatchExpr
+                        Typed Expr: UnboxedSingleton - Int
+                            Value: Int: 0 - Int
+                    PatternExpr - Int
+                        Typed MatchedExpr - (Int) option : Some
+                            Typed MatchedExpr - Int : Var y
+                    PatternMatchExpr
+                        Typed Expr: + - Int
+                            Typed Expr: UnboxedSingleton - Int
+                                Value: Var: y - Int
+                            Typed Expr: UnboxedSingleton - Int
+                                Value: Int: 1 - Int
+                    PatternExpr - Int
+                        Typed MatchedExpr - (Int) option : Some
+                            Typed MatchedExpr - Int : Underscore
+                    PatternMatchExpr
+                        Typed Expr: UnboxedSingleton - Int
+                            Value: Int: 3 - Int |}]

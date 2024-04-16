@@ -30,7 +30,8 @@ type type_expr =
   | TEUnit of loc
   | TEInt of loc
   | TEBool of loc
-  | TECustom of loc * Type_name.t
+  | TEPoly of loc * string
+  | TECustom of loc * type_expr list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
   | TETuple of loc * type_expr list
 
@@ -59,6 +60,9 @@ type binary_op =
   | BinOpNeq
   | BinOpAnd
   | BinOpOr
+
+val get_loc : type_expr -> loc
+(** Extract loc from type expression *)
 
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string

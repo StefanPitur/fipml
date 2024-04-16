@@ -13,9 +13,11 @@ let%expect_test "multiple type definitions" =
     {|
     Program
         Type Name: custom_simple_type
+        Type Poly Params:
         Type Constructors:
             Type Constructor Name: SimpleConstructor1
         Type Name: custom_complex_type
+        Type Poly Params:
         Type Constructors:
             Type Constructor Name: ComplexConstructor1
                 Type Expr: custom_simple_type

@@ -2,7 +2,7 @@ let%expect_test "function definition with owned parameters" =
   let source_code =
     "\n\
     \    fun function_name (x : int) (y : bool) (z : unit) (t : custom_type ) \
-     : [unit * int * custom_type * bool * (int -> int) -> int] = {\n\
+     : [unit * int * custom_type * bool * ((int -> int) -> int)] = {\n\
     \      ()\n\
     \    }\n\
     \  "

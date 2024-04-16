@@ -1,7 +1,7 @@
 open Ast.Ast_types
 open Core
 open Typing.Pprint_type_infer
-open Typing.Type_infer_constraints_unification
+open Typing.Type_infer
 open Typing.Type_infer_types
 
 let%expect_test "Occurs testing" =
@@ -16,15 +16,15 @@ let%expect_test "Subst testing" =
 let%expect_test "small unification" =
   let constraints : constr list =
     [
-      ( TyCustom (Type_name.of_string "custom_type"),
-        TyCustom (Type_name.of_string "custom_type") );
+      ( TyCustom ([], Type_name.of_string "custom_type"),
+        TyCustom ([], Type_name.of_string "custom_type") );
       (TyVar "t12", TyVar "t15");
       (TyVar "t15", TyInt);
       (TyUnit, TyUnit);
-      (TyCustom (Type_name.of_string "custom_type"), TyVar "t14");
+      (TyCustom ([], Type_name.of_string "custom_type"), TyVar "t14");
       (TyVar "t12", TyInt);
       (TyUnit, TyUnit);
-      (TyCustom (Type_name.of_string "custom_type"), TyVar "t13");
+      (TyCustom ([], Type_name.of_string "custom_type"), TyVar "t13");
       (TyVar "t12", TyInt);
       (TyUnit, TyUnit);
     ]
@@ -35,7 +35,7 @@ let%expect_test "small unification" =
       pprint_substs Fmt.stdout substs;
       [%expect
         {|
-    Type Variable - t13, Type - TyCustom custom_type
-    Type Variable - t14, Type - TyCustom custom_type
+    Type Variable - t13, Type - TyCustom () custom_type
+    Type Variable - t14, Type - TyCustom () custom_type
     Type Variable - t15, Type - TyInt
     Type Variable - t12, Type - TyInt |}]

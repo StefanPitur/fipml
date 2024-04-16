@@ -43,7 +43,8 @@ type type_expr =
   | TEUnit of loc
   | TEInt of loc
   | TEBool of loc
-  | TECustom of loc * Type_name.t
+  | TEPoly of loc * string
+  | TECustom of loc * type_expr list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
   | TETuple of loc * type_expr list
 
@@ -51,12 +52,20 @@ let rec equal_type_expr (type_expr1 : type_expr) (type_expr2 : type_expr) : bool
     =
   match (type_expr1, type_expr2) with
   | TEUnit _, TEUnit _ | TEInt _, TEInt _ | TEBool _, TEBool _ -> true
-  | TECustom (_, custom_type1), TECustom (_, custom_type2) ->
-      Type_name.( = ) custom_type1 custom_type2
+  | ( TECustom (_, custom_type_polys1, custom_type1),
+      TECustom (_, custom_type_polys2, custom_type2) )
+    when Int.( = )
+           (List.length custom_type_polys1)
+           (List.length custom_type_polys2)
+         && Type_name.( = ) custom_type1 custom_type2 ->
+      List.for_all2_exn custom_type_polys1 custom_type_polys2 ~f:equal_type_expr
   | ( TEArrow (_, in_type_expr1, out_type_expr1),
       TEArrow (_, in_type_expr2, out_type_expr2) ) ->
       equal_type_expr in_type_expr1 in_type_expr2
       && equal_type_expr out_type_expr1 out_type_expr2
+  | TETuple (_, type_exprs1), TETuple (_, type_exprs2) ->
+      List.for_all2_exn type_exprs1 type_exprs2 ~f:equal_type_expr
+  | TEPoly (_, poly_id1), TEPoly (_, poly_id2) -> String.( = ) poly_id1 poly_id2
   | _ -> false
 
 type param = TParam of type_expr * Var_name.t * borrowed option
@@ -81,6 +90,16 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
+let get_loc (type_expr : type_expr) : loc =
+  match type_expr with
+  | TEUnit loc -> loc
+  | TEInt loc -> loc
+  | TEBool loc -> loc
+  | TEPoly (loc, _) -> loc
+  | TECustom (loc, _, _) -> loc
+  | TEArrow (loc, _, _) -> loc
+  | TETuple (loc, _) -> loc
+
 (* Implementation of helper functions for printing AST *)
 let string_of_loc loc =
   let loc_file = loc.Lexing.pos_fname in
@@ -97,7 +116,18 @@ let rec string_of_type = function
   | TEUnit _ -> "Unit"
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
-  | TECustom (_, custom_type_name) -> Type_name.to_string custom_type_name
+  | TEPoly (_, poly_id) -> Fmt.str "%s" poly_id
+  | TECustom (_, custom_poly_params, custom_type_name) ->
+      let custom_poly_params_string =
+        match custom_poly_params with
+        | [] -> ""
+        | _ ->
+            let custom_poly_params_strings =
+              List.map ~f:string_of_type custom_poly_params
+            in
+            "(" ^ String.concat ~sep:", " custom_poly_params_strings ^ ") "
+      in
+      custom_poly_params_string ^ Type_name.to_string custom_type_name
   | TEArrow (_, in_type, out_type) ->
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in

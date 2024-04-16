@@ -31,7 +31,8 @@ and matched_expr =
   | MConstructor of loc * type_expr * Constructor_name.t * matched_expr list
 
 type type_defn =
-  | TType of loc * type_expr * Type_name.t * type_constructor list
+  | TType of
+      loc * type_expr * type_expr list * Type_name.t * type_constructor list
 
 and type_constructor =
   | TTypeConstructor of loc * type_expr * Constructor_name.t * type_expr list
