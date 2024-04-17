@@ -71,6 +71,13 @@ let get_function_params_type
     =
   List.map function_params ~f:(fun (TParam (type_expr, _, _)) -> type_expr)
 
+let get_function_mutually_recursive_group_id (loc : loc)
+    (function_name : Function_name.t) (functions_env : functions_env) :
+    int Or_error.t =
+  let open Result in
+  get_function_by_name loc function_name functions_env
+  >>= fun (FunctionEnvEntry (group_id, _, _, _, _)) -> Ok group_id
+
 let get_mutually_recursive_function_defns_by_group_id (group_id : int)
     (function_defns : function_defn list) : functions_env =
   let mutually_recursive_functions =
@@ -91,6 +98,12 @@ let get_mutually_recursive_function_defns_by_group_id (group_id : int)
           function_name,
           function_params_type,
           function_return_type ))
+
+let get_mutually_recursive_functions_env_by_group_id (group_id : int)
+    (functions_env : functions_env) : functions_env =
+  List.filter functions_env
+    ~f:(fun (FunctionEnvEntry (fun_env_entry_group_id, _, _, _, _)) ->
+      Int.( = ) group_id fun_env_entry_group_id)
 
 let get_function_signature (loc : loc) (function_name : Function_name.t)
     (functions_env : functions_env) : type_expr Or_error.t =

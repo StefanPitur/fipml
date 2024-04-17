@@ -22,11 +22,17 @@ val assert_function_not_in_functions_env :
 val get_function_by_name :
   loc -> Function_name.t -> functions_env -> function_env_entry Or_error.t
 
+val get_function_mutually_recursive_group_id :
+  loc -> Function_name.t -> functions_env -> int Or_error.t
+
 val get_function_params_type :
   Parsing.Parser_ast.function_defn -> type_expr list
 
 val get_mutually_recursive_function_defns_by_group_id :
   int -> Parsing.Parser_ast.function_defn list -> functions_env
+
+val get_mutually_recursive_functions_env_by_group_id :
+  int -> functions_env -> functions_env
 
 val get_function_signature :
   loc -> Function_name.t -> functions_env -> type_expr Or_error.t

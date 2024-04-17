@@ -1,4 +1,6 @@
 open Ast.Ast_types
+open Core
+module FreeVarSet : Set.S with type Elt.t = Var_name.t
 
 type value =
   | Unit of loc * type_expr
@@ -52,3 +54,12 @@ val get_matched_expr_vars : matched_expr -> Var_name.t list
 
 val get_match_expr_reuse_credit : matched_expr -> int
 (** Given a [match_expr] return the reuse credit available by destructive match. *)
+
+val free_variables : expr -> FreeVarSet.t
+(** Given an [expr] return a set of its free variables. *)
+
+val free_variables_value : value -> FreeVarSet.t
+(** Given a [value] return a set of its free variables. *)
+
+val free_variables_values : value list -> FreeVarSet.t
+(** Given a [value list] return a set of their accummulated free variables. *)
