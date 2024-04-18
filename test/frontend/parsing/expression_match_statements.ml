@@ -36,3 +36,32 @@ let%expect_test "expression: match" =
                        Expr: UnboxedTuple
                            Value: Var: x
                            Value: Var: y |}]
+
+let%expect_test "expression: match nested constructors" =
+  let source_code =
+    "\n\
+    \    {\n\
+    \        match x with\n\
+    \        | ComplexConstructor (_, x, Atom, ComplexConstructor2 (_)) -> { \
+     () }\n\
+    \        endmatch\n\
+    \    }\n\
+    \  "
+  in
+  Pprint_parser_ast.pprint_parser_ast source_code;
+  [%expect
+    {|
+    Program
+        Main
+            Expr: Match
+                Match Var: x
+                Pattern
+                    MatchedExpr: Constructor - ComplexConstructor
+                        MatchedExpr: Underscore
+                        MatchedExpr: Var - x
+                        MatchedExpr: Constructor - Atom
+                        MatchedExpr: Constructor - ComplexConstructor2
+                            MatchedExpr: Underscore
+                    PatternExpr
+                    Expr: UnboxedSingleton
+                        Value: Unit |}]

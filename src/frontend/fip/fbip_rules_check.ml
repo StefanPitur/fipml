@@ -374,8 +374,8 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                   (let matched_expr_vars =
                      Typed_ast.get_matched_expr_vars matched_expr
                    in
-                   let match_expr_reuse_credit =
-                     Typed_ast.get_match_expr_reuse_credit matched_expr
+                   let match_expr_reuse_credits =
+                     Typed_ast.get_match_expr_reuse_credits matched_expr
                    in
                    assert_elements_not_in_borrowed_set
                      ~elements:matched_expr_vars ~borrowed_set
@@ -388,9 +388,14 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                    remove_elements_from_owned_set ~elements:matched_expr_vars
                      ~owned_set:expr_owned_set
                    >>= fun owned_set ->
-                   consume_reuse_map ~reuse_size:match_expr_reuse_credit
-                     ~reuse_map:expr_reuse_map
-                   >>= fun reuse_map ->
+                   let reuse_map =
+                     List.fold match_expr_reuse_credits ~init:expr_reuse_map
+                       ~f:(fun expr_reuse_map match_expr_reuse_credit ->
+                         Or_error.ok_exn
+                           (consume_reuse_map
+                              ~reuse_size:match_expr_reuse_credit
+                              ~reuse_map:expr_reuse_map))
+                   in
                    Ok
                      (Fip_ast.MPattern
                         ( loc,
