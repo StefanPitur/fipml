@@ -82,16 +82,17 @@ let string_of_reuse_map_entry (reuse_map_entry : reuse_map_entry) : string =
     (String.concat ~sep:", "
        (List.map reuse_vars ~f:Ast.Ast_types.Var_name.to_string))
 
-let string_of_reuse_map (reuse_map : reuse_map_entry ReuseMap.t) : string =
+let string_of_reuse_map (reuse_map : reuse_map_entry ReuseMap.t)
+    (indent : string) : string =
   let key_data_list = Map.to_alist reuse_map in
   let reuse_map_entrys =
     List.map key_data_list ~f:(fun (key, data) ->
-        Fmt.str "Key = %s :: %s" (Int.to_string key)
+        Fmt.str "%sKey = %s :: %s" indent (Int.to_string key)
           (string_of_reuse_map_entry data))
   in
   String.concat ~sep:"\n" reuse_map_entrys
 
 let pprint_reuse_map (ppf : Format.formatter) ~(indent : string)
     (reuse_map : reuse_map_entry ReuseMap.t) : unit =
-  let reuse_map_string = string_of_reuse_map reuse_map in
-  Fmt.pf ppf "%sReuse\n%s%s@." indent indent reuse_map_string
+  let reuse_map_string = string_of_reuse_map reuse_map indent in
+  Fmt.pf ppf "%sReuse\n%s@." indent reuse_map_string

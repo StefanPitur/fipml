@@ -496,6 +496,15 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
                     Typed_ast.MVariable
                       (mock_loc, TEBool mock_loc, Var_name.of_string "x1");
                     Typed_ast.MUnderscore (mock_loc, TEInt mock_loc);
+                    Typed_ast.MConstructor
+                      ( mock_loc,
+                        TECustom
+                          (mock_loc, [], Type_name.of_string "custom_type"),
+                        Constructor_name.of_string "C2",
+                        [
+                          Typed_ast.MUnderscore (mock_loc, TEInt mock_loc);
+                          Typed_ast.MUnderscore (mock_loc, TEInt mock_loc);
+                        ] );
                   ] ),
               UnboxedSingleton
                 ( mock_loc,
@@ -508,7 +517,30 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
                         Typed_ast.Variable
                           (mock_loc, TEBool mock_loc, Var_name.of_string "x1");
                         Typed_ast.Integer (mock_loc, TEInt mock_loc, 0);
+                        Typed_ast.Constructor
+                          ( mock_loc,
+                            TECustom
+                              (mock_loc, [], Type_name.of_string "custom_type"),
+                            Constructor_name.of_string "C2",
+                            [
+                              Typed_ast.Integer (mock_loc, TEInt mock_loc, 1);
+                              Typed_ast.Integer (mock_loc, TEInt mock_loc, 2);
+                            ] );
                       ] ) ) );
+          Typed_ast.MPattern
+            ( mock_loc,
+              TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+              Typed_ast.MVariable
+                ( mock_loc,
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+                  Var_name.of_string "t" ),
+              UnboxedSingleton
+                ( mock_loc,
+                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+                  Typed_ast.Variable
+                    ( mock_loc,
+                      TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+                      Var_name.of_string "t" ) ) );
         ] )
   in
   let fip_expr =
@@ -548,16 +580,21 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
             Typed MatchedExpr - custom_type : C
                 Typed MatchedExpr - Bool : Var x1
                 Typed MatchedExpr - Int : Underscore
+                Typed MatchedExpr - custom_type : C2
+                    Typed MatchedExpr - Int : Underscore
+                    Typed MatchedExpr - Int : Underscore
         PatternMatchExpr
             Borrowed - []
             Owned - [x1]
             Reuse
             Key = 2 :: Count = 1 - [_todo]
+            Key = 3 :: Count = 1 - [_todo]
             Fip Expr: UnboxedSingleton
                 Borrowed - []
                 Owned - [x1]
                 Reuse
                 Key = 2 :: Count = 1 - [_todo]
+                Key = 3 :: Count = 1 - [_todo]
                 Fip Value: Constructor - C
                     Borrowed - []
                     Owned - [x1]
@@ -568,7 +605,39 @@ let%expect_test "FIP rules for expressions : Match (owned)" =
                     Owned - []
                     Reuse
 
-                    Fip Value: Integer - 0 |}]
+                    Fip Value: Integer - 0
+                    Borrowed - []
+                    Owned - []
+                    Reuse
+                    Key = 2 :: Count = 1 - [_todo]
+                    Fip Value: Constructor - C2
+                        Borrowed - []
+                        Owned - []
+                        Reuse
+
+                        Fip Value: Integer - 1
+                        Borrowed - []
+                        Owned - []
+                        Reuse
+
+                        Fip Value: Integer - 2
+        Borrowed - []
+        Owned - []
+        Reuse
+
+        PatternExpr
+            Typed MatchedExpr - custom_type : Var t
+        PatternMatchExpr
+            Borrowed - []
+            Owned - [t]
+            Reuse
+
+            Fip Expr: UnboxedSingleton
+                Borrowed - []
+                Owned - [t]
+                Reuse
+
+                Fip Value: Variable - t |}]
 
 let%expect_test "FIP rules for expressions : UnOp" =
   let expr =
