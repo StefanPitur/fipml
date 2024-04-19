@@ -1,0 +1,44 @@
+type color =
+| Red
+| Black
+
+type tree =
+| Node of color * tree * int * bool * tree
+| Leaf
+
+type accum =
+| Done
+| NodeL of color * accum * int * bool * tree
+| NodeR of color * tree * int * bool * accum
+
+fip fun is_red ^(t : tree) : bool = {
+  match t with
+  | Node (Red, _, _, _, _) -> { true }
+  | _ -> { false }
+  endmatch
+}
+
+fip fun set_black (t : tree) : tree = {
+  match t with
+  | Node (_, l, k, v, r) -> { Node (Black, l, k, v, r) }
+  | tt -> { tt }
+  endmatch
+}
+
+
+
+/* fip(1) fun ins (t : tree) (key : int) (v : bool) (z : accum) : tree = {
+  match t with
+  | Node (c, l, kx, vx, r) -> { 
+      if key < kx then { 
+        weak 1; ins (l, key, v, NodeL (c, z, kx, vx, r)) 
+      } else {
+        weak 1; ins (r, key, v, NodeR (c, l, kx, vx, z))
+      }
+      endif
+   }
+  | Leaf -> { inst 5; balance (z, Node (Red, Leaf, key, v, Leaf)) }
+  endmatch
+} */
+
+// fip fun balance (z : accum) (t : tree) : tree = { t }

@@ -154,7 +154,7 @@ let%expect_test "Full Type Checking" =
   in
   match Typecheck_program.typecheck_program parsed_prog with
   | Error err -> print_string (Error.to_string_hum err)
-  | Ok typed_program ->
+  | Ok (typed_program, _) ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect
         {|
@@ -310,7 +310,7 @@ let%expect_test "Full Type Checking - Let-Polymorphism constructors and match \
   in
   match Typecheck_program.typecheck_program parsed_prog with
   | Error err -> print_string (Error.to_string_hum err)
-  | Ok typed_program ->
+  | Ok (typed_program, _) ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect
         {|
