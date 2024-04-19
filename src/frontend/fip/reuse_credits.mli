@@ -46,7 +46,7 @@ val assert_reuse_maps_are_equal :
   reuse_map2:reuse_map_entry ReuseMap.t ->
   unit Or_error.t
 
-val string_of_reuse_map : reuse_map_entry ReuseMap.t -> string
+val string_of_reuse_map : reuse_map_entry ReuseMap.t -> string -> string
 
 val pprint_reuse_map :
   Format.formatter -> indent:string -> reuse_map_entry ReuseMap.t -> unit

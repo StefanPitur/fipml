@@ -75,15 +75,18 @@ let rec get_matched_expr_vars (matched_expr : matched_expr) : Var_name.t list =
   | MUnderscore _ -> []
   | MVariable (_, _, var_name) -> [ var_name ]
   | MConstructor (_, _, _, matched_exprs) ->
-      List.fold_right
-        ~f:(fun matched_expr acc_var_names ->
+      List.fold
+        ~f:(fun acc_var_names matched_expr ->
           get_matched_expr_vars matched_expr @ acc_var_names)
         matched_exprs ~init:[]
 
-let get_match_expr_reuse_credit (matched_expr : matched_expr) : int =
+let rec get_match_expr_reuse_credits (matched_expr : matched_expr) : int list =
   match matched_expr with
-  | MConstructor (_, _, _, matched_exprs) -> List.length matched_exprs
-  | _ -> 0
+  | MConstructor (_, _, _, matched_exprs) ->
+      List.length matched_exprs
+      :: List.fold matched_exprs ~init:[] ~f:(fun acc matched_expr ->
+            get_match_expr_reuse_credits matched_expr @ acc)
+  | _ -> []
 
 let rec free_variables_value (value : value) : FreeVarSet.t =
   match value with

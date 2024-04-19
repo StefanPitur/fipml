@@ -264,16 +264,13 @@ match_expr:
     MPattern($startpos, pattern_expr, matched_expr) 
   }
 
-match_var:
-| UNDERSCORE { MUnderscore($startpos) }
-| var_name=LID { MVariable($startpos, Var_name.of_string var_name) }
-
 match_constructor:
 | UNDERSCORE { MUnderscore($startpos) }
+| var_name=LID { MVariable($startpos, Var_name.of_string var_name) }
 | constructor_name=UID; { 
     MConstructor($startpos, Constructor_name.of_string constructor_name, []) 
   }
-| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, match_var); RPAREN {
+| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, match_constructor); RPAREN {
     MConstructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
   }
 
