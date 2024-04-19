@@ -62,12 +62,13 @@ let typecheck_function_defn (types_env : types_env)
   in
   type_infer types_env constructors_env extended_functions_env
     function_typing_context function_body ~verbose:false
-  >>= fun typed_function_body ->
+  >>= fun (typed_function_body, substs) ->
   let typed_function_body_type = Typed_ast.get_expr_type typed_function_body in
   let adjust_function_return_type =
     Or_error.ok_exn
       (convert_ty_to_ast_type
-         (convert_ast_type_to_ty function_return_type type_scheme_assoc_list)
+         (ty_subst substs
+            (convert_ast_type_to_ty function_return_type type_scheme_assoc_list))
          loc)
   in
   if
@@ -76,9 +77,10 @@ let typecheck_function_defn (types_env : types_env)
          typed_function_body_type)
   then
     let error_string =
-      Fmt.str "Function return type %s does not match the signature %s"
+      Fmt.str "Function return type %s does not match the signature %s - %s"
         (Ast.Ast_types.string_of_type typed_function_body_type)
         (Ast.Ast_types.string_of_type adjust_function_return_type)
+        (Ast.Ast_types.string_of_loc loc)
     in
     Or_error.of_exn (IncorrectFunctionReturnType error_string)
   else

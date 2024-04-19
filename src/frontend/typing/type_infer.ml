@@ -88,14 +88,18 @@ and instantiate (var_name : Var_name.t) (typing_context : typing_context) :
 
 and type_infer (types_env : types_env) (constructors_env : constructors_env)
     (functions_env : functions_env) (typing_context : typing_context)
-    (expr : Parser_ast.expr) ~(verbose : bool) : Typed_ast.expr Or_error.t =
+    (expr : Parser_ast.expr) ~(verbose : bool) :
+    (Typed_ast.expr * subst list) Or_error.t =
   let open Result in
   generate_constraints types_env constructors_env functions_env typing_context
     expr ~verbose
   >>= fun (_, _, constraints, let_poly_substs, pretyped_expr) ->
   unify constraints >>= fun substs ->
-  Construct_typed_ast.construct_typed_ast_expr pretyped_expr
-    (substs @ let_poly_substs)
+  let substs = substs @ let_poly_substs in
+  Ok
+    ( Or_error.ok_exn
+        (Construct_typed_ast.construct_typed_ast_expr pretyped_expr substs),
+      substs )
 
 and generate_constraints (types_env : types_env)
     (constructors_env : Type_defns_env.constructors_env)

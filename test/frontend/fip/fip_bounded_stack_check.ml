@@ -26,5 +26,3 @@ let%expect_test "Free Variables" =
   Set.iter free_variables_set ~f:(fun free_var ->
       Fmt.pf Fmt.stdout "%s " (Var_name.to_string free_var));
   [%expect {| y |}]
-
-

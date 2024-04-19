@@ -9,7 +9,7 @@ val type_infer :
   typing_context ->
   Parsing.Parser_ast.expr ->
   verbose:bool ->
-  Typed_ast.expr Or_error.t
+  (Typed_ast.expr * subst list) Or_error.t
 (** Type Inference for functions and main expression *)
 
 val generate_constraints :

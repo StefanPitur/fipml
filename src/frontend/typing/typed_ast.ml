@@ -85,7 +85,7 @@ let rec get_match_expr_reuse_credits (matched_expr : matched_expr) : int list =
   | MConstructor (_, _, _, matched_exprs) ->
       List.length matched_exprs
       :: List.fold matched_exprs ~init:[] ~f:(fun acc matched_expr ->
-            get_match_expr_reuse_credits matched_expr @ acc)
+             get_match_expr_reuse_credits matched_expr @ acc)
   | _ -> []
 
 let rec free_variables_value (value : value) : FreeVarSet.t =

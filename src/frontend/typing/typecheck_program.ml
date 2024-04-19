@@ -16,7 +16,7 @@ let typecheck_program
   | Some main_expr ->
       type_infer types_env constructors_env functions_env [] main_expr
         ~verbose:false
-      >>= fun typed_main_expr ->
+      >>= fun (typed_main_expr, _) ->
       Ok (Some typed_main_expr, Typed_ast.get_expr_type typed_main_expr))
   >>= fun (typed_main_expr_option, typed_main_expr_type) ->
   Ok
