@@ -63,3 +63,6 @@ val free_variables_value : value -> FreeVarSet.t
 
 val free_variables_values : value list -> FreeVarSet.t
 (** Given a [value list] return a set of their accummulated free variables. *)
+
+val get_mutually_recursive_typed_function_defns :
+  int -> function_defn list -> function_defn list

@@ -40,7 +40,10 @@ let typecheck_function_defn (types_env : types_env)
         get_mutually_recursive_function_defns_by_group_id group_id
           function_defns
       in
-      mutually_recursive_functions_env @ functions_env)
+      let mutually_recusive_with_fip_functions_env =
+        add_fip_function_defns_to_functions_env mutually_recursive_functions_env
+      in
+      mutually_recusive_with_fip_functions_env @ functions_env)
     else functions_env
   in
   let function_signature_type_expr =
@@ -107,13 +110,29 @@ let rec typecheck_functions_defns_wrapper (types_env : types_env)
       typecheck_function_defn types_env constructors_env functions_defns
         functions_env function_defn
       >>= fun (functions_env, typed_function_defn) ->
+      let TFun (_, _, _, fip_option, _, _, _) = typed_function_defn in
+      let extended_typed_ast_function_defns = 
+        match fip_option with
+        | None -> typed_ast_function_defns @ [ typed_function_defn ]
+        | Some (Fip _) ->
+            (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
+            ignore (Or_error.ok_exn (Static_fip.fip typed_function_defn functions_env));
+            typed_ast_function_defns @ [ typed_function_defn ]
+        | Some (Fbip _) ->
+            (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
+            ignore (Or_error.ok_exn (Static_fbip.fbip typed_function_defn functions_env));
+            typed_ast_function_defns @ [ typed_function_defn ]
+      in
       typecheck_functions_defns_wrapper types_env constructors_env functions_env
-        (typed_ast_function_defns @ [ typed_function_defn ])
+        extended_typed_ast_function_defns
         functions_defns_tail
 
 let typecheck_functions_defns (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_defns : Parsing.Parser_ast.function_defn list) :
     (functions_env * Typed_ast.function_defn list) Or_error.t =
+  let open Result in
   typecheck_functions_defns_wrapper types_env constructors_env [] []
     functions_defns
+  >>= fun (functions_env, typed_function_defns) ->
+  Ok (functions_env, typed_function_defns)

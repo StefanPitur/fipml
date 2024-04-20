@@ -165,7 +165,7 @@ let is_value_borrowed_or_top_level_fip_function (loc : loc)
           Functions_env.assert_function_has_required_fip_type loc
             required_fip_type function_name functions_env
           >>= fun () ->
-          Functions_env.get_fip_function_allocation_credit loc
-            function_name functions_env
+          Functions_env.get_fip_function_allocation_credit loc function_name
+            functions_env
           >>= fun allocation_credit -> Ok (var_name, allocation_credit))
   | _ -> Or_error.of_exn VariableExpected

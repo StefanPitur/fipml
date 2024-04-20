@@ -138,3 +138,9 @@ and free_variables (expr : expr) : FreeVarSet.t =
       free_variables expr
   | BinaryOp (_, _, _, expr1, expr2) ->
       Set.union (free_variables expr1) (free_variables expr2)
+
+let get_mutually_recursive_typed_function_defns (group_id : int)
+    (function_defns : function_defn list) : function_defn list =
+  List.filter function_defns
+    ~f:(fun (TFun (_, _, function_group_id, _, _, _, _)) ->
+      Int.( = ) group_id function_group_id)
