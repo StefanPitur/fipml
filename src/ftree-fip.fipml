@@ -308,18 +308,109 @@ fip fun to_tuples (xs : 'a list3) (b : buffer) : ['a tuple list3 * buffer] = {
   endmatch
 }
 
-/* fip fun append (q_1 : 'a bseq) (q_2 : 'a bseq) : 'a bseq = {
+fip fun glue (q_1 : 'a seq) (b_1 : buffer) (xs : 'a list3) (bs_0 : buffer) (q_2 : 'a seq) (b_2 : buffer) : ['a seq * buffer] = {
+  match q_1 with
+  | Empty -> {
+      let bs0_b1 = append_buffers (bs_0, b_1) in
+      let appended_buffers = append_buffers (bs0_b1, b_2) in
+      foldr3 (xs, q_2, appended_buffers, cons)
+    }
+  | Unit (x1, _, _) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, Unit (x1, Pad, Pad), appended_buffers, snoc)
+        }
+      | q2 -> {
+          let bs0_b1 = append_buffers (bs_0, b_1) in
+          let appended_buffers = append_buffers (bs0_b1, b_2) in
+          foldr3 (Cons3 (x1, xs, Pad), q2, appended_buffers, cons)
+        }
+      endmatch
+    }
+  | More (u1, q1, v1) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | Unit (x2, _, _) -> {
+          let append3_res = append3 (xs, Cons3 (x2, Nil3, Pad)) in
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (append3_res, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | More (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, BCons (bs_0, Pad, Pad)) in
+          let (u22, bs2) = tuple_to_list (u2, bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More (u1, q, v2), b)
+        }
+      | More0 (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, bs_0) in
+          let (u22, bs2) = (Cons3 (u2, Nil3, Pad), bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More (u1, q, v2), b)
+        }
+      endmatch
+    }
+  | More0 (u1, q1, v1) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | Unit (x2, _, _) -> {
+          let append3_res = append3 (xs, Cons3 (x2, Nil3, Pad)) in
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (append3_res, More0 (u1, q1, v1), appended_buffers, snoc)
+        }
+      | More (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, BCons (bs_0, Pad, Pad)) in
+          let (u22, bs2) = tuple_to_list (u2, bs1) in 
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More0 (u1, q, v2), b)
+        }
+      | More0 (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, bs_0) in
+          let (u22, bs2) = (Cons3 (u2, Nil3, Pad), bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More0 (u1, q, v2), b)
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun append (q_1 : 'a bseq) (q_2 : 'a bseq) : 'a bseq = {
   match q_1 with
   | BSeq (q1, b1) -> {
       match q_2 with
-      | BSeq (q2, b2) -> { 
+      | BSeq (q2, b2) -> {
+          free 2;
           let (q, b) = glue (q1, b1, Nil3, BNil, q2, b2) in
           BSeq (q, b)
         }
       endmatch
     }
   endmatch
-} */
+}
 
 fun iterate (s : 'a bseq) (n : int) : 'a bseq = {
   if n <= 0 then { s } else {

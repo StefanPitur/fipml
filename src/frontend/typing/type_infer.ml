@@ -509,7 +509,12 @@ and generate_constraints_value_expr (types_env : types_env)
           let open Result in
           Functions_env.get_function_signature loc function_name functions_env
           >>= fun function_type ->
-          let function_ty = convert_ast_type_to_ty function_type [] in
+          let type_scheme_assoc_list =
+            get_type_scheme_assoc_list [ function_type ]
+          in
+          let function_ty =
+            convert_ast_type_to_ty function_type type_scheme_assoc_list
+          in
           Ok (function_ty, [], Pretyped_ast.Variable (loc, function_ty, var)))
   | Constructor (loc, constructor_name, constructor_values) ->
       let t = fresh () in

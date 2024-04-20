@@ -493,9 +493,19 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
   | Drop (loc, _, _, _) ->
       let error_string = "free - " ^ Ast.Ast_types.string_of_loc loc in
       Or_error.of_exn (InstructionNotAllowedInFipFunction error_string)
-  | Free (loc, _, _, _) ->
-      let error_string = "free - " ^ Ast.Ast_types.string_of_loc loc in
-      Or_error.of_exn (InstructionNotAllowedInFipFunction error_string)
+  | Free (loc, _, k, expr) ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      let _, owned_set, reuse_map =
+        Fip_ast.get_fip_contexts_from_expr fip_expr
+      in
+      let extended_reuse_map =
+        extend_reuse_map ~reuse_size:k
+          ~reuse_var:(Ast.Ast_types.Var_name.of_string "_free")
+          ~reuse_map
+      in
+      Ok
+        (Fip_ast.Free
+           (loc, borrowed_set, owned_set, extended_reuse_map, k, fip_expr))
   | Weak (loc, _, k, expr) ->
       fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =

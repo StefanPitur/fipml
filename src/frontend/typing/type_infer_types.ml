@@ -5,7 +5,7 @@ exception ListsOfDifferentLengths
 exception UnableToRemoveLastElementFromEmptyList
 exception PartialFunctionApplicationNotAllowed
 exception FailureConvertTyToAstType
-exception FailureConvertAstToTyType
+exception FailureConvertAstToTyType of string
 exception FunctionExpected
 
 type ty =
@@ -76,13 +76,15 @@ let rec convert_ast_type_to_ty (type_expr : type_expr)
   | TEUnit _ -> TyUnit
   | TEInt _ -> TyInt
   | TEBool _ -> TyBool
-  | TEPoly (_, type_scheme_poly_string) -> (
+  | TEPoly (loc, type_scheme_poly_string) -> (
       match
         List.Assoc.find ~equal:String.( = ) type_scheme_assoc_list
           type_scheme_poly_string
       with
       | Some ty -> ty
-      | None -> raise FailureConvertAstToTyType)
+      | None ->
+          let error_string = string_of_loc loc in
+          raise (FailureConvertAstToTyType error_string))
   | TECustom (_, custom_type_args, custom_type_name) ->
       let ty_custom_args =
         List.map custom_type_args ~f:(fun custom_type_arg ->
