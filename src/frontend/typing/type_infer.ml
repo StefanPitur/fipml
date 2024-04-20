@@ -50,6 +50,25 @@ let unify (constraints : constr list) : subst list Or_error.t =
   in
   unify constraints []
 
+let unify_substs (substs1 : subst list) (substs2 : subst list) :
+    subst list Or_error.t =
+  let unified_substs = ref substs2 in
+  let unified_constrs = ref [] in
+  let unify_substs (ty_var, ty) =
+    match
+      List.find !unified_substs ~f:(fun (merged_ty_var, _) ->
+          String.( = ) merged_ty_var ty_var)
+    with
+    | None -> unified_substs := (ty_var, ty) :: !unified_substs
+    | Some (_, matched_ty) ->
+        if ty_equal matched_ty ty then ()
+        else unified_constrs := (ty, matched_ty) :: !unified_constrs
+  in
+  List.iter substs1 ~f:unify_substs;
+  List.iter !unified_substs ~f:(fun (ty_var, ty) ->
+      unified_constrs := (TyVar ty_var, ty) :: !unified_constrs);
+  unify !unified_constrs
+
 let rec free_type_vars (ty : ty) : FreeSet.t =
   match ty with
   | TyInt | TyUnit | TyBool -> FreeSet.empty
@@ -94,8 +113,8 @@ and type_infer (types_env : types_env) (constructors_env : constructors_env)
   generate_constraints types_env constructors_env functions_env typing_context
     expr ~verbose
   >>= fun (_, _, constraints, let_poly_substs, pretyped_expr) ->
-  unify constraints >>= fun substs ->
-  let substs = substs @ let_poly_substs in
+  unify constraints >>= fun constraints_substs ->
+  unify_substs constraints_substs let_poly_substs >>= fun substs ->
   Ok
     ( Or_error.ok_exn
         (Construct_typed_ast.construct_typed_ast_expr pretyped_expr substs),
@@ -173,11 +192,13 @@ and generate_constraints (types_env : types_env)
       generate_constraints types_env constructors_env functions_env
         extended_typing_context expr ~verbose
       >>= fun (_, expr_type, expr_constrs, expr_substs, pretyped_expr) ->
+      unify_substs expr_substs var_substs >>= fun expr_substs ->
+      unify_substs expr_substs var_pretyped_substs >>= fun expr_substs ->
       Ok
         ( extended_typing_context,
           expr_type,
           expr_constrs,
-          var_pretyped_substs @ var_substs @ expr_substs,
+          expr_substs,
           Pretyped_ast.Let
             (loc, expr_type, var_names, pretyped_vars, pretyped_expr) )
   | FunApp (loc, app_var_name, app_values) ->
@@ -264,12 +285,13 @@ and generate_constraints (types_env : types_env)
                 expr_then_constrs,
                 expr_then_substs,
                 pretyped_then_expr ) ->
+      unify_substs expr_cond_substs expr_then_substs >>= fun expr_substs ->
       Ok
         ( typing_context,
           t,
           [ (expr_cond_type, TyBool); (t, expr_then_type) ]
           @ expr_cond_constrs @ expr_then_constrs,
-          expr_cond_substs @ expr_then_substs,
+          expr_substs,
           Pretyped_ast.If (loc, t, pretyped_expr, pretyped_then_expr) )
   | IfElse (loc, expr_cond, expr_then, expr_else) ->
       let t = fresh () in
@@ -294,12 +316,14 @@ and generate_constraints (types_env : types_env)
                 expr_else_constrs,
                 expr_else_substs,
                 pretyped_expr_else ) ->
+      unify_substs expr_cond_substs expr_then_substs >>= fun expr_substs ->
+      unify_substs expr_substs expr_else_substs >>= fun expr_substs ->
       Ok
         ( typing_context,
           t,
           [ (expr_cond_type, TyBool); (t, expr_then_type); (t, expr_else_type) ]
           @ expr_cond_constrs @ expr_then_constrs @ expr_else_constrs,
-          expr_cond_substs @ expr_then_substs @ expr_else_substs,
+          expr_substs,
           Pretyped_ast.IfElse
             (loc, t, pretyped_expr, pretyped_expr_then, pretyped_expr_else) )
   | Match (loc, var_name, pattern_exprs) ->
@@ -330,11 +354,13 @@ and generate_constraints (types_env : types_env)
                            pattern_expr_constraints,
                            pattern_expr_substs,
                            pretyped_pattern_expr ) ->
+                 unify_substs pattern_expr_substs acc_substs
+                 >>= fun acc_substs ->
                  Ok
                    ( (matched_var_type, matched_expr_type)
                      :: (t, pattern_expr_type) :: match_expr_constraints
                      @ pattern_expr_constraints @ acc_constraints,
-                     pattern_expr_substs @ acc_substs,
+                     acc_substs,
                      Pretyped_ast.MPattern
                        ( loc,
                          pattern_expr_type,
@@ -375,6 +401,7 @@ and generate_constraints (types_env : types_env)
       generate_constraints types_env constructors_env functions_env
         typing_context expr2 ~verbose
       >>= fun (_, expr2_type, expr2_constrs, expr2_substs, pretyped_expr2) ->
+      unify_substs expr1_substs expr2_substs >>= fun expr_substs ->
       match binary_op with
       | (BinOpPlus | BinOpMinus | BinOpMult | BinOpDiv | BinOpMod) as binary_op
         ->
@@ -383,7 +410,7 @@ and generate_constraints (types_env : types_env)
               TyInt,
               ((expr1_type, TyInt) :: (expr2_type, TyInt) :: expr1_constrs)
               @ expr2_constrs,
-              expr1_substs @ expr2_substs,
+              expr_substs,
               Pretyped_ast.BinaryOp
                 (loc, TyInt, binary_op, pretyped_expr1, pretyped_expr2) )
       | (BinOpLt | BinOpGt | BinOpLeq | BinOpGeq) as binary_op ->
@@ -392,7 +419,7 @@ and generate_constraints (types_env : types_env)
               TyBool,
               ((expr1_type, TyInt) :: (expr2_type, TyInt) :: expr1_constrs)
               @ expr2_constrs,
-              expr1_substs @ expr2_substs,
+              expr_substs,
               Pretyped_ast.BinaryOp
                 (loc, TyBool, binary_op, pretyped_expr1, pretyped_expr2) )
       | (BinOpEq | BinOpNeq) as binary_op ->
@@ -400,7 +427,7 @@ and generate_constraints (types_env : types_env)
             ( typing_context,
               TyBool,
               ((expr1_type, expr2_type) :: expr1_constrs) @ expr2_constrs,
-              expr1_substs @ expr2_substs,
+              expr_substs,
               Pretyped_ast.BinaryOp
                 (loc, TyBool, binary_op, pretyped_expr1, pretyped_expr2) )
       | (BinOpAnd | BinOpOr) as binary_op ->
@@ -409,7 +436,7 @@ and generate_constraints (types_env : types_env)
               TyBool,
               ((expr1_type, TyBool) :: (expr2_type, TyBool) :: expr1_constrs)
               @ expr2_constrs,
-              expr1_substs @ expr2_substs,
+              expr_substs,
               Pretyped_ast.BinaryOp
                 (loc, TyBool, binary_op, pretyped_expr1, pretyped_expr2) ))
   | Drop (loc, var_name, expr) ->

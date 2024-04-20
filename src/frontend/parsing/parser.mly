@@ -118,6 +118,7 @@ type_expr:
 | poly_param=type_expr; custom_type=LID { TECustom($startpos, [poly_param], Type_name.of_string custom_type) }
 | LPAREN; poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, poly_params, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
+| LPAREN; type_expr=type_expr; MUL; type_exprs=separated_nonempty_list(MUL, type_expr); RPAREN { TETuple($startpos, type_expr :: type_exprs) }
 
 
 /* Type Definition Production Rules */
