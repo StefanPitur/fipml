@@ -1,5 +1,4 @@
 open Core
-open Typing
 
 val fbip :
   Typed_ast.function_defn ->

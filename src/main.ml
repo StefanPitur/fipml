@@ -16,7 +16,7 @@ with
             let (TFun (_, _, _, _, typed_function_name, _, _)) =
               typed_function_defn
             in
-            match Fip.Static_fip.fip typed_function_defn functions_env with
+            match Typing.Static_fip.fip typed_function_defn functions_env with
             | Error _ ->
                 Fmt.pf Fmt.stdout
                   "<><><><><><><><><><><><><><><><><><><>\n\n\
@@ -27,6 +27,6 @@ with
                   "<><><><><><><><><><><><><><><><><><><>\n\n\
                    Function Name - %s@."
                   (Function_name.to_string typed_function_name);
-                Fip.Pprint_fip_ast.pprint_fip_expr Fmt.stdout ~indent:""
+                Typing.Pprint_fip_ast.pprint_fip_expr Fmt.stdout ~indent:""
                   fiped_function_defn))
 | Error err -> print_string (Error.to_string_hum err)

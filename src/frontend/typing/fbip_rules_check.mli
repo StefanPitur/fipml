@@ -1,6 +1,5 @@
 open Borrowed_context
 open Core
-open Typing
 
 val fbip_rules_check_expr :
   Typed_ast.expr ->

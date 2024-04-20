@@ -3,7 +3,6 @@ open Borrowed_context
 open Core
 open Fip_ast
 open Owned_context
-open Typing
 open Reuse_credits
 
 let indent_tab = "    "
