@@ -2,7 +2,6 @@ open Ast
 open Borrowed_context
 open Core
 open Owned_context
-open Typing
 open Reuse_credits
 open Result
 

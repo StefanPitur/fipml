@@ -78,6 +78,32 @@ let get_function_mutually_recursive_group_id (loc : loc)
   get_function_by_name loc function_name functions_env
   >>= fun (FunctionEnvEntry (group_id, _, _, _, _)) -> Ok group_id
 
+let add_fip_function_defns_to_functions_env (functions_env : functions_env) :
+    functions_env =
+  List.fold functions_env ~init:functions_env
+    ~f:(fun
+        acc_functions_env
+        (FunctionEnvEntry
+          ( function_group_id,
+            fip_option,
+            function_name,
+            param_type_exprs,
+            return_type_expr ))
+      ->
+      match fip_option with
+      | None -> acc_functions_env
+      | _ ->
+          let fiped_function_name =
+            Function_name.of_string (Function_name.to_string function_name ^ "!")
+          in
+          FunctionEnvEntry
+            ( function_group_id,
+              fip_option,
+              fiped_function_name,
+              param_type_exprs,
+              return_type_expr )
+          :: acc_functions_env)
+
 let get_mutually_recursive_function_defns_by_group_id (group_id : int)
     (function_defns : function_defn list) : functions_env =
   let mutually_recursive_functions =

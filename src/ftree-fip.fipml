@@ -1,0 +1,454 @@
+type pad =
+| Pad
+
+type reuse3 =
+| Reuse3 of pad * pad * pad
+
+type 'a afew =
+| One of 'a * pad * pad
+| Two of 'a * 'a * pad
+| Three of 'a * 'a * 'a
+
+type 'a tuple =
+| Pair of 'a * 'a * pad
+| Triple of 'a * 'a * 'a
+
+type 'a seq =
+| Empty
+| Unit of 'a * pad * pad
+| More0 of 'a * 'a tuple seq * 'a afew
+| More of 'a tuple * 'a tuple seq * 'a afew
+
+type buffer =
+| BNil
+| BCons of buffer * pad * pad
+
+type 'a bseq =
+| BSeq of 'a seq * buffer
+
+type 'a list3 =
+| Nil3
+| Cons3 of 'a * 'a list3 * pad
+
+fun head ^(s : 'a seq) : 'a = {
+  match s with
+  | Unit (x, _, _) -> { x }
+  | More0 (x, _, _) -> { x }
+  | More (Pair (x, _, _), _, _) -> { x }
+  | More (Triple (x, _, _), _, _) -> { x }
+  endmatch
+}
+
+fun bhead ^(bs : 'a bseq) : 'a = {
+  match bs with
+  | BSeq (s, _) -> { head (s) }
+  endmatch
+}
+
+fip fun cons (x : 'a) (u3 : reuse3) (s : 'a seq) (b : buffer) : ['a seq * buffer] = {
+  match u3 with
+  | Reuse3 (_, _, _) -> {
+      match s with
+      | Empty -> { (Unit (x, Pad, Pad), b) }
+      | Unit (y, _, _) -> { (More0 (x, Empty, One (y, Pad, Pad)), b) }
+      | More (Pair (y, z, _), q, u) -> { (More (Triple (x, y, z), q, u), BCons (b, Pad, Pad)) }
+      | More (Triple (y, z, w), q, u) -> {
+          match b with
+          | BCons (b2, _, _) -> {
+              let (q2, b3) = cons (Pair (z, w, Pad), Reuse3 (Pad, Pad, Pad), q, b2) in
+              (More (Pair (x, y, Pad), q2, u), b3)
+            }
+          endmatch
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun bcons (x : 'a) (u3 : reuse3) (bs : 'a bseq) : 'a bseq = {
+  match bs with
+  | BSeq (s, b) -> {
+      let (s2, b2) = cons (x, u3, s, b) in
+      BSeq (s2, b2)
+    }
+  endmatch
+}
+
+fip fun more0 (q : 'a tuple seq) (u : 'a afew) (b : buffer) : ['a seq * buffer] = {
+  match q with
+  | Empty -> {
+      match u with
+      | One (x, y, z) -> { (Unit (x, y, z), b) }
+      | Two (y, z, _) -> {
+          match b with
+          | BCons (b2, _, _) -> { (More0 (y, Empty, One (z, Pad, Pad)), b2) }
+          endmatch
+        }
+      | Three (y, z, w) -> {
+          match b with
+          | BCons (b2, _, _) -> { (More0 (y, Empty, Two (z, w, Pad)), b2) }
+          endmatch
+        }
+      endmatch
+    }
+  | Unit (p, _, _) -> {
+      match p with
+      | Pair (x, y, _) -> { (More (Pair (x, y, Pad), Empty, u), b) }
+      | Triple (x, y, z) -> {
+          match b with
+          | BCons (b2, _, _) -> { (More0 (x, Unit (Pair (y, z, Pad), Pad, Pad), u), b2) }
+          endmatch
+        }
+      endmatch
+    }
+  | More0 (p, q1, u1) -> {
+      match p with
+      | Pair (x, y, _) -> {
+          let (q12, b2) = more0 (q1, u1, b) in
+          (More (Pair (x, y, Pad), q12, u), b2)
+        }
+      | Triple (x, y, z) -> {
+          match b with
+          | BCons (b2, _, _) -> { (More0 (x, More0 (Pair (y, z, Pad), q1, u1), u), b2) }
+          endmatch
+        }
+      endmatch
+    }
+  | More (Pair (p, y1, _), q1, u1) -> {
+      match p with
+      | Pair (x, y, _) -> { (More (Pair (x, y, Pad), More0 (y1, q1, u1), u), b) }
+      | Triple (x, y, z) -> {
+          match b with
+          | BCons (b2, _, _) -> { (More0 (x, More (Pair (Pair (y, z, Pad), y1, Pad), q1, u1), u), b2) }
+          endmatch
+        }
+      endmatch
+    }
+  | More (Triple (p, y1, z1), q1, u1) -> {
+      match b with
+      | BCons (b2, _, _) -> {
+          match p with
+          | Pair (x, y, _) -> { (More (Pair (x, y, Pad), More (Pair (y1, z1, Pad), q1, u1), u), b2) }
+          | Triple (x, y, z) -> { (More0 (x, More (Triple (Pair (y, z, Pad), y1, z1), q1, u1), u), b2) }
+          endmatch
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun uncons (s : 'a seq) (b : buffer) : ['a * reuse3 * 'a seq * buffer] = {
+  match s with
+  | Unit (x, _, _) -> { (x, Reuse3 (Pad, Pad, Pad), Empty, b) }
+  | More (Triple (x, y, z), q, u) -> {
+      match b with
+      | BCons (b2, _, _) -> {
+          (x, Reuse3 (Pad, Pad, Pad), More (Pair (y, z, Pad), q, u), b2)
+        }
+      endmatch
+    }
+  | More (Pair (x, y, _), q, u) -> {
+      (x, Reuse3 (Pad, Pad, Pad), More0 (y, q, u), b)
+    }
+  | More0 (x, q, u) -> { let (q2, b2) = more0 (q, u, b) in (x, Reuse3 (Pad, Pad, Pad), q2, b2) }
+  endmatch
+}
+
+fip fun buncons (bs : 'a bseq) : ['a * reuse3 * 'a bseq] = {
+  match bs with
+  | BSeq (s, b) -> {
+      let (x, u3, s2, b2) = uncons (s, b) in
+      (x, u3, BSeq (s2, b2))
+    }
+  endmatch
+}
+
+fip fun snoc (s : 'a seq) (b : buffer) (u3 : reuse3) (x : 'a) : ['a seq * buffer] = {
+  match u3 with
+  | Reuse3 (_, _, _) -> {
+      match s with
+      | Empty -> { (Unit (x, Pad, Pad), b) }
+      | Unit (y, _, _) -> { (More0 (y, Empty, One (x, Pad, Pad)), b) }
+      | More0(u, q, One(y, _, _)) -> { (More0(u, q, Two(y, x, Pad)), BCons(b, Pad, Pad)) }
+      | More (u, q, One(y, _, _)) -> { (More (u, q, Two(y, x, Pad)), BCons(b, Pad, Pad)) }
+      | More0(u, q, Two(y, z, _)) -> { (More0(u, q, Three(y, z, x)), BCons(b, Pad, Pad)) }
+      | More (u, q, Two(y, z, _)) -> { (More (u, q, Three(y, z, x)), BCons(b, Pad, Pad)) }
+      | More0(u, q, Three(y, z, w)) -> {
+          match b with
+          | BCons (b2, _, _) -> {
+              let (q2, b3) = snoc (q, b2, Reuse3 (Pad, Pad, Pad), Pair (y, z, Pad)) in
+              (More0(u, q2, Two(w, x, Pad)), b3)
+            }
+          endmatch
+        }
+      | More (u, q, Three (y, z, w)) -> {
+          match b with
+          | BCons (b2, _, _) -> {
+              let (q2, b3) = snoc (q, b2, Reuse3 (Pad, Pad, Pad), Pair (y, z, Pad)) in
+              (More (u, q2, Two (w, x, Pad)), b3)
+            }
+          endmatch
+        }
+      endmatch
+  }
+  endmatch
+}
+
+fip fun bsnoc (bs : 'a bseq) (u3 : reuse3) (x : 'a) : 'a bseq = {
+  match bs with
+  | BSeq (s, b) -> {
+      let (s2, b2) = snoc (s, b, u3, x) in
+      BSeq (s2, b2)
+    }
+  endmatch
+}
+
+fip fun reverse_acc (acc : 'a list3) (ys : 'a list3) : 'a list3 = {
+  match ys with
+  | Cons3 (x, xx, _) -> { reverse_acc (Cons3 (x, acc, Pad), xx) }
+  | _ -> { acc }
+  endmatch
+}
+
+fip fun reverse_append3 (xs : 'a list3) (tl : 'a list3) : 'a list3 = {
+  reverse_acc (tl, xs)
+}
+
+fip fun reverse3 (xs : 'a list3) : 'a list3 = {
+  reverse_append3 (xs, Nil3)
+}
+
+fip fun append3 (xs : 'a list3) (ys : 'a list3) : 'a list3 = {
+  match xs with
+  | Cons3 (x, xx, _) -> { 
+      let xx2 = append3 (xx, ys) in
+      Cons3 (x, xx2, Pad)
+    }
+  | Nil3 -> { ys }
+  endmatch
+}
+
+fip fun foldl3 (xs : 'a list3) (z1 : 'b) (z2 : 'c) ^(f : ('b -> ('c -> (reuse3 -> ('a -> ('b * 'c)))))) : ['b * 'c] = {
+  match xs with
+  | Cons3 (x, xx, _) -> {
+      let (z12, z22) = ^f (z1, z2, Reuse3 (Pad, Pad, Pad), x) in
+      foldl3 (xx, z12, z22, f)
+    }
+  | Nil3 -> { (z1, z2) }
+  endmatch
+}
+
+fip fun foldl3_flipped (xs : 'a list3) (z1 : 'b) (z2 : 'c) ^(f : ('a -> (reuse3 -> ('b -> ('c -> ('b * 'c)))))) : ['b * 'c] = {
+  match xs with
+  | Cons3 (x, xx, _) -> {
+      let (z12, z22) = ^f (x, Reuse3 (Pad, Pad, Pad), z1, z2) in
+      foldl3_flipped (xx, z12, z22, f)
+    }
+  | Nil3 -> { (z1, z2) }
+  endmatch
+}
+
+fip fun foldr3 (xs : 'a list3) (z1 : 'b) (z2 : 'c) ^(f : ('a -> (reuse3 -> ('b -> ('c -> ('b * 'c)))))) : ['b * 'c] = {
+  let xs_reverse3 = reverse3 (xs) in
+  foldl3_flipped (xs_reverse3, z1, z2, f)
+}
+
+fip fun append_buffers (b1 : buffer) (b2 : buffer) : buffer = {
+  match b1 with
+  | BNil -> { b2 }
+  | BCons (b12, _, _) -> { 
+      let appended_buffers =  append_buffers (b12, b2) in
+      BCons (appended_buffers, Pad, Pad)
+    }
+  endmatch
+}
+
+fip fun afew_to_list (u : 'a afew) (b : buffer) : ['a list3 * buffer] = {
+  match u with
+  | One (x, _, _) -> { (Cons3 (x, Nil3, Pad), b) }
+  | Two (x, y, _) -> {
+      match b with
+      | BCons (b2, _, _) -> { (Cons3 (x, Cons3 (y, Nil3, Pad), Pad), b2) }
+      endmatch
+    }
+  | Three (x, y, z) -> {
+      match b with
+      | BCons (BCons (b2, _, _), _, _) -> {
+          (Cons3(x, Cons3(y, Cons3(z, Nil3, Pad), Pad), Pad), b2)
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun tuple_to_list (u : 'a tuple) (b : buffer) : ['a list3 * buffer] = {
+  match u with
+  | Pair (x, y, _) -> {
+      match b with
+      | BCons (b2, _, _) -> { (Cons3(x, Cons3(y, Nil3, Pad), Pad), b2) }
+      endmatch
+    }
+  | Triple (x, y, z) -> {
+      match b with
+      | BCons(BCons(b2, _, _), _, _) -> { (Cons3(x, Cons3(y, Cons3(z, Nil3, Pad), Pad), Pad), b2) }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun to_tuples (xs : 'a list3) (b : buffer) : ['a tuple list3 * buffer] = {
+  match xs with
+  | Cons3(x, Cons3(y, Nil3, _), _) -> { (Cons3(Pair(x,y,Pad), Nil3, Pad), b) }
+  | Cons3(x, Cons3(y, Cons3(z, Cons3(w, Nil3, _), _), _), _) -> { (Cons3(Pair(x,y,Pad), Cons3(Pair(z,w,Pad),Nil3,Pad), Pad), b) }
+  | Cons3(x, Cons3(y, Cons3(z, xs1, _), _), _) -> {
+      let (xs2, b2) = to_tuples (xs1, b) in
+      (Cons3(Triple(x,y,z), xs2, Pad), BCons(b2, Pad, Pad))
+    }
+  | _ -> { (Nil3, b) }
+  endmatch
+}
+
+fip fun glue (q_1 : 'a seq) (b_1 : buffer) (xs : 'a list3) (bs_0 : buffer) (q_2 : 'a seq) (b_2 : buffer) : ['a seq * buffer] = {
+  match q_1 with
+  | Empty -> {
+      let bs0_b1 = append_buffers (bs_0, b_1) in
+      let appended_buffers = append_buffers (bs0_b1, b_2) in
+      foldr3 (xs, q_2, appended_buffers, cons)
+    }
+  | Unit (x1, _, _) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, Unit (x1, Pad, Pad), appended_buffers, snoc)
+        }
+      | q2 -> {
+          let bs0_b1 = append_buffers (bs_0, b_1) in
+          let appended_buffers = append_buffers (bs0_b1, b_2) in
+          foldr3 (Cons3 (x1, xs, Pad), q2, appended_buffers, cons)
+        }
+      endmatch
+    }
+  | More (u1, q1, v1) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | Unit (x2, _, _) -> {
+          let append3_res = append3 (xs, Cons3 (x2, Nil3, Pad)) in
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (append3_res, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | More (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, BCons (bs_0, Pad, Pad)) in
+          let (u22, bs2) = tuple_to_list (u2, bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More (u1, q, v2), b)
+        }
+      | More0 (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, bs_0) in
+          let (u22, bs2) = (Cons3 (u2, Nil3, Pad), bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More (u1, q, v2), b)
+        }
+      endmatch
+    }
+  | More0 (u1, q1, v1) -> {
+      match q_2 with
+      | Empty -> {
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (xs, More (u1, q1, v1), appended_buffers, snoc)
+        }
+      | Unit (x2, _, _) -> {
+          let append3_res = append3 (xs, Cons3 (x2, Nil3, Pad)) in
+          let bs0_b2 = append_buffers (bs_0, b_2) in
+          let appended_buffers = append_buffers (bs0_b2, b_1) in
+          foldl3 (append3_res, More0 (u1, q1, v1), appended_buffers, snoc)
+        }
+      | More (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, BCons (bs_0, Pad, Pad)) in
+          let (u22, bs2) = tuple_to_list (u2, bs1) in 
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More0 (u1, q, v2), b)
+        }
+      | More0 (u2, q2, v2) -> {
+          let (v12, bs1) = afew_to_list (v1, bs_0) in
+          let (u22, bs2) = (Cons3 (u2, Nil3, Pad), bs1) in
+          let v12_xs = append3 (v12, xs) in
+          let appended_list3 = append3 (v12_xs, u22) in
+          let (ts, bs3) = to_tuples (appended_list3, bs2) in
+          let (q, b) = glue (q1, b_1, ts, bs3, q2, b_2) in
+          (More0 (u1, q, v2), b)
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fip fun append (q_1 : 'a bseq) (q_2 : 'a bseq) : 'a bseq = {
+  match q_1 with
+  | BSeq (q1, b1) -> {
+      match q_2 with
+      | BSeq (q2, b2) -> {
+          free 2;
+          let (q, b) = glue (q1, b1, Nil3, BNil, q2, b2) in
+          BSeq (q, b)
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fun iterate (s : 'a bseq) (n : int) : 'a bseq = {
+  if n <= 0 then { s } else {
+    let (x, u3, s2) = buncons (s) in
+    let bsnoc_result = bsnoc (s2, u3, x) in
+    let pred_n = n - 1 in
+    iterate (bsnoc_result, pred_n)
+  }
+  endif
+}
+
+fun build (n : int) (s : int bseq) : int bseq = {
+  if n <= 0 then { s } else {
+    let pred_n = n - 1 in
+    let bsnoc_result = bsnoc (s, Reuse3 (Pad, Pad, Pad), n) in
+    build (pred_n, bsnoc_result)
+  }
+  endif
+}
+
+fun test_iter (n : int) (iter : int) : unit = {
+  if iter < 0 then { () } else {
+    let s = build (n, BSeq (Empty, BNil)) in
+    let n_times_3 = n * 3 in
+    let iterate_res = iterate (s, n_times_3) in
+    let test_res = bhead (iterate_res) in
+    let pred_iter = iter - 1 in
+    test_iter (n, pred_iter)
+  }
+  endif
+}
+
+fun test (n : int) : unit = {
+  let div = if n <= 0 then { 1 } else { n } endif in
+  let steps = 10000000 / div in
+  test_iter (n, steps)
+}
+
+fun main (n : int) : unit = {
+  test (n)
+}

@@ -1,8 +1,8 @@
 open Ast.Ast_types
 open Core
-open Fip.Fip_rules_check
-open Fip.Borrowed_context
-open Fip.Pprint_fip_ast
+open Typing.Fip_rules_check
+open Typing.Borrowed_context
+open Typing.Pprint_fip_ast
 open Typing
 
 let mock_loc : Lexing.position =

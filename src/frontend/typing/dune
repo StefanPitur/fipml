@@ -14,5 +14,14 @@
   type_infer
   functions_env
   pprint_type_infer
-  pprint_pretyped_ast)
+  pprint_pretyped_ast
+  static_fip
+  static_fbip
+  borrowed_context
+  owned_context
+  reuse_credits
+  fip_ast
+  pprint_fip_ast
+  fip_rules_check
+  fbip_rules_check)
  (libraries core ast parsing))

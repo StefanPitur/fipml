@@ -31,7 +31,7 @@ let%expect_test "Full Type Checking" =
       TFun
         ( mock_loc,
           1,
-          Some (Fip 0),
+          None,
           Function_name.of_string "add",
           [
             TParam (TEInt mock_loc, Var_name.of_string "x", None);
@@ -167,7 +167,7 @@ let%expect_test "Full Type Checking" =
                   Type Constructor Name: C2
                       Type Expr: Bool
                       Type Expr: custom_type
-              Fip(0) Function Name: add
+              Function Name: add
               Function Mutually Recursive Group Id - 1
               Return Type: Int
               Param List:

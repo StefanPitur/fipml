@@ -1,11 +1,12 @@
 open Borrowed_context
 open Core
 open Owned_context
-open Typing
 open Reuse_credits
 open Result
 
-let rec fbip_rules_check_value (typed_value : Typed_ast.value)
+exception InstructionNotAllowedInFipFunction of string
+
+let rec fip_rules_check_value (typed_value : Typed_ast.value)
     (borrowed_set : BorrowedSet.t) : Fip_ast.value Or_error.t =
   match typed_value with
   | Unit (loc, _) ->
@@ -37,7 +38,7 @@ let rec fbip_rules_check_value (typed_value : Typed_ast.value)
                 (acc_owned_set, acc_reuse_map, acc_fip_values)
               ->
               Or_error.ok_exn
-                ( fbip_rules_check_value constructor_typed_value borrowed_set
+                ( fip_rules_check_value constructor_typed_value borrowed_set
                 >>= fun fip_value ->
                   let _, owned_set, reuse_map =
                     Fip_ast.get_fip_contexts_from_value fip_value
@@ -68,12 +69,12 @@ let rec fbip_rules_check_value (typed_value : Typed_ast.value)
                constructor_name,
                constructor_fip_values ))
 
-and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
+and fip_rules_check_expr (typed_expr : Typed_ast.expr)
     (borrowed_set : BorrowedSet.t) (functions_env : Functions_env.functions_env)
     : Fip_ast.expr Or_error.t =
   match typed_expr with
   | UnboxedSingleton (loc, _, typed_value) ->
-      fbip_rules_check_value typed_value borrowed_set >>= fun fip_value ->
+      fip_rules_check_value typed_value borrowed_set >>= fun fip_value ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_value fip_value
       in
@@ -85,7 +86,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         List.fold_right typed_values ~init:(OwnedSet.empty, ReuseMap.empty, [])
           ~f:(fun typed_value (acc_owned_set, acc_reuse_map, acc_fip_values) ->
             Or_error.ok_exn
-              ( fbip_rules_check_value typed_value borrowed_set
+              ( fip_rules_check_value typed_value borrowed_set
               >>= fun fip_value ->
                 let _, owned_set, reuse_map =
                   Fip_ast.get_fip_contexts_from_value fip_value
@@ -106,7 +107,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.UnboxedTuple
            (loc, borrowed_set, owned_set, reuse_map, fip_values))
   | Let (loc, _, var_names, var_expr, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, expr_extended_owned_set, expr_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
@@ -118,7 +119,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
       let var_expr_borrowed_set =
         combine_owned_with_borrowed ~borrowed_set ~owned_set:expr_owned_set
       in
-      fbip_rules_check_expr var_expr var_expr_borrowed_set functions_env
+      fip_rules_check_expr var_expr var_expr_borrowed_set functions_env
       >>= fun fip_var_expr ->
       let _, var_expr_owned_set, var_expr_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_var_expr
@@ -147,7 +148,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         List.fold_right values ~init:(OwnedSet.empty, ReuseMap.empty, [])
           ~f:(fun value (acc_owned_set, acc_reuse_map, acc_fip_values) ->
             Or_error.ok_exn
-              ( fbip_rules_check_value value borrowed_set >>= fun fip_value ->
+              ( fip_rules_check_value value borrowed_set >>= fun fip_value ->
                 let _, owned_set, reuse_map =
                   Fip_ast.get_fip_contexts_from_value fip_value
                 in
@@ -167,6 +168,9 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.FunApp
            (loc, borrowed_set, owned_set, reuse_map, fun_var, fip_values))
   | FunCall (loc, _, function_name, values) ->
+      Or_error.ok_exn
+        (Functions_env.assert_function_has_required_fip_type loc (Fip (-1))
+           function_name functions_env);
       let function_allocation_credit =
         Or_error.ok_exn
           (Functions_env.get_fip_function_allocation_credit loc function_name
@@ -183,7 +187,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
             ->
             match
               Fip_ast.is_value_borrowed_or_top_level_fip_function loc ~value
-                ~required_fip_type:(Fbip 0) ~borrowed_set ~functions_env
+                ~required_fip_type:(Fip (-1)) ~borrowed_set ~functions_env
             with
             | Ok (var_name, allocation_credit) ->
                 let fip_value =
@@ -196,8 +200,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                   allocation_credit + acc_allocation_credit )
             | _ ->
                 Or_error.ok_exn
-                  ( fbip_rules_check_value value borrowed_set
-                  >>= fun fip_value ->
+                  ( fip_rules_check_value value borrowed_set >>= fun fip_value ->
                     let _, owned_set, reuse_map =
                       Fip_ast.get_fip_contexts_from_value fip_value
                     in
@@ -230,12 +233,12 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              function_name,
              fip_values ))
   | If (loc, _, cond_expr, then_expr) ->
-      fbip_rules_check_expr cond_expr borrowed_set functions_env
+      fip_rules_check_expr cond_expr borrowed_set functions_env
       >>= fun fip_cond_expr ->
       let _, cond_owned_set, cond_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_cond_expr
       in
-      fbip_rules_check_expr then_expr borrowed_set functions_env
+      fip_rules_check_expr then_expr borrowed_set functions_env
       >>= fun fip_then_expr ->
       let _, then_owned_set, then_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_then_expr
@@ -257,19 +260,19 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              fip_cond_expr,
              fip_then_expr ))
   | IfElse (loc, _, cond_expr, then_expr, else_expr) ->
-      fbip_rules_check_expr cond_expr borrowed_set functions_env
+      fip_rules_check_expr cond_expr borrowed_set functions_env
       >>= fun fip_cond_expr ->
       let _, cond_owned_set, cond_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_cond_expr
       in
 
-      fbip_rules_check_expr then_expr borrowed_set functions_env
+      fip_rules_check_expr then_expr borrowed_set functions_env
       >>= fun fip_then_expr ->
       let _, then_owned_set, then_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_then_expr
       in
 
-      fbip_rules_check_expr else_expr borrowed_set functions_env
+      fip_rules_check_expr else_expr borrowed_set functions_env
       >>= fun fip_else_expr ->
       let _, else_owned_set, else_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_else_expr
@@ -310,7 +313,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                    extend_borrowed_set_by_list ~elements:matched_expr_vars
                      ~borrowed_set
                    >>= fun extended_borrowed_set ->
-                   fbip_rules_check_expr typed_expr extended_borrowed_set
+                   fip_rules_check_expr typed_expr extended_borrowed_set
                      functions_env
                    >>= fun fip_expr ->
                    let _, owned_set, reuse_map =
@@ -380,7 +383,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                    assert_elements_not_in_borrowed_set
                      ~elements:matched_expr_vars ~borrowed_set
                    >>= fun () ->
-                   fbip_rules_check_expr typed_expr borrowed_set functions_env
+                   fip_rules_check_expr typed_expr borrowed_set functions_env
                    >>= fun fip_expr ->
                    let _, expr_owned_set, expr_reuse_map =
                      Fip_ast.get_fip_contexts_from_expr fip_expr
@@ -450,7 +453,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
                        all branches - %s."
                       (Ast.Ast_types.string_of_loc loc)))))
   | UnOp (loc, _, unary_op, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
@@ -458,12 +461,12 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.UnOp
            (loc, borrowed_set, owned_set, reuse_map, unary_op, fip_expr))
   | BinaryOp (loc, _, binary_op, left_expr, right_expr) ->
-      fbip_rules_check_expr left_expr borrowed_set functions_env
+      fip_rules_check_expr left_expr borrowed_set functions_env
       >>= fun fip_left_expr ->
       let _, left_owned_set, left_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_left_expr
       in
-      fbip_rules_check_expr right_expr borrowed_set functions_env
+      fip_rules_check_expr right_expr borrowed_set functions_env
       >>= fun fip_right_expr ->
       let _, right_owned_set, right_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_right_expr
@@ -486,19 +489,11 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              binary_op,
              fip_left_expr,
              fip_right_expr ))
-  | Drop (loc, _, drop_var, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
-      let _, owned_set, reuse_map =
-        Fip_ast.get_fip_contexts_from_expr fip_expr
-      in
-      let extended_owned_set =
-        Or_error.ok_exn (extend_owned_set ~element:drop_var ~owned_set)
-      in
-      Ok
-        (Fip_ast.Drop
-           (loc, borrowed_set, extended_owned_set, reuse_map, drop_var, fip_expr))
+  | Drop (loc, _, _, _) ->
+      let error_string = "free - " ^ Ast.Ast_types.string_of_loc loc in
+      Or_error.of_exn (InstructionNotAllowedInFipFunction error_string)
   | Free (loc, _, k, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
@@ -511,7 +506,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.Free
            (loc, borrowed_set, owned_set, extended_reuse_map, k, fip_expr))
   | Weak (loc, _, k, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
@@ -525,7 +520,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.Weak
            (loc, borrowed_set, owned_set, extended_reuse_map, k, fip_expr))
   | Inst (loc, _, k, expr) ->
-      fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
+      fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
