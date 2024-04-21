@@ -22,9 +22,9 @@ let%expect_test "function definition with owned parameters" =
             OwnedParam: y
             Type Expr: Unit @ shared
             OwnedParam: z
-            Type Expr: custom_type @ shared
+            Type Expr: ( ;  ; ) custom_type @ shared
             OwnedParam: t
-        Return Type: (Unit @ shared * Int @ shared * custom_type @ shared * Bool @ shared * ((Int @ shared -> Int @ shared) @ shared -> Int @ shared) @ shared) @ shared
+        Return Type: (Unit @ shared * Int @ shared * ( ;  ; ) custom_type @ shared * Bool @ shared * ((Int @ shared -> Int @ shared) @ shared -> Int @ shared) @ shared) @ shared
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

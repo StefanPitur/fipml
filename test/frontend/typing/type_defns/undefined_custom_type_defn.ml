@@ -11,18 +11,27 @@ let%expect_test "typing type defn: used type before actual definition" =
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type_1",
         [
           TTypeConstructor
             ( mock_loc,
               Constructor_name.of_string "C1",
-              [ TECustom (mock_loc, [], Type_name.of_string "custom_type_2") ]
-            );
+              [
+                TAttr
+                  ( mock_loc,
+                    TECustom
+                      (mock_loc, [], [], [], Type_name.of_string "custom_type_2"),
+                    Unique mock_loc );
+              ] );
         ] )
   in
   let simple_custom_type_2 =
     TType
       ( mock_loc,
+        [],
+        [],
         [],
         Type_name.of_string "custom_type_2",
         [ TTypeConstructor (mock_loc, Constructor_name.of_string "C2", []) ] )
@@ -32,4 +41,4 @@ let%expect_test "typing type defn: used type before actual definition" =
   | Error err ->
       print_string (Error.to_string_hum err);
       [%expect
-        {| ("Typing.Type_defns_env.TypeNotFound(\"File: mock - Line: 0 - Column: 1. Type () custom_type_2 not defined\")") |}]
+        {| ("Typing.Type_defns_env.TypeNotFound(\"File: mock - Line: 0 - Column: 1. Type ( ;  ; ) custom_type_2 not defined\")") |}]

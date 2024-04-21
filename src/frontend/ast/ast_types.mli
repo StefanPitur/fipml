@@ -35,17 +35,13 @@ type typ =
   | TEInt of loc
   | TEBool of loc
   | TEPoly of loc * poly
-  | TECustom of loc * custom_poly_arg list * Type_name.t
+  | TECustom of loc * typ list * uniqueness list * type_expr list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
   | TETuple of loc * type_expr list
 
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
-and custom_poly_arg =
-  | CustomArgTypeExpr of type_expr
-  | CustomArgUnique of uniqueness
-  | CustomArgPoly of poly
-
+val equal_poly : poly -> poly -> bool
 val equal_type_expr : type_expr -> type_expr -> bool
 
 type param = TParam of type_expr * Var_name.t * borrowed option
@@ -72,8 +68,14 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
+val get_poly_loc : poly -> loc
+
 val get_loc : type_expr -> loc
 (** Extract loc from type expression *)
+
+val convert_typ_to_poly : typ -> poly Or_error.t
+val convert_uniqueness_to_poly : uniqueness -> poly Or_error.t
+val convert_type_expr_to_poly : type_expr -> poly Or_error.t
 
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string

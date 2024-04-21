@@ -41,10 +41,16 @@ and matched_expr =
 
 type type_defn =
   | TType of
-      loc * type_expr * type_expr list * Type_name.t * type_constructor list
+      loc
+      * typ
+      * typ list
+      * uniqueness list
+      * type_expr list
+      * Type_name.t
+      * type_constructor list
 
 and type_constructor =
-  | TTypeConstructor of loc * type_expr * Constructor_name.t * type_expr list
+  | TTypeConstructor of loc * typ * Constructor_name.t * type_expr list
 
 type function_defn =
   | TFun of

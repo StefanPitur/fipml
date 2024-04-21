@@ -16,7 +16,7 @@ let%expect_test "complex type definition" =
         Type Constructors:
             Type Constructor Name: Constructor1
             Type Constructor Name: Constructor2
-                Type Expr: some_custom_type @ unique
+                Type Expr: ( ;  ; ) some_custom_type @ unique
             Type Constructor Name: Constructor3
                 Type Expr: Int @ shared
-                Type Expr: some_custom_type @ unique|}]
+                Type Expr: ( ;  ; ) some_custom_type @ unique|}]

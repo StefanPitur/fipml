@@ -5,12 +5,31 @@ let indent_tab = "    "
 
 (* Pretty-printing Type Definition *)
 let rec pprint_typed_defn ppf ~indent
-    (TType (_, _, type_poly_params, type_name, type_constructors)) =
+    (TType
+      ( _,
+        _,
+        typ_poly_params,
+        uniqueness_poly_params,
+        type_expr_poly_params,
+        type_name,
+        type_constructors )) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
   Fmt.pf ppf "%sType Poly Params:@." indent;
-  let poly_ids = List.map string_of_type type_poly_params in
-  List.iter (Fmt.pf ppf "%sType Poly Param: %s@." sub_expr_indent) poly_ids;
+  let typ_poly_ids = List.map string_of_typ typ_poly_params in
+  let uniqueness_poly_ids =
+    List.map string_of_uniqueness uniqueness_poly_params
+  in
+  let type_expr_poly_ids = List.map string_of_type type_expr_poly_params in
+  List.iter
+    (Fmt.pf ppf "%sType Typ Poly Param: %s@." sub_expr_indent)
+    typ_poly_ids;
+  List.iter
+    (Fmt.pf ppf "%sType Unique Poly Param: %s@." sub_expr_indent)
+    uniqueness_poly_ids;
+  List.iter
+    (Fmt.pf ppf "%sType TypeExpr Poly Param: %s@." sub_expr_indent)
+    type_expr_poly_ids;
   Fmt.pf ppf "%sType Constructors:@." indent;
   List.iter
     (pprint_typed_constructor ppf ~indent:sub_expr_indent)

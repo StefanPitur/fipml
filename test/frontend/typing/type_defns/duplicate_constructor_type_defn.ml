@@ -12,11 +12,15 @@ let%expect_test "typing type defn: duplicated constructor definition in the \
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type",
         [
           TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []);
           TTypeConstructor
-            (mock_loc, Constructor_name.of_string "C1", [ TEUnit mock_loc ]);
+            ( mock_loc,
+              Constructor_name.of_string "C1",
+              [ TAttr (mock_loc, TEUnit mock_loc, Unique mock_loc) ] );
         ] )
   in
   match typecheck_type_defns [ custom_type ] with
@@ -32,6 +36,8 @@ let%expect_test "typing type defn: duplicated constructor definition across \
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type_1",
         [ TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []) ] )
   in
@@ -39,10 +45,14 @@ let%expect_test "typing type defn: duplicated constructor definition across \
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type_2",
         [
           TTypeConstructor
-            (mock_loc, Constructor_name.of_string "C1", [ TEUnit mock_loc ]);
+            ( mock_loc,
+              Constructor_name.of_string "C1",
+              [ TAttr (mock_loc, TEUnit mock_loc, Unique mock_loc) ] );
         ] )
   in
   match typecheck_type_defns [ custom_type_1; custom_type_2 ] with

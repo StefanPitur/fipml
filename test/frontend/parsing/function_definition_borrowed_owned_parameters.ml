@@ -15,11 +15,11 @@ let%expect_test "function definition with both borrowed and owned parameters" =
         Param Types:
             Type Expr: Int @ shared
             BorrowedParam: y1
-            Type Expr: custom_type @ shared
+            Type Expr: ( ;  ; ) custom_type @ shared
             OwnedParam: x
             Type Expr: Unit @ shared
             BorrowedParam: y2
-        Return Type: (Unit @ shared * custom_type @ shared * (Int @ shared -> Bool @ shared) @ shared) @ shared
+        Return Type: (Unit @ shared * ( ;  ; ) custom_type @ shared * (Int @ shared -> Bool @ shared) @ shared) @ shared
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

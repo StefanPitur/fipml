@@ -1,5 +1,7 @@
 open Core
 
+exception PolyExpected of string
+
 type loc = Lexing.position
 
 module type ID = sig
@@ -47,16 +49,11 @@ type typ =
   | TEInt of loc
   | TEBool of loc
   | TEPoly of loc * poly
-  | TECustom of loc * custom_poly_arg list * Type_name.t
+  | TECustom of loc * typ list * uniqueness list * type_expr list * Type_name.t
   | TEArrow of loc * type_expr * type_expr
   | TETuple of loc * type_expr list
 
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
-
-and custom_poly_arg =
-  | CustomArgTypeExpr of type_expr
-  | CustomArgUnique of uniqueness
-  | CustomArgPoly of poly
 
 let equal_poly (poly1 : poly) (poly2 : poly) : bool =
   match (poly1, poly2) with
@@ -82,14 +79,31 @@ let rec equal_type_expr (type_expr1 : type_expr) (type_expr2 : type_expr) : bool
 and equal_typ (typ1 : typ) (typ2 : typ) : bool =
   match (typ1, typ2) with
   | TEUnit _, TEUnit _ | TEInt _, TEInt _ | TEBool _, TEBool _ -> true
-  | ( TECustom (_, custom_type_polys1, custom_type1),
-      TECustom (_, custom_type_polys2, custom_type2) )
-    when Int.( = )
-           (List.length custom_type_polys1)
-           (List.length custom_type_polys2)
+  | ( TECustom
+        ( _,
+          typ_type_polys1,
+          uniqueness_type_polys1,
+          type_expr_type_polys1,
+          custom_type1 ),
+      TECustom
+        ( _,
+          typ_type_polys2,
+          uniqueness_type_polys2,
+          type_expr_type_polys2,
+          custom_type2 ) )
+    when Int.( = ) (List.length typ_type_polys1) (List.length typ_type_polys2)
+         && Int.( = )
+              (List.length uniqueness_type_polys1)
+              (List.length uniqueness_type_polys2)
+         && Int.( = )
+              (List.length type_expr_type_polys1)
+              (List.length type_expr_type_polys2)
          && Type_name.( = ) custom_type1 custom_type2 ->
-      List.for_all2_exn custom_type_polys1 custom_type_polys2
-        ~f:equal_custom_poly_arg
+      List.for_all2_exn typ_type_polys1 typ_type_polys2 ~f:equal_typ
+      && List.for_all2_exn uniqueness_type_polys1 uniqueness_type_polys2
+           ~f:equal_uniqueness
+      && List.for_all2_exn type_expr_type_polys1 type_expr_type_polys2
+           ~f:equal_type_expr
   | ( TEArrow (_, in_type_expr1, out_type_expr1),
       TEArrow (_, in_type_expr2, out_type_expr2) ) ->
       equal_type_expr in_type_expr1 in_type_expr2
@@ -97,16 +111,6 @@ and equal_typ (typ1 : typ) (typ2 : typ) : bool =
   | TETuple (_, type_exprs1), TETuple (_, type_exprs2) ->
       List.for_all2_exn type_exprs1 type_exprs2 ~f:equal_type_expr
   | TEPoly (_, poly_id1), TEPoly (_, poly_id2) -> equal_poly poly_id1 poly_id2
-  | _ -> false
-
-and equal_custom_poly_arg (custom_poly_arg1 : custom_poly_arg)
-    (custom_poly_arg2 : custom_poly_arg) : bool =
-  match (custom_poly_arg1, custom_poly_arg2) with
-  | CustomArgTypeExpr type_expr1, CustomArgTypeExpr type_expr2 ->
-      equal_type_expr type_expr1 type_expr2
-  | CustomArgUnique uniqueness1, CustomArgUnique uniqueness2 ->
-      equal_uniqueness uniqueness1 uniqueness2
-  | CustomArgPoly poly1, CustomArgPoly poly2 -> equal_poly poly1 poly2
   | _ -> false
 
 type param = TParam of type_expr * Var_name.t * borrowed option
@@ -130,6 +134,26 @@ type binary_op =
   | BinOpNeq
   | BinOpAnd
   | BinOpOr
+
+let get_poly_loc (poly : poly) : loc =
+  let (Poly (loc, _)) = poly in
+  loc
+
+let get_typ_loc (typ : typ) : loc =
+  match typ with
+  | TEUnit loc -> loc
+  | TEInt loc -> loc
+  | TEBool loc -> loc
+  | TEPoly (loc, _) -> loc
+  | TECustom (loc, _, _, _, _) -> loc
+  | TEArrow (loc, _, _) -> loc
+  | TETuple (loc, _) -> loc
+
+let get_uniqueness_loc (uniqueness : uniqueness) : loc =
+  match uniqueness with
+  | Unique loc -> loc
+  | Shared loc -> loc
+  | PolyUnique (loc, _) -> loc
 
 let get_loc (type_expr : type_expr) : loc =
   match type_expr with TPoly (Poly (loc, _)) | TAttr (loc, _, _) -> loc
@@ -158,17 +182,24 @@ let rec string_of_typ = function
   | TEInt _ -> "Int"
   | TEBool _ -> "Bool"
   | TEPoly (_, poly_id) -> string_of_poly poly_id
-  | TECustom (_, custom_poly_params, custom_type_name) ->
-      let custom_poly_params_string =
-        match custom_poly_params with
-        | [] -> ""
-        | _ ->
-            let custom_poly_params_strings =
-              List.map ~f:string_of_custom_poly_arg custom_poly_params
-            in
-            "(" ^ String.concat ~sep:", " custom_poly_params_strings ^ ") "
+  | TECustom
+      ( _,
+        typ_type_polys,
+        uniqueness_type_polys,
+        type_expr_type_polys,
+        custom_type_name ) ->
+      let typ_polys_id = List.map typ_type_polys ~f:string_of_typ in
+      let uniqueness_polys_id =
+        List.map uniqueness_type_polys ~f:string_of_uniqueness
       in
-      custom_poly_params_string ^ Type_name.to_string custom_type_name
+      let type_expr_polys_id =
+        List.map type_expr_type_polys ~f:string_of_type
+      in
+      Fmt.str "(%s ; %s ; %s) %s"
+        (String.concat ~sep:", " typ_polys_id)
+        (String.concat ~sep:", " uniqueness_polys_id)
+        (String.concat ~sep:", " type_expr_polys_id)
+        (Type_name.to_string custom_type_name)
   | TEArrow (_, in_type, out_type) ->
       let in_type_string = string_of_type in_type in
       let out_type_string = string_of_type out_type in
@@ -182,12 +213,6 @@ and string_of_type (type_expr : type_expr) =
   | TPoly poly -> string_of_poly poly
   | TAttr (_, typ, uniqueness) ->
       string_of_typ typ ^ " @ " ^ string_of_uniqueness uniqueness
-
-and string_of_custom_poly_arg (custom_poly_arg : custom_poly_arg) : string =
-  match custom_poly_arg with
-  | CustomArgTypeExpr type_expr -> "CustomArgTypeExpr " ^ string_of_type type_expr
-  | CustomArgUnique uniqueness -> "CustomArgUnique " ^ string_of_uniqueness uniqueness
-  | CustomArgPoly poly -> "CustomArgPoly " ^ string_of_poly poly
 
 let get_params_type (params : param list) =
   let get_param_type = function
@@ -220,3 +245,20 @@ let string_of_fip_option = function
   | None -> ""
   | Some (Fip n) -> Fmt.str "Fip(%s) " (string_of_int n)
   | Some (Fbip n) -> Fmt.str "Fbip(%s) " (string_of_int n)
+
+let convert_typ_to_poly (typ : typ) : poly Or_error.t =
+  match typ with
+  | TEPoly (_, poly) -> Ok poly
+  | _ -> Or_error.of_exn (PolyExpected (string_of_loc (get_typ_loc typ)))
+
+let convert_uniqueness_to_poly (uniqueness : uniqueness) : poly Or_error.t =
+  match uniqueness with
+  | PolyUnique (_, poly) -> Ok poly
+  | _ ->
+      Or_error.of_exn
+        (PolyExpected (string_of_loc (get_uniqueness_loc uniqueness)))
+
+let convert_type_expr_to_poly (type_expr : type_expr) : poly Or_error.t =
+  match type_expr with
+  | TPoly poly -> Ok poly
+  | _ -> Or_error.of_exn (PolyExpected (string_of_loc (get_loc type_expr)))

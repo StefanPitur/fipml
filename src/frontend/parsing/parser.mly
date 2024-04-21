@@ -117,24 +117,19 @@ poly:
 | poly=POLY { Poly($startpos, poly) }
 
 uniqueness:
+| poly=poly { PolyUnique($startpos, poly) }
 | SHARED { Shared($startpos) }
 | UNIQUE { Unique($startpos) }
-| poly=poly { PolyUnique($startpos, poly) }
-
-custom_poly_arg:
-| poly=poly { CustomArgPoly poly }
-| SHARED { CustomArgUnique (Shared($startpos)) }
-| UNIQUE { CustomArgUnique (Unique($startpos)) }
-| typ=typ; AT; uniqueness=uniqueness { CustomArgTypeExpr (TAttr($startpos, typ, uniqueness)) }
 
 typ:
+| poly=poly { TEPoly ($startpos, poly) }
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| poly=poly { TEPoly ($startpos, poly) }
-| custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
-| custom_poly_arg=custom_poly_arg; custom_type=LID { TECustom($startpos, [custom_poly_arg], Type_name.of_string custom_type) }
-| LPAREN; custom_poly_args=separated_nonempty_list(COMMA, custom_poly_arg); RPAREN; custom_type=LID { TECustom($startpos, custom_poly_args, Type_name.of_string custom_type) }
+| custom_type=LID { TECustom($startpos, [], [], [], Type_name.of_string custom_type) }
+| LPAREN; typ_args=separated_list(COMMA, typ); SEMICOLON; uniqueness_args=separated_list(COMMA, uniqueness); SEMICOLON; type_expr_args=separated_list(COMMA, type_expr); RPAREN; custom_type=LID {
+    TECustom($startpos, typ_args, uniqueness_args, type_expr_args, Type_name.of_string custom_type)
+  }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 | LPAREN; type_expr=type_expr; MUL; type_exprs=separated_nonempty_list(MUL, type_expr); RPAREN { TETuple($startpos, type_expr :: type_exprs) }
 
@@ -146,13 +141,13 @@ type_expr:
 // Type Definition Structure Production Rules 
 type_defn:
 | TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, [], Type_name.of_string type_name, type_constructors) 
+    TType($startpos, [], [], [], Type_name.of_string type_name, type_constructors) 
   }
-| TYPE; poly=poly; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, [poly], Type_name.of_string type_name, type_constructors) 
-  }
-| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, poly); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, polys, Type_name.of_string type_name, type_constructors) 
+| TYPE; LPAREN; typ_polys=separated_list(COMMA, poly); AT; uniqueness_polys=separated_list(COMMA, poly); AT; type_expr_polys=separated_list(COMMA, poly); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let typ_polys = List.map (fun (Poly (loc, _) as poly) -> TEPoly (loc, poly)) typ_polys in
+    let uniqueness_polys = List.map (fun (Poly (loc, _) as poly) -> PolyUnique (loc, poly)) uniqueness_polys in
+    let type_expr_polys = List.map (fun poly -> TPoly poly) type_expr_polys in
+    TType($startpos, typ_polys, uniqueness_polys, type_expr_polys, Type_name.of_string type_name, type_constructors) 
   }
 
 
