@@ -110,22 +110,25 @@ let rec typecheck_functions_defns_wrapper (types_env : types_env)
       typecheck_function_defn types_env constructors_env functions_defns
         functions_env function_defn
       >>= fun (functions_env, typed_function_defn) ->
-      let TFun (_, _, _, fip_option, _, _, _) = typed_function_defn in
-      let extended_typed_ast_function_defns = 
+      let (TFun (_, _, _, fip_option, _, _, _)) = typed_function_defn in
+      let extended_typed_ast_function_defns =
         match fip_option with
         | None -> typed_ast_function_defns @ [ typed_function_defn ]
         | Some (Fip _) ->
             (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
-            ignore (Or_error.ok_exn (Static_fip.fip typed_function_defn functions_env));
+            ignore
+              (Or_error.ok_exn
+                 (Static_fip.fip typed_function_defn functions_env));
             typed_ast_function_defns @ [ typed_function_defn ]
         | Some (Fbip _) ->
             (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
-            ignore (Or_error.ok_exn (Static_fbip.fbip typed_function_defn functions_env));
+            ignore
+              (Or_error.ok_exn
+                 (Static_fbip.fbip typed_function_defn functions_env));
             typed_ast_function_defns @ [ typed_function_defn ]
       in
       typecheck_functions_defns_wrapper types_env constructors_env functions_env
-        extended_typed_ast_function_defns
-        functions_defns_tail
+        extended_typed_ast_function_defns functions_defns_tail
 
 let typecheck_functions_defns (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)

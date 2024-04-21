@@ -140,7 +140,7 @@ and pprint_type_defn ppf ~indent
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
   Fmt.pf ppf "%sType Poly Params:@." indent;
-  let poly_ids = List.map string_of_type poly_types in
+  let poly_ids = List.map string_of_poly poly_types in
   List.iter (Fmt.pf ppf "%sType Poly Param: %s@." sub_expr_indent) poly_ids;
   Fmt.pf ppf "%sType Constructors:@." indent;
   List.iter

@@ -12,10 +12,9 @@
 %token<int> INT
 %token<string> LID
 %token<string> UID
+%token AT
 %token LPAREN
 %token RPAREN
-%token LSQPAREN
-%token RSQPAREN
 %token LCURLY
 %token RCURLY
 %token COMMA
@@ -65,10 +64,14 @@
 %token EOF
 
 /* Types Tokens */
-%token<Lexing.position * string> TYPE_POLY
+%token<string> POLY
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
+
+/* Uniqueness Attributes */
+%token UNIQUE
+%token SHARED
 
 /* Precedence and associativity */
 %nonassoc LT GT LEQ GEQ EQ NEQ IN
@@ -82,6 +85,8 @@
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
 
+%type<poly> poly
+%type<uniqueness> uniqueness
 %type<type_expr> type_expr
 
 /* Types for Type Definitions */
@@ -108,18 +113,34 @@ program:
     TProg($startpos, type_defns, function_defns, main_expr_option)
   }
 
+poly:
+| poly=POLY { Poly($startpos, poly) }
 
-type_expr:
+uniqueness:
+| SHARED { Shared($startpos) }
+| UNIQUE { Unique($startpos) }
+| poly=poly { PolyUnique($startpos, poly) }
+
+custom_poly_arg:
+| poly=poly { CustomArgPoly poly }
+| SHARED { CustomArgUnique (Shared($startpos)) }
+| UNIQUE { CustomArgUnique (Unique($startpos)) }
+| typ=typ; AT; uniqueness=uniqueness { CustomArgTypeExpr (TAttr($startpos, typ, uniqueness)) }
+
+typ:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| poly=TYPE_POLY { let (poly_pos, poly_id) = poly in TEPoly (poly_pos, poly_id) }
+| poly=poly { TEPoly ($startpos, poly) }
 | custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
-| poly_param=type_expr; custom_type=LID { TECustom($startpos, [poly_param], Type_name.of_string custom_type) }
-| LPAREN; poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, poly_params, Type_name.of_string custom_type) }
+| custom_poly_arg=custom_poly_arg; custom_type=LID { TECustom($startpos, [custom_poly_arg], Type_name.of_string custom_type) }
+| LPAREN; custom_poly_args=separated_nonempty_list(COMMA, custom_poly_arg); RPAREN; custom_type=LID { TECustom($startpos, custom_poly_args, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 | LPAREN; type_expr=type_expr; MUL; type_exprs=separated_nonempty_list(MUL, type_expr); RPAREN { TETuple($startpos, type_expr :: type_exprs) }
 
+type_expr:
+| poly=poly { TPoly(poly) }
+| typ=typ; AT; uniqueness=uniqueness { TAttr($startpos, typ, uniqueness) }
 
 /* Type Definition Production Rules */
 // Type Definition Structure Production Rules 
@@ -127,13 +148,11 @@ type_defn:
 | TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
     TType($startpos, [], Type_name.of_string type_name, type_constructors) 
   }
-| TYPE; poly=TYPE_POLY; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    let (poly_pos, poly_id) = poly in
-    TType($startpos, [TEPoly (poly_pos, poly_id)], Type_name.of_string type_name, type_constructors) 
+| TYPE; poly=poly; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    TType($startpos, [poly], Type_name.of_string type_name, type_constructors) 
   }
-| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, TYPE_POLY); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    let poly_type_exprs = List.map (fun (poly_pos, poly_id) -> TEPoly (poly_pos, poly_id)) polys in
-    TType($startpos, poly_type_exprs, Type_name.of_string type_name, type_constructors) 
+| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, poly); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    TType($startpos, polys, Type_name.of_string type_name, type_constructors) 
   }
 
 
@@ -155,40 +174,36 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| mut_rec=option(ANDFUN); FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+| mut_rec=option(ANDFUN); FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
     (match mut_rec with
     | None ->  incr_mutually_recursive_group_id ()
     | _ -> ());
     TFun($startpos, get_mutually_recursive_group_id (), Some (Fip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| mut_rec=option(ANDFUN); FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+| mut_rec=option(ANDFUN); FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
     (match mut_rec with
     | None ->  incr_mutually_recursive_group_id ()
     | _ -> ());
     TFun($startpos, get_mutually_recursive_group_id (), Some (Fip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| mut_rec=option(ANDFUN); FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+| mut_rec=option(ANDFUN); FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
     (match mut_rec with
     | None ->  incr_mutually_recursive_group_id ()
     | _ -> ());
     TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| mut_rec=option(ANDFUN); FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+| mut_rec=option(ANDFUN); FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
     (match mut_rec with
     | None ->  incr_mutually_recursive_group_id ()
     | _ -> ());
     TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-| mut_rec=option(ANDFUN); FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+| mut_rec=option(ANDFUN); FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
     (match mut_rec with
     | None ->  incr_mutually_recursive_group_id ()
     | _ -> ());
     TFun($startpos, get_mutually_recursive_group_id(), None, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
-
-function_return_type:
-| return_type=type_expr { return_type }
-| LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { TETuple ($startpos, return_types) }
 
 function_param:
 | borrowed=option(BORROWED); LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {

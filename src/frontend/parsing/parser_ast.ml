@@ -33,7 +33,7 @@ and matched_expr =
 
 (* Type Definitions *)
 type type_defn =
-  | TType of loc * type_expr list * Type_name.t * type_constructor list
+  | TType of loc * poly list * Type_name.t * type_constructor list
 
 and type_constructor =
   | TTypeConstructor of loc * Constructor_name.t * type_expr list
