@@ -1,71 +1,67 @@
 let%expect_test "expression: match" =
   let source_code =
     "\n\
-    \    begin\n\
-    \          match x with\n\
-    \      | _ -> begin () end\n\
-    \      | y -> begin () end\n\
-    \      | (y, z) -> begin () end\n\
-    \      | Constructor1 -> begin () end\n\
-    \      | Constructor2 (_) -> begin () end\n\
-    \      | None -> begin () end\n\
-    \      | Some _ -> begin () end\n\
-    \      endmatch\n\
-    \    end\n\
-    \      "
+    \        {\n\
+    \            match x with\n\
+    \            | _ -> { true }\n\
+    \            | Constructor1 -> { 0 }\n\
+    \            | Constructor2 (_, x, y) -> { (x, y) }\n\
+    \            endmatch\n\
+    \        }\n\
+    \     "
+  in
+  Pprint_parser_ast.pprint_parser_ast source_code;
+  [%expect
+    {|
+       Program
+           Main
+               Expr: Match
+                   Match Var: x
+                   Pattern
+                       MatchedExpr: Underscore
+                       PatternExpr
+                       Expr: UnboxedSingleton
+                           Value: Bool: true
+                   Pattern
+                       MatchedExpr: Constructor - Constructor1
+                       PatternExpr
+                       Expr: UnboxedSingleton
+                           Value: Int: 0
+                   Pattern
+                       MatchedExpr: Constructor - Constructor2
+                           MatchedExpr: Underscore
+                           MatchedExpr: Var - x
+                           MatchedExpr: Var - y
+                       PatternExpr
+                       Expr: UnboxedTuple
+                           Value: Var: x
+                           Value: Var: y |}]
+
+let%expect_test "expression: match nested constructors" =
+  let source_code =
+    "\n\
+    \    {\n\
+    \        match x with\n\
+    \        | ComplexConstructor (_, x, Atom, ComplexConstructor2 (_)) -> { \
+     () }\n\
+    \        endmatch\n\
+    \    }\n\
+    \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
   [%expect
     {|
     Program
-        Main Block
+        Main
             Expr: Match
                 Match Var: x
-                PatternExpr
-                    MatchedExpr: Underscore
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: Var - y
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: Tuple
-                        MatchedExpr: Var - y
-                        MatchedExpr: Var - z
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: Constructor - Constructor1
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: Constructor - Constructor2
+                Pattern
+                    MatchedExpr: Constructor - ComplexConstructor
                         MatchedExpr: Underscore
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: MOption - None
-                    PatternBlockExpr Block
-                        Expr: Unit
-                PatternExpr
-                    MatchedExpr: MOption - Some
-                        MatchedExpr: Underscore
-                    PatternBlockExpr Block
-                        Expr: Unit |}]
-
-let%expect_test "expression: destructive match" =
-  let source_code =
-    "begin match! x with\n    | _ -> begin () end\n    endmatch end"
-  in
-  Pprint_parser_ast.pprint_parser_ast source_code;
-  [%expect
-    {|
-    Program
-        Main Block
-            Expr: DMatch
-                DMatch Var: x
-                PatternExpr
-                    MatchedExpr: Underscore
-                    PatternBlockExpr Block
-                        Expr: Unit |}]
+                        MatchedExpr: Var - x
+                        MatchedExpr: Constructor - Atom
+                        MatchedExpr: Constructor - ComplexConstructor2
+                            MatchedExpr: Underscore
+                    PatternExpr
+                    Expr: UnboxedSingleton
+                        Value: Unit |}]

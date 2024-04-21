@@ -1,0 +1,19 @@
+type list =
+| Cons of int * list
+| Nil
+
+fip fun add_1 (x : int) : int = {
+  x + 1
+}
+
+fip fun map_fn (xs : list) ^(f : int -> int) : list = {
+  match xs with
+  | Cons (x, xxs) -> { let fx = ^f (x) in let fxs = map_fn (xxs, f) in Cons (fx, fxs) }
+  | Nil -> { Nil }
+  endmatch
+}
+
+{
+  let xs = Cons (1, Cons (2, Cons (3, Nil))) in
+  map_fn (xs, add_1)
+}

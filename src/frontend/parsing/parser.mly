@@ -1,7 +1,11 @@
 %{
   open Ast.Ast_types
   open Parser_ast
-  (* TODO: Could add multiple types, such as CHAR, STRING, LIST... *)
+
+  let mutually_recursive_group_id = ref 0
+  let incr_mutually_recursive_group_id () =
+    mutually_recursive_group_id := !mutually_recursive_group_id + 1
+  let get_mutually_recursive_group_id () = !mutually_recursive_group_id
 %}
 
 /* Tokens Definition */
@@ -10,6 +14,10 @@
 %token<string> UID
 %token LPAREN
 %token RPAREN
+%token LSQPAREN
+%token RSQPAREN
+%token LCURLY
+%token RCURLY
 %token COMMA
 %token COLON
 %token SEMICOLON
@@ -34,8 +42,6 @@
 %token ARROW
 %token UNIT
 %token OF
-%token FST
-%token SND
 %token IF
 %token THEN
 %token ELSE
@@ -43,36 +49,35 @@
 %token TRUE
 %token FALSE
 %token LET
-%token REC
 %token FUN
+%token ANDFUN
 %token IN
-%token BEGIN
-%token END
 %token TYPE
 %token MATCH
-%token DMATCH
 %token ENDMATCH
 %token WITH
-%token SOME
-%token NONE
+%token DROP
+%token FREE
+%token WEAK
+%token INST
+%token FIP
+%token FBIP
 %token EOF
 
 /* Types Tokens */
+%token<Lexing.position * string> TYPE_POLY
 %token TYPE_INT
 %token TYPE_BOOL
 %token TYPE_UNIT
-%token TYPE_OPTION
 
 /* Precedence and associativity */
 %nonassoc LT GT LEQ GEQ EQ NEQ IN
-%right FST SND SOME
 %left OR
 %left AND
 %right NOT
 %left ADD SUB
 %left MUL DIV MOD
-%right ARROW
-%left TYPE_OPTION
+%nonassoc SEMICOLON
 
 /* Starting non-terminal, endpoint for calling the parser */
 %start <program> program
@@ -89,21 +94,18 @@
 %type<param> function_param
 
 /* Types for Expression Definitions */
-%type<block_expr> block_expr
-
 %type<expr> expr
-%type<expr> constructor_expr
 %type<pattern_expr> match_expr
 %type<matched_expr> match_constructor
 
 %type<unary_op> unary_op
 %type<binary_op> binary_op
-%type<expr> value
+%type<value> value
 %%
 
 program:
-| type_defns=list(type_defn); function_defns=list(function_defn); block_expr=option(block_expr); EOF { 
-    TProg($startpos, type_defns, function_defns, block_expr)
+| type_defns=list(type_defn); function_defns=list(function_defn); main_expr_option=option(block_expr); EOF { 
+    TProg($startpos, type_defns, function_defns, main_expr_option)
   }
 
 
@@ -111,9 +113,10 @@ type_expr:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| type_expr=type_expr; TYPE_OPTION { TEOption($startpos, type_expr) }
-| custom_type=LID { TECustom($startpos, Type_name.of_string custom_type) }
-| in_type=type_expr; ARROW; out_type=type_expr { TEArrow($startpos, in_type, out_type) }
+| poly=TYPE_POLY { let (poly_pos, poly_id) = poly in TEPoly (poly_pos, poly_id) }
+| custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
+| poly_param=type_expr; custom_type=LID { TECustom($startpos, [poly_param], Type_name.of_string custom_type) }
+| LPAREN; poly_params=separated_nonempty_list(COMMA, type_expr); RPAREN; custom_type=LID { TECustom($startpos, poly_params, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 
 
@@ -121,7 +124,15 @@ type_expr:
 // Type Definition Structure Production Rules 
 type_defn:
 | TYPE; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
-    TType($startpos, Type_name.of_string type_name, type_constructors) 
+    TType($startpos, [], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; poly=TYPE_POLY; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let (poly_pos, poly_id) = poly in
+    TType($startpos, [TEPoly (poly_pos, poly_id)], Type_name.of_string type_name, type_constructors) 
+  }
+| TYPE; LPAREN; polys=separated_nonempty_list(COMMA, TYPE_POLY); RPAREN; type_name=LID; ASSIGN; type_constructors=nonempty_list(type_constructor) { 
+    let poly_type_exprs = List.map (fun (poly_pos, poly_id) -> TEPoly (poly_pos, poly_id)) polys in
+    TType($startpos, poly_type_exprs, Type_name.of_string type_name, type_constructors) 
   }
 
 
@@ -143,32 +154,68 @@ type_constructor_arguments:
 
 /* Function Definition Production Rules */
 function_defn:
-| FUN; option(REC); fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=type_expr; ASSIGN; fun_body=block_expr {
-    TFun($startpos, Function_name.of_string fun_name, fun_params, fun_body, return_type)
+| mut_rec=option(ANDFUN); FIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id (), Some (Fip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+  }
+| mut_rec=option(ANDFUN); FIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id (), Some (Fip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+  }
+| mut_rec=option(ANDFUN); FBIP; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip 0), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+  }
+| mut_rec=option(ANDFUN); FBIP; LPAREN; n=INT; RPAREN; FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), Some (Fbip n), Function_name.of_string fun_name, fun_params, fun_body, return_type)
+  }
+| mut_rec=option(ANDFUN); FUN; fun_name=LID; fun_params=nonempty_list(function_param); COLON; return_type=function_return_type; ASSIGN; fun_body=block_expr {
+    (match mut_rec with
+    | None ->  incr_mutually_recursive_group_id ()
+    | _ -> ());
+    TFun($startpos, get_mutually_recursive_group_id(), None, Function_name.of_string fun_name, fun_params, fun_body, return_type)
   }
 
+function_return_type:
+| return_type=type_expr { return_type }
+| LSQPAREN; return_types=separated_nonempty_list(MUL, type_expr); RSQPAREN { TETuple ($startpos, return_types) }
 
 function_param:
-| LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
-    TParam(param_type, Var_name.of_string param_name, None)
+| borrowed=option(BORROWED); LPAREN; param_name=LID; COLON; param_type=type_expr; RPAREN {
+    match borrowed with
+    | None -> TParam(param_type, Var_name.of_string param_name, None)
+    | Some _ -> TParam(param_type, Var_name.of_string param_name, Some Borrowed)
   }
-| LPAREN; BORROWED; param_name=LID; COLON; param_type=type_expr; RPAREN {
-    TParam(param_type, Var_name.of_string param_name, Some Borrowed)
-  }
-
 
 /* Block Expression Definition Production Rules */
 block_expr:
-| BEGIN; exprs=separated_list(SEMICOLON, expr); END { Block($startpos, exprs) }
+| LCURLY; expr=expr; RCURLY { expr }
 
+/* Value Definition Production Rules */
+value:
+| UNIT { Unit($startpos) }
+| n=INT { Integer($startpos, n) }
+| TRUE { Boolean($startpos, true) }
+| FALSE { Boolean($startpos, false) }
+| var_name=LID { Variable($startpos, Var_name.of_string var_name) }
+| constructor_name=UID { Constructor($startpos, Constructor_name.of_string constructor_name, []) }
+| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, value); RPAREN {
+    Constructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
+  }
 
 expr:
-/* Simple expression containing values, variables and applied constructors */
-| value=value { value }
-| LPAREN; expr=expr; RPAREN {expr}
-| SOME; expr=expr { Option($startpos, Some expr) }
-| var_name=LID { Variable($startpos, Var_name.of_string var_name) }
-| constructor_expr=constructor_expr { constructor_expr }
+/* Unboxed Tuples */
+| value=value { UnboxedSingleton($startpos, value) }
+| LPAREN; values=separated_nonempty_list(COMMA, value); RPAREN { UnboxedTuple($startpos, values) }
 
 /* Convoluted expressions */
 | unary_op=unary_op; expr=expr { UnOp($startpos, unary_op, expr) }
@@ -176,11 +223,12 @@ expr:
     BinaryOp($startpos, binary_op, expr_left, expr_right)
   }
 
-| LPAREN; fst_expr=expr; COMMA snd_expr=expr; RPAREN { 
-    Tuple($startpos, fst_expr, snd_expr) 
-  }
 | LET; var_name=LID; ASSIGN; var_expr=expr; IN; var_scope=expr {
-    Let($startpos, Var_name.of_string var_name, var_expr, var_scope)
+    Let($startpos, [Var_name.of_string var_name], var_expr, var_scope)
+  }
+| LET; LPAREN; var_names=separated_nonempty_list(COMMA, LID); RPAREN; ASSIGN; var_expr=expr; IN; var_scope=expr {
+    let vars = List.map (fun var_name -> Var_name.of_string var_name) var_names in
+    Let($startpos, vars, var_expr, var_scope)
   }
 
 /* Control Flow - IF statements */
@@ -191,54 +239,44 @@ expr:
     IfElse($startpos, cond_expr, then_expr, else_expr)
   }
 
-/* Control Flow - MATCH / DMATCH statements */
+/* Control Flow - MATCH */
 | MATCH; match_var_name=LID; WITH; pattern_exprs=nonempty_list(match_expr); ENDMATCH {
     Match($startpos, Var_name.of_string match_var_name, pattern_exprs)
   }
-| DMATCH; match_var_name=LID; WITH; pattern_exprs=nonempty_list(match_expr); ENDMATCH {
-    DMatch($startpos, Var_name.of_string match_var_name, pattern_exprs)
-  }
 
-/* Function application */
-| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, expr); RPAREN {
-    FunApp($startpos, Function_name.of_string fun_name, fun_args)
-  }
+/* Memory deallocation operators */
+| DROP; dropped_var_name=LID; SEMICOLON; expr=expr { Drop($startpos, Var_name.of_string dropped_var_name, expr) }
+| FREE; k=INT; SEMICOLON; expr=expr { Free($startpos, k, expr) }
+| WEAK; k=INT; SEMICOLON; expr=expr { Weak($startpos, k, expr) }
+| INST; k=INT; SEMICOLON; expr=expr { Inst($startpos, k, expr) }
 
-/* Constructor expression */
-constructor_expr:
-| constructor_name=UID { Constructor($startpos, Constructor_name.of_string constructor_name, []) }
-| constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, expr); RPAREN {
-    Constructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
+/* Function call / application */
+| fun_name=LID; LPAREN; fun_args=separated_nonempty_list(COMMA, value); RPAREN {
+    FunCall($startpos, Function_name.of_string fun_name, fun_args)
+  }
+| BORROWED; fun_name=LID; LPAREN; fun_owned_args=separated_nonempty_list(COMMA, value); RPAREN {
+    FunApp($startpos, Var_name.of_string fun_name, fun_owned_args)
   }
 
 /* Matching expression */
 match_expr:
-| BAR; matched_expr=match_constructor; ARROW; block_expr=block_expr { 
-    MPattern($startpos, matched_expr, block_expr) 
+| BAR; pattern_expr=match_constructor; ARROW; matched_expr=block_expr { 
+    MPattern($startpos, pattern_expr, matched_expr) 
   }
-
 
 match_constructor:
 | UNDERSCORE { MUnderscore($startpos) }
 | var_name=LID { MVariable($startpos, Var_name.of_string var_name) }
-| LPAREN; left_matched_expr=match_constructor; COMMA; right_matched_expr=match_constructor; RPAREN {
-    MTuple($startpos, left_matched_expr, right_matched_expr)
-  }
 | constructor_name=UID; { 
     MConstructor($startpos, Constructor_name.of_string constructor_name, []) 
   }
 | constructor_name=UID; LPAREN; constructor_args=separated_nonempty_list(COMMA, match_constructor); RPAREN {
     MConstructor($startpos, Constructor_name.of_string constructor_name, constructor_args)
   }
-| NONE { MOption($startpos, None) }
-| SOME; matched_expr=match_constructor { MOption($startpos, Some matched_expr) }
-(* maybe collapse None Some with Constructors *)
 
 %inline unary_op:
 | SUB { UnOpNeg }
 | NOT { UnOpNot }
-| FST { UnOpFst }
-| SND { UnOpSnd }
 
 
 %inline binary_op:
@@ -255,11 +293,3 @@ match_constructor:
 | NEQ { BinOpNeq }
 | AND { BinOpAnd }
 | OR { BinOpOr }
-
-
-%inline value:
-| NONE { Option($startpos, None) }
-| UNIT { Unit($startpos) }
-| n=INT { Integer($startpos, n) }
-| TRUE { Boolean($startpos, true) }
-| FALSE { Boolean($startpos, false) }

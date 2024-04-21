@@ -11,6 +11,7 @@ let%expect_test "typing type defn: duplicated constructor definition in the \
   let custom_type =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "custom_type",
         [
           TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []);
@@ -30,12 +31,14 @@ let%expect_test "typing type defn: duplicated constructor definition across \
   let custom_type_1 =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "custom_type_1",
         [ TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []) ] )
   in
   let custom_type_2 =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "custom_type_2",
         [
           TTypeConstructor

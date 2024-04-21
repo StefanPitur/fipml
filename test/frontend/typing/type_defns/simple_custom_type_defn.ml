@@ -10,6 +10,7 @@ let%expect_test "typing type defn: simple custom type" =
   let simple_custom_type =
     TType
       ( mock_loc,
+        [],
         Type_name.of_string "simple_custom_type",
         [
           TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []);
@@ -20,9 +21,8 @@ let%expect_test "typing type defn: simple custom type" =
                 TEUnit mock_loc;
                 TEInt mock_loc;
                 TEBool mock_loc;
-                TEOption (mock_loc, TEUnit mock_loc);
                 TEArrow (mock_loc, TEUnit mock_loc, TEInt mock_loc);
-                TECustom (mock_loc, Type_name.of_string "simple_custom_type");
+                TECustom (mock_loc, [], Type_name.of_string "simple_custom_type");
               ] );
         ] )
   in
@@ -30,7 +30,7 @@ let%expect_test "typing type defn: simple custom type" =
     Or_error.ok_exn (typecheck_type_defns [ simple_custom_type ])
   in
   pprint_types_env Fmt.stdout types_env;
-  [%expect {| simple_custom_type |}];
+  [%expect {| () simple_custom_type |}];
   pprint_constructors_env Fmt.stdout constructors_env;
   [%expect
     {|
@@ -39,7 +39,6 @@ let%expect_test "typing type defn: simple custom type" =
             Type Expr: Unit
             Type Expr: Int
             Type Expr: Bool
-            Type Expr: Unit option
             Type Expr: (Unit -> Int)
             Type Expr: simple_custom_type
     Constructor Type : simple_custom_type
