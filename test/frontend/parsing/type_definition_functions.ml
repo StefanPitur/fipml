@@ -2,7 +2,7 @@ let%expect_test "custom type with function params" =
   let source_code =
     "\n\
     \    type custom_simple_type = \n\
-    \    | Constructor1 of (('a option @ 'u) my_custom_type @ shared -> (int @ \
+    \    | Constructor1 of ('a option my_custom_type @ shared -> (int @ \
      shared -> unit @ shared) @ shared) @ shared\n\
     \    | Constructor2 of ((int @ shared -> unit @ shared) @ shared -> int @ \
      shared) @ shared \n\
@@ -17,7 +17,7 @@ let%expect_test "custom type with function params" =
         Type Poly Params:
         Type Constructors:
             Type Constructor Name: Constructor1
-                Type Expr: ((CustomArgTypeExpr (CustomArgPoly 'a) option @ 'u) my_custom_type @ shared -> (Int @ shared -> Unit @ shared) @ shared) @ shared
+                Type Expr: ((CustomArgTyp (CustomArgPoly 'a) option) my_custom_type @ shared -> (Int @ shared -> Unit @ shared) @ shared) @ shared
             Type Constructor Name: Constructor2
                 Type Expr: ((Int @ shared -> Unit @ shared) @ shared -> Int @ shared) @ shared
             Type Constructor Name: Constructor3

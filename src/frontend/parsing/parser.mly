@@ -125,18 +125,22 @@ custom_poly_arg:
 | poly=poly { CustomArgPoly poly }
 | SHARED { CustomArgUnique (Shared($startpos)) }
 | UNIQUE { CustomArgUnique (Unique($startpos)) }
+| typ=typ_no_poly { CustomArgTyp typ }
 | typ=typ; AT; uniqueness=uniqueness { CustomArgTypeExpr (TAttr($startpos, typ, uniqueness)) }
 
-typ:
+typ_no_poly:
 | TYPE_UNIT { TEUnit($startpos) }
 | TYPE_INT { TEInt($startpos) }
 | TYPE_BOOL { TEBool($startpos) }
-| poly=poly { TEPoly ($startpos, poly) }
 | custom_type=LID { TECustom($startpos, [], Type_name.of_string custom_type) }
 | custom_poly_arg=custom_poly_arg; custom_type=LID { TECustom($startpos, [custom_poly_arg], Type_name.of_string custom_type) }
 | LPAREN; custom_poly_args=separated_nonempty_list(COMMA, custom_poly_arg); RPAREN; custom_type=LID { TECustom($startpos, custom_poly_args, Type_name.of_string custom_type) }
 | LPAREN; in_type=type_expr; ARROW; out_type=type_expr; RPAREN { TEArrow($startpos, in_type, out_type) }
 | LPAREN; type_expr=type_expr; MUL; type_exprs=separated_nonempty_list(MUL, type_expr); RPAREN { TETuple($startpos, type_expr :: type_exprs) }
+
+typ:
+| poly=poly { TEPoly ($startpos, poly) }
+| typ_no_poly=typ_no_poly { typ_no_poly }
 
 type_expr:
 | poly=poly { TPoly(poly) }

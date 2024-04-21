@@ -42,9 +42,10 @@ type typ =
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
 and custom_poly_arg =
+  | CustomArgPoly of poly
+  | CustomArgTyp of typ
   | CustomArgTypeExpr of type_expr
   | CustomArgUnique of uniqueness
-  | CustomArgPoly of poly
 
 val equal_type_expr : type_expr -> type_expr -> bool
 
@@ -72,6 +73,7 @@ type binary_op =
   | BinOpAnd
   | BinOpOr
 
+val get_poly_loc : poly -> loc
 val get_loc : type_expr -> loc
 (** Extract loc from type expression *)
 

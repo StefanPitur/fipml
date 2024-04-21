@@ -54,9 +54,10 @@ type typ =
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
 and custom_poly_arg =
+  | CustomArgPoly of poly
+  | CustomArgTyp of typ
   | CustomArgTypeExpr of type_expr
   | CustomArgUnique of uniqueness
-  | CustomArgPoly of poly
 
 let equal_poly (poly1 : poly) (poly2 : poly) : bool =
   match (poly1, poly2) with
@@ -102,11 +103,12 @@ and equal_typ (typ1 : typ) (typ2 : typ) : bool =
 and equal_custom_poly_arg (custom_poly_arg1 : custom_poly_arg)
     (custom_poly_arg2 : custom_poly_arg) : bool =
   match (custom_poly_arg1, custom_poly_arg2) with
+  | CustomArgPoly poly1, CustomArgPoly poly2 -> equal_poly poly1 poly2
   | CustomArgTypeExpr type_expr1, CustomArgTypeExpr type_expr2 ->
       equal_type_expr type_expr1 type_expr2
   | CustomArgUnique uniqueness1, CustomArgUnique uniqueness2 ->
       equal_uniqueness uniqueness1 uniqueness2
-  | CustomArgPoly poly1, CustomArgPoly poly2 -> equal_poly poly1 poly2
+  | CustomArgTyp typ1, CustomArgTyp typ2 -> equal_typ typ1 typ2
   | _ -> false
 
 type param = TParam of type_expr * Var_name.t * borrowed option
@@ -130,6 +132,9 @@ type binary_op =
   | BinOpNeq
   | BinOpAnd
   | BinOpOr
+
+let get_poly_loc (poly : poly) : loc =
+  let Poly (loc, _) = poly in loc
 
 let get_loc (type_expr : type_expr) : loc =
   match type_expr with TPoly (Poly (loc, _)) | TAttr (loc, _, _) -> loc
@@ -185,9 +190,10 @@ and string_of_type (type_expr : type_expr) =
 
 and string_of_custom_poly_arg (custom_poly_arg : custom_poly_arg) : string =
   match custom_poly_arg with
+  | CustomArgPoly poly -> "CustomArgPoly " ^ string_of_poly poly
   | CustomArgTypeExpr type_expr -> "CustomArgTypeExpr " ^ string_of_type type_expr
   | CustomArgUnique uniqueness -> "CustomArgUnique " ^ string_of_uniqueness uniqueness
-  | CustomArgPoly poly -> "CustomArgPoly " ^ string_of_poly poly
+  | CustomArgTyp typ -> "CustomArgTyp " ^ string_of_typ typ
 
 let get_params_type (params : param list) =
   let get_param_type = function
