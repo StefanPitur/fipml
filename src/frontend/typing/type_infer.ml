@@ -12,36 +12,48 @@ exception UnableToUnify of string
 
 module FreeSet = Set.Make (String)
 
+(* Note: this inference is just not implemented on uniqueness attributes! *)
+let _default_ty_unique = TyShared
+
 let unify (constraints : constr list) : subst list Or_error.t =
   let rec unify (constraints : constr list) (substs : subst list) =
     match constraints with
     | [] -> Ok substs
     | (t1, t2) :: constraints when ty_equal t1 t2 -> unify constraints substs
     | (TyVar type_var, t) :: constraints when not (occurs type_var t) ->
-        let ts = ty_subst [ (type_var, t) ] in
+        let ts = ty_subst [ (type_var, t) ] [] in
         unify
           (List.map constraints ~f:(fun (ty1, ty2) -> (ts ty1, ts ty2)))
           ((type_var, t) :: List.map substs ~f:(fun (ty1, ty2) -> (ty1, ts ty2)))
     | (t, TyVar type_var) :: constraints when not (occurs type_var t) ->
-        let ts = ty_subst [ (type_var, t) ] in
+        let ts = ty_subst [ (type_var, t) ] [] in
         unify
           (List.map constraints ~f:(fun (ty1, ty2) -> (ts ty1, ts ty2)))
           ((type_var, t) :: List.map substs ~f:(fun (ty1, ty2) -> (ty1, ts ty2)))
-    | (TyArrow (ty11, ty12), TyArrow (ty21, ty22)) :: constraints ->
+    | (TyArrow ((ty11, _), (ty12, _)), TyArrow ((ty21, _), (ty22, _)))
+      :: constraints ->
         unify ((ty11, ty21) :: (ty12, ty22) :: constraints) substs
-    | (TyTuple tys1, TyTuple tys2) :: constraints
-      when List.length tys1 = List.length tys2 ->
+    | (TyTuple ty_attrs1, TyTuple ty_attrs2) :: constraints
+      when List.length ty_attrs1 = List.length ty_attrs2 ->
         let tuples_constraints =
-          List.map2_exn tys1 tys2 ~f:(fun ty1 ty2 -> (ty1, ty2))
+          List.map2_exn ty_attrs1 ty_attrs2 ~f:(fun (ty1, _) (ty2, _) ->
+              (ty1, ty2))
         in
         unify (tuples_constraints @ constraints) substs
-    | (TyCustom (tys1, type_name1), TyCustom (tys2, type_name2)) :: constraints
+    | ( TyCustom (tys1, _, ty_attrs1, type_name1),
+        TyCustom (tys2, _, ty_attrs2, type_name2) )
+      :: constraints
       when Type_name.( = ) type_name1 type_name2
-           && List.length tys1 = List.length tys2 ->
-        let type_scheme_vars_constraints =
+           && List.length tys1 = List.length tys2
+           && List.length ty_attrs1 = List.length ty_attrs2 ->
+        let tys_constraints =
           List.map2_exn tys1 tys2 ~f:(fun ty1 ty2 -> (ty1, ty2))
         in
-        unify (type_scheme_vars_constraints @ constraints) substs
+        let ty_attrs_constraints =
+          List.map2_exn ty_attrs1 ty_attrs2 ~f:(fun (ty1, _) (ty2, _) ->
+              (ty1, ty2))
+        in
+        unify (tys_constraints @ ty_attrs_constraints @ constraints) substs
     | (ty1, ty2) :: _ ->
         let error_string = Fmt.str "Unable to unify types %s and %s@." in
         let string_ty1 = Pprint_type_infer.string_of_ty ty1 in
@@ -74,36 +86,46 @@ let rec free_type_vars (ty : ty) : FreeSet.t =
   | TyInt | TyUnit | TyBool -> FreeSet.empty
   | TyVar ty_var -> FreeSet.singleton ty_var
   | TyPoly (polys, ty) -> Set.diff (free_type_vars ty) (FreeSet.of_list polys)
-  | TyCustom (tys, _) | TyTuple tys ->
-      FreeSet.union_list (List.map tys ~f:free_type_vars)
-  | TyArrow (ty1, ty2) -> Set.union (free_type_vars ty1) (free_type_vars ty2)
+  | TyCustom (tys, _, ty_attrs, _) ->
+      let tys_free_vars = FreeSet.union_list (List.map tys ~f:free_type_vars) in
+      let ty_attrs_free_vars =
+        FreeSet.union_list
+          (List.map ty_attrs ~f:(fun (ty, _) -> free_type_vars ty))
+      in
+      Set.union tys_free_vars ty_attrs_free_vars
+  | TyTuple ty_attrs ->
+      FreeSet.union_list
+        (List.map ty_attrs ~f:(fun (ty, _) -> free_type_vars ty))
+  | TyArrow ((ty1, _), (ty2, _)) ->
+      Set.union (free_type_vars ty1) (free_type_vars ty2)
 
 let bounded_type_vars (typing_context : typing_context) : FreeSet.t =
   let free_tys =
-    List.map typing_context ~f:(fun (TypingContextEntry (_, ty)) ->
+    List.map typing_context ~f:(fun (TypingContextEntry (_, (ty, _))) ->
         free_type_vars ty)
   in
   FreeSet.union_list free_tys
 
 let rec generalise (typing_context : typing_context) (var_name : Var_name.t)
-    (var_ty : ty) : typing_context Or_error.t =
+    ((var_ty, var_ty_unique) : ty_attr) : typing_context Or_error.t =
   let generalisable_ty_vars =
     Set.diff (free_type_vars var_ty) (bounded_type_vars typing_context)
   in
   let poly_strings = Set.elements generalisable_ty_vars in
-  extend_typing_context typing_context var_name (TyPoly (poly_strings, var_ty))
+  extend_typing_context typing_context var_name
+    (TyPoly (poly_strings, var_ty), var_ty_unique)
 
 and instantiate (var_name : Var_name.t) (typing_context : typing_context) :
-    ty Or_error.t =
+    ty_attr Or_error.t =
   let open Result in
-  get_var_type typing_context var_name >>= fun var_ty ->
+  get_var_type typing_context var_name >>= fun (var_ty, var_ty_unique) ->
   match var_ty with
   | TyPoly (poly_strings, ty) ->
       let substs =
         List.map poly_strings ~f:(fun poly_string -> (poly_string, fresh ()))
       in
-      Ok (ty_subst substs ty)
-  | ty -> Ok ty
+      Ok (ty_subst substs [] ty, var_ty_unique)
+  | _ -> Ok (var_ty, var_ty_unique)
 
 and type_infer (types_env : types_env) (constructors_env : constructors_env)
     (functions_env : functions_env) (typing_context : typing_context)
@@ -117,7 +139,7 @@ and type_infer (types_env : types_env) (constructors_env : constructors_env)
   unify_substs constraints_substs let_poly_substs >>= fun substs ->
   Ok
     ( Or_error.ok_exn
-        (Construct_typed_ast.construct_typed_ast_expr pretyped_expr substs),
+        (Construct_typed_ast.construct_typed_ast_expr pretyped_expr substs []),
       substs )
 
 and generate_constraints (types_env : types_env)
@@ -126,7 +148,7 @@ and generate_constraints (types_env : types_env)
     (typing_context : typing_context) (expr : Parser_ast.expr) ~(verbose : bool)
     :
     (Type_infer_types.typing_context
-    * Type_infer_types.ty
+    * Type_infer_types.ty_attr
     * Type_infer_types.constr list
     * subst list
     * Pretyped_ast.expr)
@@ -136,13 +158,13 @@ and generate_constraints (types_env : types_env)
   | UnboxedSingleton (loc, value) ->
       generate_constraints_value_expr types_env constructors_env functions_env
         typing_context value ~verbose
-      >>= fun (value_ty, value_constraints, pretyped_value) ->
+      >>= fun (value_ty_attr, value_constraints, pretyped_value) ->
       Ok
         ( typing_context,
-          value_ty,
+          value_ty_attr,
           value_constraints,
           [],
-          Pretyped_ast.UnboxedSingleton (loc, value_ty, pretyped_value) )
+          Pretyped_ast.UnboxedSingleton (loc, value_ty_attr, pretyped_value) )
   | UnboxedTuple (loc, values) ->
       let values_types, values_constraints, values_pretyped =
         List.fold_right values ~init:([], [], [])
@@ -158,64 +180,69 @@ and generate_constraints (types_env : types_env)
       in
       Ok
         ( typing_context,
-          TyTuple values_types,
+          (TyTuple values_types, _default_ty_unique),
           values_constraints,
           [],
-          Pretyped_ast.UnboxedTuple (loc, TyTuple values_types, values_pretyped)
+          Pretyped_ast.UnboxedTuple
+            (loc, (TyTuple values_types, _default_ty_unique), values_pretyped)
         )
   | Let (loc, var_names, vars_expr, expr) ->
       generate_constraints types_env constructors_env functions_env
         typing_context vars_expr ~verbose
-      >>= fun (_, var_type, var_constrs, var_pretyped_substs, pretyped_vars) ->
+      >>= fun (_, var_ty_attr, var_constrs, var_pretyped_substs, pretyped_vars)
+        ->
       unify var_constrs >>= fun var_substs ->
-      let sub_var_type = ty_subst var_substs var_type in
-      let sub_typing_context = ty_subst_context typing_context var_substs in
+      let sub_var_ty_attr, sub_var_ty_unique =
+        ty_attr_subst var_substs [] var_ty_attr
+      in
+      let sub_typing_context = ty_subst_context typing_context var_substs [] in
       let extended_typing_context =
         Or_error.ok_exn
-          (match sub_var_type with
-          | TyTuple tys ->
+          (match sub_var_ty_attr with
+          | TyTuple ty_attrs ->
               if List.length var_names = 1 then Or_error.of_exn TyNotMatching
               else
                 Ok
-                  (List.fold2_exn var_names tys ~init:sub_typing_context
-                     ~f:(fun typing_context var_name var_type ->
+                  (List.fold2_exn var_names ty_attrs ~init:sub_typing_context
+                     ~f:(fun typing_context var_name var_ty_attr ->
                        Or_error.ok_exn
-                         (generalise typing_context var_name var_type)))
+                         (generalise typing_context var_name var_ty_attr)))
           | _ -> (
               match var_names with
               | [ var_name ] ->
                   Ok
                     (Or_error.ok_exn
-                       (generalise sub_typing_context var_name sub_var_type))
+                       (generalise sub_typing_context var_name
+                          (sub_var_ty_attr, sub_var_ty_unique)))
               | _ -> Or_error.of_exn TyNotMatching))
       in
       generate_constraints types_env constructors_env functions_env
         extended_typing_context expr ~verbose
-      >>= fun (_, expr_type, expr_constrs, expr_substs, pretyped_expr) ->
+      >>= fun (_, expr_ty_attr, expr_constrs, expr_substs, pretyped_expr) ->
       unify_substs expr_substs var_substs >>= fun expr_substs ->
       unify_substs expr_substs var_pretyped_substs >>= fun expr_substs ->
       Ok
         ( extended_typing_context,
-          expr_type,
+          expr_ty_attr,
           expr_constrs,
           expr_substs,
           Pretyped_ast.Let
-            (loc, expr_type, var_names, pretyped_vars, pretyped_expr) )
+            (loc, expr_ty_attr, var_names, pretyped_vars, pretyped_expr) )
   | FunApp (loc, app_var_name, app_values) ->
-      get_var_type typing_context app_var_name >>= fun app_var_ty ->
-      get_ty_function_signature app_var_ty
-      >>= fun (app_params_tys, app_return_ty) ->
+      get_var_type typing_context app_var_name >>= fun app_var_ty_attr ->
+      get_ty_attr_function_signature app_var_ty_attr
+      >>= fun (app_params_ty_attrs, app_return_ty_attr) ->
       let app_params_constraints, app_params_pretyped =
-        List.fold_right2_exn app_params_tys app_values ~init:([], [])
+        List.fold_right2_exn app_params_ty_attrs app_values ~init:([], [])
           ~f:(fun
-              app_param_ty
+              (app_param_ty, _)
               app_value
               (acc_params_constraints, acc_params_pretyped)
             ->
             Or_error.ok_exn
               ( generate_constraints_value_expr types_env constructors_env
                   functions_env typing_context app_value ~verbose
-              >>= fun (value_ty, value_constraints, pretyped_value) ->
+              >>= fun ((value_ty, _), value_constraints, pretyped_value) ->
                 Ok
                   ( ((value_ty, app_param_ty) :: value_constraints)
                     @ acc_params_constraints,
@@ -223,11 +250,14 @@ and generate_constraints (types_env : types_env)
       in
       Ok
         ( typing_context,
-          app_return_ty,
+          app_return_ty_attr,
           app_params_constraints,
           [],
           Pretyped_ast.FunApp
-            (loc, app_return_ty, app_var_name, app_params_pretyped) )
+            (loc, app_return_ty_attr, app_var_name, app_params_pretyped) )
+  | _ ->
+      raise (Invalid_argument "")
+      (*
   | FunCall (loc, function_name, values) ->
       Functions_env.get_function_by_name loc function_name functions_env
       >>= fun (FunctionEnvEntry
@@ -480,18 +510,21 @@ and generate_constraints (types_env : types_env)
           expr_ty,
           expr_ty_constraints,
           expr_substs,
-          Pretyped_ast.Inst (loc, expr_ty, k, pretyped_expr) ))
-  >>= fun (typing_context, expr_tys, expr_constraints, substs, pretyped_expr) ->
+          Pretyped_ast.Inst (loc, expr_ty, k, pretyped_expr) )*))
+  >>= fun (typing_context, expr_ty_attr, expr_constraints, substs, pretyped_expr)
+    ->
   Pprint_type_infer.pprint_type_infer_expr_verbose Fmt.stdout ~verbose expr
-    typing_context expr_tys expr_constraints;
-  Ok (typing_context, expr_tys, expr_constraints, substs, pretyped_expr)
+    typing_context expr_ty_attr expr_constraints;
+  Ok (typing_context, expr_ty_attr, expr_constraints, substs, pretyped_expr)
 
 and generate_constraints_value_expr (types_env : types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_env : Functions_env.functions_env)
     (typing_context : typing_context) (value : Parser_ast.value)
     ~(verbose : bool) :
-    (Type_infer_types.ty * Type_infer_types.constr list * Pretyped_ast.value)
+    (Type_infer_types.ty_attr
+    * Type_infer_types.constr list
+    * Pretyped_ast.value)
     Or_error.t =
   let open Result in
   (match value with

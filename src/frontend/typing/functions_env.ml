@@ -139,7 +139,7 @@ let get_function_signature (loc : loc) (function_name : Function_name.t)
   Ok
     (List.fold_right param_type_exprs ~init:return_type_expr
        ~f:(fun param_type_expr acc_type_expr ->
-         TEArrow (loc, param_type_expr, acc_type_expr)))
+         TAttr (loc, TEArrow (loc, param_type_expr, acc_type_expr), Shared loc)))
 
 let get_fip_function_allocation_credit loc (function_name : Function_name.t)
     (functions_env : functions_env) : int Or_error.t =

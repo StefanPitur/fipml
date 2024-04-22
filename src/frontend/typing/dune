@@ -2,11 +2,15 @@
  (name typing)
  (modules
   typed_ast
+  pretyped_ast
   pprint_typed_ast
+  construct_typed_ast
   typecheck_type_defns
   typecheck_functions_defns
   type_defns_env
+  type_context_env
   type_infer
+  pprint_type_infer
   type_infer_types
   functions_env)
  (libraries core ast parsing))
