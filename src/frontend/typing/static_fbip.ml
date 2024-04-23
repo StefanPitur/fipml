@@ -17,13 +17,15 @@ let fbip
         List.fold params ~init:(BorrowedSet.empty, OwnedSet.empty)
           ~f:(fun
               (acc_borrowed_set, acc_owned_set)
-              (Ast_types.TParam (_, param_name, param_borrowed_option))
+              (Ast_types.TParam
+                (param_type_expr, param_name, param_borrowed_option))
             ->
             match param_borrowed_option with
             | None ->
                 let extended_owned_set =
                   Or_error.ok_exn
                     (extend_owned_set ~element:param_name
+                       ~element_type_expr:param_type_expr
                        ~owned_set:acc_owned_set)
                 in
                 (acc_borrowed_set, extended_owned_set)

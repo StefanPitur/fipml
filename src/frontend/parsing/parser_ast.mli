@@ -1,4 +1,6 @@
 open Ast.Ast_types
+open Core
+module FreeVarSet : Set.S with type Elt.t = Var_name.t
 
 type value =
   | Unit of loc
@@ -50,3 +52,15 @@ type function_defn =
 
 type program =
   | TProg of loc * type_defn list * function_defn list * expr option
+
+val get_matched_expr_vars : matched_expr -> Var_name.t list
+(** Given a [match_expr] return a list of the variables present in the pattern. *)
+
+val free_variables : expr -> FreeVarSet.t
+(** Given an [expr] return a set of its free variables. *)
+
+val free_variables_value : value -> FreeVarSet.t
+(** Given a [value] return a set of its free variables. *)
+
+val free_variables_values : value list -> FreeVarSet.t
+(** Given a [value list] return a set of their accummulated free variables. *)

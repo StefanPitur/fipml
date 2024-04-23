@@ -1,25 +1,17 @@
-type custom_type =
-| C1 of int
-| C2 of bool * custom_type
-
-fip fun add (x : int) ^(y : int) : int = {
-  x + y
-}
+/*
+type ( @ 'u1 @ ) custom_type =
+| C1 of int @ unique
+| C2 of bool @ 'u1 * ( ; unique ; ) custom_type @ shared
 
 {
-  let x = 5 in
-  let y = C1 (10) in
-  let (z1, z2) = 
-    match y with
-    | _ -> { let res = add (0, x) in (res, true) }
-    | C1 (t) -> { let res = add (t, x) in (res, true) }
-    | C2 (t, c1) -> {
-        match c1 with
-        | C1 (_) -> { let res = add (2, x) in (res, t) }
-        | _ -> { (0, false) }
-        endmatch
-      }
-    endmatch
-  in
-  if z2 then { z1 } else { x } endif
+  let x = C1 (42) in
+  match x with
+  | _ -> { (0, true) }
+  | C1(y) -> { (y, true) }
+  | C2(y, C1(_)) -> { (1, y) }
+  endmatch
+}
+*/
+{
+  let (x, y) = (1, true) in let z = 3 in (x, y, y, z, z)
 }

@@ -27,6 +27,8 @@ type constr = ty * ty
 type constr_unique = ty_unique * ty_unique
 type typing_context = ty_attr Type_context_env.typing_context
 
+module SharingAnalysisMap : Map.S with type Key.t = Var_name.t
+
 val occurs : string -> ty -> bool
 (** [occurs "t1" t] returns whether or not [TyVar "t1"] appears in [t]. *)
 
@@ -37,6 +39,10 @@ val ty_unique_subst : subst_unique list -> ty_unique -> ty_unique
 (** [ty_unique_subst [(u1, ty_unique1); ...; (uk, ty_uniquek)] u] replaces in the uniqueness [u] every uniqueness variable [ui] with [ty_uniquei] *)
 
 val ty_attr_subst : subst list -> subst_unique list -> ty_attr -> ty_attr
+
+val apply_substs_unique_to_substs :
+  subst_unique list -> subst list -> subst list
+(** Apply [substs_unique] to partial [substs] so they are fully resolved. *)
 
 val ty_subst_context :
   typing_context -> subst list -> subst_unique list -> typing_context
@@ -71,3 +77,8 @@ val get_ty_attr_function_signature :
 val get_type_expr_scheme_assoc_lists :
   type_expr list -> subst list * subst_unique list * subst_attr list
 (** Given [type_expr list], return the association lists for its type variables within the type scheme for typ, uniqueness and type_expr. *)
+
+val get_sharing_analysis : Parsing.Parser_ast.expr -> int SharingAnalysisMap.t
+
+val get_ty_unique_from_sharing_analysis :
+  int SharingAnalysisMap.t -> Var_name.t -> ty_unique

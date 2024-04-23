@@ -38,7 +38,7 @@ let rec string_of_ty (ty : ty) : string =
         (String.concat ~sep:", " (List.map ty_attrs ~f:string_of_ty_attr))
 
 and string_of_ty_attr ((ty, ty_unique) : ty_attr) : string =
-  Fmt.str "TyAttr - %s @ %s" (string_of_ty ty) (string_of_ty_unique ty_unique)
+  Fmt.str "TyAttr - %s <> %s" (string_of_ty ty) (string_of_ty_unique ty_unique)
 
 let pprint_ty_attr (ppf : Format.formatter) (ty_attr : ty_attr) : unit =
   Fmt.pf ppf "%s@." (string_of_ty_attr ty_attr)
@@ -61,9 +61,20 @@ let rec pprint_constraints (ppf : Format.formatter) (constraints : constr list)
       Fmt.pf ppf "(%s, %s)@." (string_of_ty ty_fst) (string_of_ty ty_snd);
       pprint_constraints ppf constraints
 
+let rec pprint_unique_constraints (ppf : Format.formatter)
+    (unique_constraints : constr_unique list) : unit =
+  match unique_constraints with
+  | [] -> ()
+  | (ty_unique_fst, ty_unique_snd) :: unique_constraints ->
+      Fmt.pf ppf "(%s, %s)@."
+        (string_of_ty_unique ty_unique_fst)
+        (string_of_ty_unique ty_unique_snd);
+      pprint_unique_constraints ppf unique_constraints
+
 let pprint_type_infer_expr_verbose (ppf : Format.formatter) ~(verbose : bool)
     (expr : Parsing.Parser_ast.expr) (typing_context : typing_context)
-    (expr_ty_attr : ty_attr) (expr_constraints : constr list) : unit =
+    (expr_ty_attr : ty_attr) (expr_constraints : constr list)
+    (expr_unique_constraints : constr_unique list) : unit =
   if not verbose then ()
   else (
     Fmt.pf ppf "Actual expr:@.";
@@ -74,11 +85,14 @@ let pprint_type_infer_expr_verbose (ppf : Format.formatter) ~(verbose : bool)
     pprint_ty_attr ppf expr_ty_attr;
     Fmt.pf ppf "=> Expr Constraints:@.";
     pprint_constraints ppf expr_constraints;
+    Fmt.pf ppf "=> Expr Unique Constraints;@.";
+    pprint_unique_constraints ppf expr_unique_constraints;
     Fmt.pf ppf "-------------------------\n@.")
 
 let pprint_type_infer_value_verbose (ppf : Format.formatter) ~(verbose : bool)
     (value : Parsing.Parser_ast.value) (value_ty_attr : ty_attr)
-    (value_constraints : constr list) : unit =
+    (value_constraints : constr list)
+    (value_unique_constraints : constr_unique list) : unit =
   if not verbose then ()
   else (
     Fmt.pf ppf "Actual value:@.";
@@ -87,9 +101,24 @@ let pprint_type_infer_value_verbose (ppf : Format.formatter) ~(verbose : bool)
     pprint_ty_attr ppf value_ty_attr;
     Fmt.pf ppf "=> Value Constraints:@.";
     pprint_constraints ppf value_constraints;
+    Fmt.pf ppf "=> Value Uniqueness Constraints:@.";
+    pprint_unique_constraints ppf value_unique_constraints;
     Fmt.pf ppf "-------------------------\n@.")
 
 let pprint_substs (ppf : Format.formatter) (substs : subst list) : unit =
   List.iter substs ~f:(fun (ty_var, ty_subst) ->
       Fmt.pf ppf "Type Variable - %s, Type - %s@." ty_var
         (string_of_ty ty_subst))
+
+let pprint_substs_unique (ppf : Format.formatter)
+    (substs_unique : subst_unique list) : unit =
+  List.iter substs_unique ~f:(fun (ty_var, ty_unique_subst) ->
+      Fmt.pf ppf "Unique Variable - %s, Unique - %s@." ty_var
+        (string_of_ty_unique ty_unique_subst))
+
+let pprint_substs_attr (ppf : Format.formatter) (substs_attr : subst_attr list)
+    : unit =
+  List.iter substs_attr ~f:(fun (ty_var, (ty_subst, ty_unique_subst)) ->
+      Fmt.pf ppf "Kind Variable - %s, Type - %s <> Unique - %s@." ty_var
+        (string_of_ty ty_subst)
+        (string_of_ty_unique ty_unique_subst))

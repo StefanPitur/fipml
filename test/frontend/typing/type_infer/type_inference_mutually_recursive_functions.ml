@@ -14,7 +14,15 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
           1,
           None,
           Function_name.of_string "is_even",
-          [ TParam (TEInt mock_loc, Var_name.of_string "x", None) ],
+          [
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEInt mock_loc,
+                    PolyUnique (mock_loc, Poly (mock_loc, "'u1")) ),
+                Var_name.of_string "x",
+                None );
+          ],
           Let
             ( mock_loc,
               [ Var_name.of_string "pred_x" ],
@@ -37,13 +45,24 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                       Function_name.of_string "is_odd",
                       [ Variable (mock_loc, Var_name.of_string "pred_x") ] ),
                   UnboxedSingleton (mock_loc, Boolean (mock_loc, true)) ) ),
-          TEBool mock_loc );
+          TAttr
+            ( mock_loc,
+              TEBool mock_loc,
+              PolyUnique (mock_loc, Poly (mock_loc, "'u2")) ) );
       TFun
         ( mock_loc,
           1,
           None,
           Function_name.of_string "is_odd",
-          [ TParam (TEInt mock_loc, Var_name.of_string "x", None) ],
+          [
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEInt mock_loc,
+                    PolyUnique (mock_loc, Poly (mock_loc, "'u1")) ),
+                Var_name.of_string "x",
+                None );
+          ],
           Let
             ( mock_loc,
               [ Var_name.of_string "pred_x" ],
@@ -66,15 +85,30 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                       Function_name.of_string "is_even",
                       [ Variable (mock_loc, Var_name.of_string "pred_x") ] ),
                   UnboxedSingleton (mock_loc, Boolean (mock_loc, false)) ) ),
-          TEBool mock_loc );
+          TAttr
+            ( mock_loc,
+              TEBool mock_loc,
+              PolyUnique (mock_loc, Poly (mock_loc, "'u2")) ) );
       TFun
         ( mock_loc,
           2,
           None,
           Function_name.of_string "add",
           [
-            TParam (TEInt mock_loc, Var_name.of_string "x", None);
-            TParam (TEInt mock_loc, Var_name.of_string "y", None);
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEInt mock_loc,
+                    PolyUnique (mock_loc, Poly (mock_loc, "'u1")) ),
+                Var_name.of_string "x",
+                None );
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEInt mock_loc,
+                    PolyUnique (mock_loc, Poly (mock_loc, "'u2")) ),
+                Var_name.of_string "y",
+                None );
           ],
           BinaryOp
             ( mock_loc,
@@ -83,7 +117,10 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                 (mock_loc, Variable (mock_loc, Var_name.of_string "x")),
               UnboxedSingleton
                 (mock_loc, Variable (mock_loc, Var_name.of_string "y")) ),
-          TEInt mock_loc );
+          TAttr
+            ( mock_loc,
+              TEInt mock_loc,
+              PolyUnique (mock_loc, Poly (mock_loc, "'u3")) ) );
     ]
   in
   let parsed_main =
@@ -108,87 +145,87 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect
         {|
-        Typed Program - Bool
+        Typed Program - Bool @ u36
             Function Name: is_even
             Function Mutually Recursive Group Id - 1
-            Return Type: Bool
+            Return Type: Bool @ u11
             Param List:
-                Type Expr: Int
+                Type Expr: Int @ 'u1
                 OwnedParam: x
             Function Body:
                 Typed Expr: Let vars: (pred_x) =
-                    Typed Expr: - - Int
-                        Typed Expr: UnboxedSingleton - Int
-                            Value: Var: x - Int
-                        Typed Expr: UnboxedSingleton - Int
-                            Value: Int: 1 - Int
-                Typed Expr: Let expr - Bool
-                    Typed Expr: IfElse - Bool
-                        Typed Expr: > - Bool
-                            Typed Expr: UnboxedSingleton - Int
-                                Value: Var: x - Int
-                            Typed Expr: UnboxedSingleton - Int
-                                Value: Int: 0 - Int
+                    Typed Expr: - - Int @ u3
+                        Typed Expr: UnboxedSingleton - Int @ shared
+                            Value: Var: x - Int @ shared
+                        Typed Expr: UnboxedSingleton - Int @ u4
+                            Value: Int: 1 - Int @ u4
+                Typed Expr: Let expr - Bool @ u11
+                    Typed Expr: IfElse - Bool @ u11
+                        Typed Expr: > - Bool @ u7
+                            Typed Expr: UnboxedSingleton - Int @ shared
+                                Value: Var: x - Int @ shared
+                            Typed Expr: UnboxedSingleton - Int @ u8
+                                Value: Int: 0 - Int @ u8
                     Then
-                        Typed Expr: FunCall - Bool
+                        Typed Expr: FunCall - Bool @ u11
                             Function Name: is_odd
                             FunctionArg
-                                Value: Var: pred_x - Int
+                                Value: Var: pred_x - Int @ u3
                     Else
-                        Typed Expr: UnboxedSingleton - Bool
-                            Value: Bool: true - Bool
+                        Typed Expr: UnboxedSingleton - Bool @ u11
+                            Value: Bool: true - Bool @ u11
             Function Name: is_odd
             Function Mutually Recursive Group Id - 1
-            Return Type: Bool
+            Return Type: Bool @ u22
             Param List:
-                Type Expr: Int
+                Type Expr: Int @ 'u1
                 OwnedParam: x
             Function Body:
                 Typed Expr: Let vars: (pred_x) =
-                    Typed Expr: - - Int
-                        Typed Expr: UnboxedSingleton - Int
-                            Value: Var: x - Int
-                        Typed Expr: UnboxedSingleton - Int
-                            Value: Int: 1 - Int
-                Typed Expr: Let expr - Bool
-                    Typed Expr: IfElse - Bool
-                        Typed Expr: > - Bool
-                            Typed Expr: UnboxedSingleton - Int
-                                Value: Var: x - Int
-                            Typed Expr: UnboxedSingleton - Int
-                                Value: Int: 0 - Int
+                    Typed Expr: - - Int @ u14
+                        Typed Expr: UnboxedSingleton - Int @ shared
+                            Value: Var: x - Int @ shared
+                        Typed Expr: UnboxedSingleton - Int @ u15
+                            Value: Int: 1 - Int @ u15
+                Typed Expr: Let expr - Bool @ u22
+                    Typed Expr: IfElse - Bool @ u22
+                        Typed Expr: > - Bool @ u18
+                            Typed Expr: UnboxedSingleton - Int @ shared
+                                Value: Var: x - Int @ shared
+                            Typed Expr: UnboxedSingleton - Int @ u19
+                                Value: Int: 0 - Int @ u19
                     Then
-                        Typed Expr: FunCall - Bool
+                        Typed Expr: FunCall - Bool @ u22
                             Function Name: is_even
                             FunctionArg
-                                Value: Var: pred_x - Int
+                                Value: Var: pred_x - Int @ u14
                     Else
-                        Typed Expr: UnboxedSingleton - Bool
-                            Value: Bool: false - Bool
+                        Typed Expr: UnboxedSingleton - Bool @ u22
+                            Value: Bool: false - Bool @ u22
             Function Name: add
             Function Mutually Recursive Group Id - 2
-            Return Type: Int
+            Return Type: Int @ u25
             Param List:
-                Type Expr: Int
+                Type Expr: Int @ 'u1
                 OwnedParam: x
-                Type Expr: Int
+                Type Expr: Int @ 'u2
                 OwnedParam: y
             Function Body:
-                Typed Expr: + - Int
-                    Typed Expr: UnboxedSingleton - Int
-                        Value: Var: x - Int
-                    Typed Expr: UnboxedSingleton - Int
-                        Value: Var: y - Int
+                Typed Expr: + - Int @ u25
+                    Typed Expr: UnboxedSingleton - Int @ u23
+                        Value: Var: x - Int @ u23
+                    Typed Expr: UnboxedSingleton - Int @ u24
+                        Value: Var: y - Int @ u24
             Typed Main
             Typed Expr: Let vars: (sum_x_y) =
-                Typed Expr: FunCall - Int
+                Typed Expr: FunCall - Int @ u31
                     Function Name: add
                     FunctionArg
-                        Value: Int: 4 - Int
+                        Value: Int: 4 - Int @ u33
                     FunctionArg
-                        Value: Int: 5 - Int
-            Typed Expr: Let expr - Bool
-                Typed Expr: FunCall - Bool
+                        Value: Int: 5 - Int @ u32
+            Typed Expr: Let expr - Bool @ u36
+                Typed Expr: FunCall - Bool @ u36
                     Function Name: is_even
                     FunctionArg
-                        Value: Var: sum_x_y - Int |}]
+                        Value: Var: sum_x_y - Int @ u31 |}]

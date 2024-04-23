@@ -69,6 +69,8 @@ type binary_op =
   | BinOpOr
 
 val get_poly_loc : poly -> loc
+val get_typ_loc : typ -> loc
+val get_uniqueness_loc : uniqueness -> loc
 
 val get_loc : type_expr -> loc
 (** Extract loc from type expression *)
@@ -76,6 +78,7 @@ val get_loc : type_expr -> loc
 val convert_typ_to_poly : typ -> poly Or_error.t
 val convert_uniqueness_to_poly : uniqueness -> poly Or_error.t
 val convert_type_expr_to_poly : type_expr -> poly Or_error.t
+val assert_type_expr_is_unique : type_expr -> unit Or_error.t
 
 (* Helper function for printing AST *)
 val string_of_loc : loc -> string

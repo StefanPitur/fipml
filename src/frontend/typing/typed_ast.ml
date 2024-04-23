@@ -1,13 +1,6 @@
 open Ast.Ast_types
 open Core
-
-module FreeVarSet = Set.Make (struct
-  type t = Var_name.t
-
-  let compare = Var_name.compare
-  let sexp_of_t = Var_name.sexp_of_t
-  let t_of_sexp = Var_name.t_of_sexp
-end)
+open Parsing
 
 type value =
   | Unit of loc * type_expr
@@ -24,10 +17,10 @@ type expr =
   | FunCall of loc * type_expr * Function_name.t * value list
   | If of loc * type_expr * expr * expr
   | IfElse of loc * type_expr * expr * expr * expr
-  | Match of loc * type_expr * Var_name.t * pattern_expr list
+  | Match of loc * type_expr * type_expr * Var_name.t * pattern_expr list
   | UnOp of loc * type_expr * unary_op * expr
   | BinaryOp of loc * type_expr * binary_op * expr * expr
-  | Drop of loc * type_expr * Var_name.t * expr
+  | Drop of loc * type_expr * type_expr * Var_name.t * expr
   | Free of loc * type_expr * int * expr
   | Weak of loc * type_expr * int * expr
   | Inst of loc * type_expr * int * expr
@@ -68,23 +61,13 @@ let get_expr_type (expr : expr) : type_expr =
   | FunCall (_, type_expr, _, _) -> type_expr
   | If (_, type_expr, _, _) -> type_expr
   | IfElse (_, type_expr, _, _, _) -> type_expr
-  | Match (_, type_expr, _, _) -> type_expr
+  | Match (_, type_expr, _, _, _) -> type_expr
   | UnOp (_, type_expr, _, _) -> type_expr
   | BinaryOp (_, type_expr, _, _, _) -> type_expr
-  | Drop (_, type_expr, _, _) -> type_expr
+  | Drop (_, type_expr, _, _, _) -> type_expr
   | Free (_, type_expr, _, _) -> type_expr
   | Weak (_, type_expr, _, _) -> type_expr
   | Inst (_, type_expr, _, _) -> type_expr
-
-let rec get_matched_expr_vars (matched_expr : matched_expr) : Var_name.t list =
-  match matched_expr with
-  | MUnderscore _ -> []
-  | MVariable (_, _, var_name) -> [ var_name ]
-  | MConstructor (_, _, _, matched_exprs) ->
-      List.fold
-        ~f:(fun acc_var_names matched_expr ->
-          get_matched_expr_vars matched_expr @ acc_var_names)
-        matched_exprs ~init:[]
 
 let rec get_match_expr_reuse_credits (matched_expr : matched_expr) : int list =
   match matched_expr with
@@ -94,59 +77,90 @@ let rec get_match_expr_reuse_credits (matched_expr : matched_expr) : int list =
              get_match_expr_reuse_credits matched_expr @ acc)
   | _ -> []
 
-let rec free_variables_value (value : value) : FreeVarSet.t =
-  match value with
-  | Unit _ | Integer _ | Boolean _ -> FreeVarSet.empty
-  | Variable (_, _, var_name) -> FreeVarSet.singleton var_name
-  | Constructor (_, _, _, values) ->
-      List.fold values ~init:FreeVarSet.empty ~f:(fun acc_free_var_set value ->
-          Set.union acc_free_var_set (free_variables_value value))
-
-and free_variables_values (values : value list) : FreeVarSet.t =
-  List.fold values ~init:FreeVarSet.empty ~f:(fun acc_free_var_set value ->
-      Set.union acc_free_var_set (free_variables_value value))
-
-and free_variables_pattern (MPattern (_, _, matched_expr, expr) : pattern_expr)
-    : FreeVarSet.t =
-  let matched_expr_free_var_set =
-    FreeVarSet.of_list (get_matched_expr_vars matched_expr)
-  in
-  Set.diff (free_variables expr) matched_expr_free_var_set
-
-and free_variables (expr : expr) : FreeVarSet.t =
-  match expr with
-  | UnboxedSingleton (_, _, value) -> free_variables_value value
-  | UnboxedTuple (_, _, values) | FunCall (_, _, _, values) ->
-      free_variables_values values
-  | Let (_, _, var_names, var_expr, expr) ->
-      let var_names_set = FreeVarSet.of_list var_names in
-      Set.diff
-        (Set.union (free_variables var_expr) (free_variables expr))
-        var_names_set
-  | FunApp (_, _, var_name, values) ->
-      Set.add (free_variables_values values) var_name
-  | If (_, _, cond_expr, then_expr) ->
-      Set.union (free_variables cond_expr) (free_variables then_expr)
-  | IfElse (_, _, cond_expr, then_expr, else_expr) ->
-      Set.union
-        (Set.union (free_variables cond_expr) (free_variables then_expr))
-        (free_variables else_expr)
-  | Match (_, _, _, patterns) ->
-      let free_vars_patterns = List.map ~f:free_variables_pattern patterns in
-      List.fold_left ~init:FreeVarSet.empty
-        ~f:(fun acc_free_var_set set -> Set.union acc_free_var_set set)
-        free_vars_patterns
-  | UnOp (_, _, _, expr)
-  | Drop (_, _, _, expr)
-  | Free (_, _, _, expr)
-  | Weak (_, _, _, expr)
-  | Inst (_, _, _, expr) ->
-      free_variables expr
-  | BinaryOp (_, _, _, expr1, expr2) ->
-      Set.union (free_variables expr1) (free_variables expr2)
-
 let get_mutually_recursive_typed_function_defns (group_id : int)
     (function_defns : function_defn list) : function_defn list =
   List.filter function_defns
     ~f:(fun (TFun (_, _, function_group_id, _, _, _, _)) ->
       Int.( = ) group_id function_group_id)
+
+let rec convert_typed_to_parser (typed_expr : expr) : Parser_ast.expr =
+  match typed_expr with
+  | UnboxedSingleton (loc, _, value) ->
+      let parser_value = convert_typed_to_parser_value value in
+      UnboxedSingleton (loc, parser_value)
+  | UnboxedTuple (loc, _, values) ->
+      let parser_values = convert_typed_to_parser_values values in
+      UnboxedTuple (loc, parser_values)
+  | Let (loc, _, vars, vars_expr, expr) ->
+      let parser_vars_expr = convert_typed_to_parser vars_expr in
+      let parser_expr = convert_typed_to_parser expr in
+      Let (loc, vars, parser_vars_expr, parser_expr)
+  | FunApp (loc, _, var, values) ->
+      let parser_values = convert_typed_to_parser_values values in
+      FunApp (loc, var, parser_values)
+  | FunCall (loc, _, function_name, values) ->
+      let parser_values = convert_typed_to_parser_values values in
+      FunCall (loc, function_name, parser_values)
+  | If (loc, _, expr_cond, expr_then) ->
+      let parser_expr_cond = convert_typed_to_parser expr_cond in
+      let parser_expr_then = convert_typed_to_parser expr_then in
+      If (loc, parser_expr_cond, parser_expr_then)
+  | IfElse (loc, _, expr_cond, expr_then, expr_else) ->
+      let parser_expr_cond = convert_typed_to_parser expr_cond in
+      let parser_expr_then = convert_typed_to_parser expr_then in
+      let parser_expr_else = convert_typed_to_parser expr_else in
+      IfElse (loc, parser_expr_cond, parser_expr_then, parser_expr_else)
+  | Match (loc, _, _, matched_var, pattern_exprs) ->
+      Match
+        ( loc,
+          matched_var,
+          List.map pattern_exprs
+            ~f:(fun (MPattern (loc, _, matched_expr, expr)) ->
+              let parser_matched_expr =
+                convert_typed_to_parser_matched_expr matched_expr
+              in
+              let parser_expr = convert_typed_to_parser expr in
+              Parser_ast.MPattern (loc, parser_matched_expr, parser_expr)) )
+  | UnOp (loc, _, unary_op, expr) ->
+      let parser_expr = convert_typed_to_parser expr in
+      UnOp (loc, unary_op, parser_expr)
+  | BinaryOp (loc, _, binary_op, expr1, expr2) ->
+      let parser_expr1 = convert_typed_to_parser expr1 in
+      let parser_exprs2 = convert_typed_to_parser expr2 in
+      BinaryOp (loc, binary_op, parser_expr1, parser_exprs2)
+  | Drop (loc, _, _, var, expr) ->
+      let parser_expr = convert_typed_to_parser expr in
+      Drop (loc, var, parser_expr)
+  | Free (loc, _, k, expr) ->
+      let parser_expr = convert_typed_to_parser expr in
+      Free (loc, k, parser_expr)
+  | Weak (loc, _, k, expr) ->
+      let parser_expr = convert_typed_to_parser expr in
+      Weak (loc, k, parser_expr)
+  | Inst (loc, _, k, expr) ->
+      let parser_expr = convert_typed_to_parser expr in
+      Inst (loc, k, parser_expr)
+
+and convert_typed_to_parser_value (typed_value : value) : Parser_ast.value =
+  match typed_value with
+  | Unit (loc, _) -> Unit loc
+  | Integer (loc, _, i) -> Integer (loc, i)
+  | Boolean (loc, _, b) -> Boolean (loc, b)
+  | Variable (loc, _, var) -> Variable (loc, var)
+  | Constructor (loc, _, constructor_name, values) ->
+      Constructor (loc, constructor_name, convert_typed_to_parser_values values)
+
+and convert_typed_to_parser_values (typed_values : value list) :
+    Parser_ast.value list =
+  List.map typed_values ~f:convert_typed_to_parser_value
+
+and convert_typed_to_parser_matched_expr (typed_matched_expr : matched_expr) :
+    Parser_ast.matched_expr =
+  match typed_matched_expr with
+  | MUnderscore (loc, _) -> MUnderscore loc
+  | MVariable (loc, _, var) -> MVariable (loc, var)
+  | MConstructor (loc, _, constructor_name, matched_exprs) ->
+      MConstructor
+        ( loc,
+          constructor_name,
+          List.map matched_exprs ~f:convert_typed_to_parser_matched_expr )

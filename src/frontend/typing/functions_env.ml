@@ -169,7 +169,7 @@ let assert_function_has_required_fip_type (loc : loc) (required_fip_type : fip)
       raise (FipFunctionExpected error_string)
   | Some fip -> (
       match (required_fip_type, fip) with
-      | Fip _, Fip _ | Fbip _, Fbip _ -> Ok ()
+      | Fip _, Fip _ | Fbip _, _ -> Ok ()
       | _ ->
           let error_string =
             Fmt.str "Expected fun of fip type %s at %s@."

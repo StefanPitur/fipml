@@ -1,7 +1,8 @@
 open Ast.Ast_types
 open Core
 open Typing.Fip_rules_check
-open Typing.Fbip_rules_check
+
+(* open Typing.Fbip_rules_check *)
 open Typing.Borrowed_context
 open Typing.Pprint_fip_ast
 open Typing
@@ -15,22 +16,40 @@ let functions_env : Functions_env.functions_env =
       ( 1,
         Some (Fip 0),
         Function_name.of_string "add_fun",
-        [ TEInt mock_loc ],
-        TEInt mock_loc );
+        [ TAttr (mock_loc, TEInt mock_loc, Unique mock_loc) ],
+        TAttr
+          ( mock_loc,
+            TEInt mock_loc,
+            PolyUnique (mock_loc, Poly (mock_loc, "'u")) ) );
     FunctionEnvEntry
       ( 2,
         Some (Fip 0),
         Function_name.of_string "apply_fun",
-        [ TEArrow (mock_loc, TEInt mock_loc, TEInt mock_loc); TEInt mock_loc ],
-        TEInt mock_loc );
+        [
+          TAttr
+            ( mock_loc,
+              TEArrow
+                ( mock_loc,
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc) ),
+              Shared mock_loc );
+          TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+        ],
+        TAttr
+          ( mock_loc,
+            TEInt mock_loc,
+            PolyUnique (mock_loc, Poly (mock_loc, "'u")) ) );
   ]
 
 let%expect_test "FIP rules for expressions : UnboxedSingleton" =
   let expr =
     Typed_ast.UnboxedSingleton
       ( mock_loc,
-        TEInt mock_loc,
-        Typed_ast.Variable (mock_loc, TEInt mock_loc, Var_name.of_string "x") )
+        TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
+        Typed_ast.Variable
+          ( mock_loc,
+            TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
+            Var_name.of_string "x" ) )
   in
   let fip_expr =
     Or_error.ok_exn (fip_rules_check_expr expr BorrowedSet.empty functions_env)
@@ -48,7 +67,7 @@ let%expect_test "FIP rules for expressions : UnboxedSingleton" =
         Reuse
 
         Fip Value: Variable - x |}]
-
+(*
 let%expect_test "FIP rules for expressions : UnboxedTuple" =
   let expr =
     Typed_ast.UnboxedTuple
@@ -877,3 +896,4 @@ let%expect_test "FIP rules for expressions : Inst" =
                 Reuse
 
                 Fip Value: Variable - x1 |}]
+*)

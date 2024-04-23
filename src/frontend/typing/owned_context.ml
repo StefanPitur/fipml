@@ -15,8 +15,10 @@ module OwnedSet = Set.Make (struct
   let t_of_sexp = Var_name.t_of_sexp
 end)
 
-let extend_owned_set ~(element : Var_name.t) ~(owned_set : OwnedSet.t) :
-    OwnedSet.t Or_error.t =
+let extend_owned_set ~(element : Var_name.t) ~(element_type_expr : type_expr)
+    ~(owned_set : OwnedSet.t) : OwnedSet.t Or_error.t =
+  let open Result in
+  assert_type_expr_is_unique element_type_expr >>= fun _ ->
   match Set.mem owned_set element with
   | false -> Ok (Set.add owned_set element)
   | true ->
@@ -51,7 +53,10 @@ let combine_owned_sets ~(owned_set1 : OwnedSet.t) ~(owned_set2 : OwnedSet.t) :
   | true -> Ok (Set.union owned_set1 owned_set2)
 
 let extend_owned_set_by_list ~(elements : Var_name.t list)
-    ~(owned_set : OwnedSet.t) : OwnedSet.t Or_error.t =
+    ~(elements_type_exprs : type_expr list) ~(owned_set : OwnedSet.t) :
+    OwnedSet.t Or_error.t =
+  List.iter elements_type_exprs ~f:(fun element_type_expr ->
+      Or_error.ok_exn (assert_type_expr_is_unique element_type_expr));
   let elements_set = OwnedSet.of_list elements in
   combine_owned_sets ~owned_set1:owned_set ~owned_set2:elements_set
 

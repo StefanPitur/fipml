@@ -125,18 +125,24 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
       Ok
         (Typed_ast.IfElse
            (loc, ast_type, typed_cond_expr, typed_then_expr, typed_else_expr))
-  | Pretyped_ast.Match (loc, ty_attr, var_name, pretyped_pattern_exprs) ->
+  | Pretyped_ast.Match
+      (loc, ty_attr, var_ty_attr, var_name, pretyped_pattern_exprs) ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)
         loc
       >>= fun ast_type ->
+      convert_ty_attr_to_ast_type
+        (ty_attr_subst substs substs_unique var_ty_attr)
+        loc
+      >>= fun var_type ->
       let typed_pattern_exprs =
         List.map pretyped_pattern_exprs ~f:(fun pretyped_pattern_expr ->
             Or_error.ok_exn
               (construct_typed_ast_pattern pretyped_pattern_expr substs
                  substs_unique))
       in
-      Ok (Typed_ast.Match (loc, ast_type, var_name, typed_pattern_exprs))
+      Ok
+        (Typed_ast.Match (loc, ast_type, var_type, var_name, typed_pattern_exprs))
   | Pretyped_ast.UnOp (loc, ty_attr, unary_op, pretyped_expr) ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)
@@ -158,14 +164,18 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
       Ok
         (Typed_ast.BinaryOp
            (loc, ast_type, binary_op, typed_expr_left, typed_expr_right))
-  | Pretyped_ast.Drop (loc, ty_attr, var_name, pretyped_expr) ->
+  | Pretyped_ast.Drop (loc, ty_attr, var_ty_attr, var_name, pretyped_expr) ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)
         loc
       >>= fun ast_type ->
+      convert_ty_attr_to_ast_type
+        (ty_attr_subst substs substs_unique var_ty_attr)
+        loc
+      >>= fun var_type ->
       construct_typed_ast_expr pretyped_expr substs substs_unique
       >>= fun typed_expr ->
-      Ok (Typed_ast.Drop (loc, ast_type, var_name, typed_expr))
+      Ok (Typed_ast.Drop (loc, ast_type, var_type, var_name, typed_expr))
   | Pretyped_ast.Free (loc, ty_attr, k, pretyped_expr) ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)

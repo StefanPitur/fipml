@@ -262,3 +262,16 @@ let convert_type_expr_to_poly (type_expr : type_expr) : poly Or_error.t =
   match type_expr with
   | TPoly poly -> Ok poly
   | _ -> Or_error.of_exn (PolyExpected (string_of_loc (get_loc type_expr)))
+
+let assert_type_expr_is_unique (type_expr : type_expr) : unit Or_error.t =
+  match type_expr with
+  | TPoly (Poly (loc, _))
+  | TAttr (loc, _, PolyUnique _)
+  | TAttr (loc, _, Shared _) ->
+      let error_string =
+        Fmt.str
+          "%s - Type Expr uniqueness attribute is not strictly unique - %s"
+          (string_of_loc loc) (string_of_type type_expr)
+      in
+      Or_error.of_exn (Invalid_argument error_string)
+  | _ -> Ok ()

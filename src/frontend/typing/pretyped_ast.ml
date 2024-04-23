@@ -16,10 +16,10 @@ type expr =
   | FunCall of loc * ty_attr * Function_name.t * value list
   | If of loc * ty_attr * expr * expr
   | IfElse of loc * ty_attr * expr * expr * expr
-  | Match of loc * ty_attr * Var_name.t * pattern_expr list
+  | Match of loc * ty_attr * ty_attr * Var_name.t * pattern_expr list
   | UnOp of loc * ty_attr * unary_op * expr
   | BinaryOp of loc * ty_attr * binary_op * expr * expr
-  | Drop of loc * ty_attr * Var_name.t * expr
+  | Drop of loc * ty_attr * ty_attr * Var_name.t * expr
   | Free of loc * ty_attr * int * expr
   | Weak of loc * ty_attr * int * expr
   | Inst of loc * ty_attr * int * expr

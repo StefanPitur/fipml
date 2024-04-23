@@ -1,6 +1,7 @@
 open Borrowed_context
 open Core
 open Owned_context
+open Parsing
 open Reuse_credits
 open Result
 
@@ -13,9 +14,13 @@ let rec fbip_rules_check_value (typed_value : Typed_ast.value)
       Ok (Integer (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, i))
   | Boolean (loc, _, b) ->
       Ok (Boolean (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, b))
-  | Variable (loc, _, var_name) ->
-      let owned_set = OwnedSet.singleton var_name in
-      Ok (Variable (loc, borrowed_set, owned_set, ReuseMap.empty, var_name))
+  | Variable (loc, var_type_expr, var_name) ->
+      extend_owned_set ~element:var_name ~element_type_expr:var_type_expr
+        ~owned_set:OwnedSet.empty
+      >>= fun owned_set ->
+      Ok
+        (Fip_ast.Variable
+           (loc, borrowed_set, owned_set, ReuseMap.empty, var_name))
   | Constructor (loc, _, constructor_name, constructor_typed_values) ->
       let constructor_arity = List.length constructor_typed_values in
       if constructor_arity = 0 then
@@ -166,10 +171,17 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.FunApp
            (loc, borrowed_set, owned_set, reuse_map, fun_var, fip_values))
   | FunCall (loc, _, function_name, values) ->
+      Or_error.ok_exn
+        (Functions_env.assert_function_has_required_fip_type loc (Fbip (-1))
+           function_name functions_env);
       let function_allocation_credit =
         Or_error.ok_exn
           (Functions_env.get_fip_function_allocation_credit loc function_name
              functions_env)
+      in
+      let fbiped_function_name =
+        Ast.Ast_types.Function_name.of_string
+          (Ast.Ast_types.Function_name.to_string function_name ^ "!")
       in
       let owned_set, reuse_map, fip_values, values_acc_allocation_credit =
         List.fold_right values ~init:(OwnedSet.empty, ReuseMap.empty, [], 0)
@@ -226,7 +238,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              borrowed_set,
              owned_set,
              extended_reuse_map,
-             function_name,
+             fbiped_function_name,
              fip_values ))
   | If (loc, _, cond_expr, then_expr) ->
       fbip_rules_check_expr cond_expr borrowed_set functions_env
@@ -296,7 +308,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              fip_cond_expr,
              fip_then_expr,
              fip_else_expr ))
-  | Match (loc, _, matched_var, pattern_exprs) -> (
+  | Match (loc, _, matched_var_type_expr, matched_var, pattern_exprs) -> (
       match assert_in_borrowed_set ~element:matched_var ~borrowed_set with
       | Ok () -> (
           let fip_pattern_exprs =
@@ -304,7 +316,9 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
               ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
                 Or_error.ok_exn
                   (let matched_expr_vars =
-                     Typed_ast.get_matched_expr_vars matched_expr
+                     Parser_ast.get_matched_expr_vars
+                       (Typed_ast.convert_typed_to_parser_matched_expr
+                          matched_expr)
                    in
                    extend_borrowed_set_by_list ~elements:matched_expr_vars
                      ~borrowed_set
@@ -371,7 +385,9 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
               ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
                 Or_error.ok_exn
                   (let matched_expr_vars =
-                     Typed_ast.get_matched_expr_vars matched_expr
+                     Parser_ast.get_matched_expr_vars
+                       (Typed_ast.convert_typed_to_parser_matched_expr
+                          matched_expr)
                    in
                    let match_expr_reuse_credits =
                      Typed_ast.get_match_expr_reuse_credits matched_expr
@@ -431,6 +447,7 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
               let extended_owned_set =
                 Or_error.ok_exn
                   (extend_owned_set ~element:matched_var
+                     ~element_type_expr:matched_var_type_expr
                      ~owned_set:fip_owned_set)
               in
               Ok
@@ -485,13 +502,15 @@ and fbip_rules_check_expr (typed_expr : Typed_ast.expr)
              binary_op,
              fip_left_expr,
              fip_right_expr ))
-  | Drop (loc, _, drop_var, expr) ->
+  | Drop (loc, _, drop_var_type_expr, drop_var, expr) ->
       fbip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, owned_set, reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
       in
       let extended_owned_set =
-        Or_error.ok_exn (extend_owned_set ~element:drop_var ~owned_set)
+        Or_error.ok_exn
+          (extend_owned_set ~element:drop_var ~owned_set
+             ~element_type_expr:drop_var_type_expr)
       in
       Ok
         (Fip_ast.Drop

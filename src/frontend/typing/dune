@@ -1,16 +1,27 @@
 (library
  (name typing)
  (modules
-  typed_ast
-  pretyped_ast
-  pprint_typed_ast
   construct_typed_ast
+  pretyped_ast
+  typed_ast
+  typecheck_program
   typecheck_type_defns
   typecheck_functions_defns
   type_defns_env
+  pprint_typed_ast
   type_context_env
-  type_infer
-  pprint_type_infer
   type_infer_types
-  functions_env)
+  type_infer
+  functions_env
+  pprint_type_infer
+  pprint_pretyped_ast
+  static_fip
+  static_fbip
+  borrowed_context
+  owned_context
+  reuse_credits
+  fip_ast
+  pprint_fip_ast
+  fip_rules_check
+  fbip_rules_check)
  (libraries core ast parsing))

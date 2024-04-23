@@ -1,5 +1,6 @@
 open Ast.Ast_types
 open Core
+open Parsing
 open Result
 
 exception ListsOfDifferentLengths
@@ -30,6 +31,14 @@ type subst_attr = string * (ty * ty_unique)
 type constr = ty * ty
 type constr_unique = ty_unique * ty_unique
 type typing_context = ty_attr Type_context_env.typing_context
+
+module SharingAnalysisMap = Map.Make (struct
+  type t = Var_name.t
+
+  let compare = Var_name.compare
+  let sexp_of_t x = Var_name.sexp_of_t x
+  let t_of_sexp x = Var_name.t_of_sexp x
+end)
 
 let rec occurs (ty_var_name : string) = function
   | TyInt | TyBool | TyUnit -> false
@@ -83,6 +92,11 @@ and ty_attr_subst (substs : subst list) (substs_unique : subst_unique list)
     (ty_attr : ty_attr) : ty_attr =
   let ty, ty_unique = ty_attr in
   (ty_subst substs substs_unique ty, ty_unique_subst substs_unique ty_unique)
+
+let apply_substs_unique_to_substs (substs_unique : subst_unique list)
+    (substs : subst list) : subst list =
+  List.map substs ~f:(fun (var, var_ty) ->
+      (var, ty_subst [] substs_unique var_ty))
 
 let ty_subst_context (typing_context : typing_context) (substs : subst list)
     (substs_unique : subst_unique list) : typing_context =
@@ -397,3 +411,96 @@ let get_type_expr_scheme_assoc_lists (type_exprs : type_expr list) :
       ~f:(fun unique_var -> (unique_var, fresh_unique ())),
     List.map (List.dedup_and_sort type_expr_vars ~compare:String.compare)
       ~f:(fun type_expr_var -> (type_expr_var, (fresh (), fresh_unique ()))) )
+
+let join_sharing_analysis_map (sharing_analysis_map1 : int SharingAnalysisMap.t)
+    (sharing_analysis_map2 : int SharingAnalysisMap.t) :
+    int SharingAnalysisMap.t =
+  Map.merge_skewed sharing_analysis_map1 sharing_analysis_map2
+    ~combine:(fun ~key:_ v1 v2 -> v1 + v2)
+
+let join_max_sharing_analysis_map
+    (sharing_analysis_map1 : int SharingAnalysisMap.t)
+    (sharing_analysis_map2 : int SharingAnalysisMap.t) :
+    int SharingAnalysisMap.t =
+  Map.merge_skewed sharing_analysis_map1 sharing_analysis_map2
+    ~combine:(fun ~key:_ v1 v2 -> Int.max v1 v2)
+
+let rec get_sharing_analysis (parsed_expr : Parser_ast.expr) :
+    int SharingAnalysisMap.t =
+  match parsed_expr with
+  | UnboxedSingleton (_, value) -> get_sharing_analysis_value value
+  | UnboxedTuple (_, values) -> get_sharing_analysis_values values
+  | Let (_, vars, vars_expr, expr) ->
+      let vars_expr_sharing_analysis_map = get_sharing_analysis vars_expr in
+      let expr_sharing_analysis_map = get_sharing_analysis expr in
+      let joined_sharing_analysis_map =
+        join_sharing_analysis_map vars_expr_sharing_analysis_map
+          expr_sharing_analysis_map
+      in
+      List.fold vars ~init:joined_sharing_analysis_map
+        ~f:(fun acc_sharing_analysis_map var ->
+          Map.remove acc_sharing_analysis_map var)
+  | FunApp (_, _, values) | FunCall (_, _, values) ->
+      get_sharing_analysis_values values
+  | If (_, expr_cond, expr_then) ->
+      join_sharing_analysis_map
+        (get_sharing_analysis expr_cond)
+        (get_sharing_analysis expr_then)
+  | IfElse (_, expr_cond, expr_then, expr_else) ->
+      join_sharing_analysis_map
+        (join_sharing_analysis_map
+           (get_sharing_analysis expr_cond)
+           (get_sharing_analysis expr_then))
+        (get_sharing_analysis expr_else)
+  | Match (_, matched_var, pattern_exprs) ->
+      let aggr_sharing_analysis_map =
+        List.fold pattern_exprs ~init:SharingAnalysisMap.empty
+          ~f:(fun
+              acc_sharing_analysis_map
+              (Parser_ast.MPattern (_, matched_expr, expr))
+            ->
+            let matched_vars = Parser_ast.get_matched_expr_vars matched_expr in
+            let expr_sharing_analysis_map = get_sharing_analysis expr in
+            let extended_sharing_analysis_map =
+              join_max_sharing_analysis_map acc_sharing_analysis_map
+                expr_sharing_analysis_map
+            in
+            List.fold matched_vars ~init:extended_sharing_analysis_map
+              ~f:(fun acc_sharing_analysis_map matched_var ->
+                Map.remove acc_sharing_analysis_map matched_var))
+      in
+      Map.update aggr_sharing_analysis_map matched_var ~f:(fun key_option ->
+          match key_option with None -> 1 | Some key -> key + 1)
+  | UnOp (_, _, expr) -> get_sharing_analysis expr
+  | BinaryOp (_, _, expr1, expr2) ->
+      join_sharing_analysis_map
+        (get_sharing_analysis expr1)
+        (get_sharing_analysis expr2)
+  | Drop (_, drop_var, expr) ->
+      Map.update (get_sharing_analysis expr) drop_var ~f:(fun key_option ->
+          match key_option with None -> 1 | Some key -> key + 1)
+  | Free (_, _, expr) | Weak (_, _, expr) | Inst (_, _, expr) ->
+      get_sharing_analysis expr
+
+and get_sharing_analysis_value (parsed_value : Parser_ast.value) :
+    int SharingAnalysisMap.t =
+  match parsed_value with
+  | Unit _ | Integer _ | Boolean _ -> SharingAnalysisMap.empty
+  | Variable (_, var_name) -> SharingAnalysisMap.singleton var_name 1
+  | Constructor (_, _, values) -> get_sharing_analysis_values values
+
+and get_sharing_analysis_values (parsed_values : Parser_ast.value list) :
+    int SharingAnalysisMap.t =
+  List.fold parsed_values ~init:SharingAnalysisMap.empty
+    ~f:(fun acc_sharing_analysis_map value ->
+      join_sharing_analysis_map
+        (get_sharing_analysis_value value)
+        acc_sharing_analysis_map)
+
+let get_ty_unique_from_sharing_analysis
+    (sharing_analysis_map : int SharingAnalysisMap.t) (var_name : Var_name.t) :
+    ty_unique =
+  match Map.find sharing_analysis_map var_name with
+  | None -> fresh_unique ()
+  | Some usage when usage = 1 -> fresh_unique ()
+  | _ -> TyShared

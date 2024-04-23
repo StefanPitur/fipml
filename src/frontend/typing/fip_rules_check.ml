@@ -1,6 +1,7 @@
 open Borrowed_context
 open Core
 open Owned_context
+open Parsing
 open Reuse_credits
 open Result
 
@@ -15,9 +16,13 @@ let rec fip_rules_check_value (typed_value : Typed_ast.value)
       Ok (Integer (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, i))
   | Boolean (loc, _, b) ->
       Ok (Boolean (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, b))
-  | Variable (loc, _, var_name) ->
-      let owned_set = OwnedSet.singleton var_name in
-      Ok (Variable (loc, borrowed_set, owned_set, ReuseMap.empty, var_name))
+  | Variable (loc, var_type_expr, var_name) ->
+      extend_owned_set ~element:var_name ~element_type_expr:var_type_expr
+        ~owned_set:OwnedSet.empty
+      >>= fun owned_set ->
+      Ok
+        (Fip_ast.Variable
+           (loc, borrowed_set, owned_set, ReuseMap.empty, var_name))
   | Constructor (loc, _, constructor_name, constructor_typed_values) ->
       let constructor_arity = List.length constructor_typed_values in
       if constructor_arity = 0 then
@@ -176,6 +181,10 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
           (Functions_env.get_fip_function_allocation_credit loc function_name
              functions_env)
       in
+      let fiped_function_name =
+        Ast.Ast_types.Function_name.of_string
+          (Ast.Ast_types.Function_name.to_string function_name ^ "!")
+      in
       let owned_set, reuse_map, fip_values, values_acc_allocation_credit =
         List.fold_right values ~init:(OwnedSet.empty, ReuseMap.empty, [], 0)
           ~f:(fun
@@ -230,7 +239,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
              borrowed_set,
              owned_set,
              extended_reuse_map,
-             function_name,
+             fiped_function_name,
              fip_values ))
   | If (loc, _, cond_expr, then_expr) ->
       fip_rules_check_expr cond_expr borrowed_set functions_env
@@ -300,7 +309,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
              fip_cond_expr,
              fip_then_expr,
              fip_else_expr ))
-  | Match (loc, _, matched_var, pattern_exprs) -> (
+  | Match (loc, _, matched_var_type, matched_var, pattern_exprs) -> (
       match assert_in_borrowed_set ~element:matched_var ~borrowed_set with
       | Ok () -> (
           let fip_pattern_exprs =
@@ -308,7 +317,9 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
               ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
                 Or_error.ok_exn
                   (let matched_expr_vars =
-                     Typed_ast.get_matched_expr_vars matched_expr
+                     Parser_ast.get_matched_expr_vars
+                       (Typed_ast.convert_typed_to_parser_matched_expr
+                          matched_expr)
                    in
                    extend_borrowed_set_by_list ~elements:matched_expr_vars
                      ~borrowed_set
@@ -375,7 +386,9 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
               ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
                 Or_error.ok_exn
                   (let matched_expr_vars =
-                     Typed_ast.get_matched_expr_vars matched_expr
+                     Parser_ast.get_matched_expr_vars
+                       (Typed_ast.convert_typed_to_parser_matched_expr
+                          matched_expr)
                    in
                    let match_expr_reuse_credits =
                      Typed_ast.get_match_expr_reuse_credits matched_expr
@@ -435,6 +448,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
               let extended_owned_set =
                 Or_error.ok_exn
                   (extend_owned_set ~element:matched_var
+                     ~element_type_expr:matched_var_type
                      ~owned_set:fip_owned_set)
               in
               Ok
@@ -489,7 +503,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
              binary_op,
              fip_left_expr,
              fip_right_expr ))
-  | Drop (loc, _, _, _) ->
+  | Drop (loc, _, _, _, _) ->
       let error_string = "free - " ^ Ast.Ast_types.string_of_loc loc in
       Or_error.of_exn (InstructionNotAllowedInFipFunction error_string)
   | Free (loc, _, k, expr) ->

@@ -181,10 +181,11 @@ and pprint_typed_expr ppf ~indent expr =
       pprint_typed_expr ppf ~indent:sub_expr_indent then_expr;
       Fmt.pf ppf "%sElse@." indent;
       pprint_typed_expr ppf ~indent:sub_expr_indent else_expr
-  | Match (_, type_expr, var_name, typed_pattern_exprs) ->
+  | Match (_, type_expr, var_type_expr, var_name, typed_pattern_exprs) ->
       print_expr (Fmt.str "Match - %s" (string_of_type type_expr));
-      Fmt.pf ppf "%sMatch Var: %s@." sub_expr_indent
-        (Var_name.to_string var_name);
+      Fmt.pf ppf "%sMatch Var: %s - %s@." sub_expr_indent
+        (Var_name.to_string var_name)
+        (string_of_type var_type_expr);
       pprint_typed_pattern_exprs ppf ~indent:sub_expr_indent typed_pattern_exprs
   | UnOp (_, type_expr, unary_op, typed_expr) ->
       print_expr
@@ -199,10 +200,11 @@ and pprint_typed_expr ppf ~indent expr =
            (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent typed_expr_left;
       pprint_typed_expr ppf ~indent:sub_expr_indent typed_expr_right
-  | Drop (_, type_expr, dropped_var_name, expr) ->
+  | Drop (_, type_expr, dropped_var_type_expr, dropped_var_name, expr) ->
       print_expr
-        (Fmt.str "Drop %s - %s Expr:"
+        (Fmt.str "Drop %s : %s - %s Expr:"
            (Var_name.to_string dropped_var_name)
+           (string_of_type dropped_var_type_expr)
            (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent expr
   | Free (_, type_expr, k, expr) ->
