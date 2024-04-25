@@ -60,24 +60,42 @@ let%expect_test "FIP rules for expressions : UnboxedSingleton" =
   [%expect
     {|
     Borrowed - []
-    Owned - [x]
+    Owned - []
     Reuse
 
     Fip Expr: UnboxedSingleton
         Borrowed - []
-        Owned - [x]
+        Owned - []
         Reuse
 
         Fip Value: Variable - x |}]
-(*
+
 let%expect_test "FIP rules for expressions : UnboxedTuple" =
   let expr =
     Typed_ast.UnboxedTuple
       ( mock_loc,
-        TETuple (mock_loc, [ TEInt mock_loc; TEUnit mock_loc ]),
+        TAttr
+          ( mock_loc,
+            TETuple
+              ( mock_loc,
+                [
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+                ] ),
+            Shared mock_loc ),
         [
-          Typed_ast.Variable (mock_loc, TEInt mock_loc, Var_name.of_string "x");
-          Typed_ast.Variable (mock_loc, TEUnit mock_loc, Var_name.of_string "y");
+          Typed_ast.Variable
+            ( mock_loc,
+              TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+              Var_name.of_string "x" );
+          Typed_ast.Variable
+            ( mock_loc,
+              TAttr
+                ( mock_loc,
+                  TECustom
+                    (mock_loc, [], [], [], Type_name.of_string "custom_type"),
+                  Unique mock_loc ),
+              Var_name.of_string "y" );
         ] )
   in
   let fip_expr =
@@ -87,12 +105,12 @@ let%expect_test "FIP rules for expressions : UnboxedTuple" =
   [%expect
     {|
     Borrowed - []
-    Owned - [x, y]
+    Owned - [y]
     Reuse
 
     Fip Expr: UnboxedValue
         Borrowed - []
-        Owned - [x]
+        Owned - []
         Reuse
 
         Fip Value: Variable - x
@@ -106,46 +124,119 @@ let%expect_test "FIP rules for expressions : Let" =
   let expr =
     Typed_ast.Let
       ( mock_loc,
-        TETuple
+        TAttr
           ( mock_loc,
-            [
-              TECustom (mock_loc, [], Type_name.of_string "custom_type");
-              TEInt mock_loc;
-            ] ),
+            TETuple
+              ( mock_loc,
+                [
+                  TAttr
+                    ( mock_loc,
+                      TECustom
+                        (mock_loc, [], [], [], Type_name.of_string "custom_type"),
+                      Unique mock_loc );
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+                  TAttr
+                    ( mock_loc,
+                      TEPoly (mock_loc, Poly (mock_loc, "'t1")),
+                      PolyUnique (mock_loc, Poly (mock_loc, "'u3")) );
+                ] ),
+            PolyUnique (mock_loc, Poly (mock_loc, "'u4")) ),
+        [
+          TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+          TAttr
+            ( mock_loc,
+              TECustom (mock_loc, [], [], [], Type_name.of_string "custom_type"),
+              Unique mock_loc );
+        ],
         [ Var_name.of_string "x1"; Var_name.of_string "x2" ],
         Typed_ast.UnboxedTuple
           ( mock_loc,
-            TETuple
+            TAttr
               ( mock_loc,
-                [
-                  TEInt mock_loc;
-                  TECustom (mock_loc, [], Type_name.of_string "custom_type");
-                ] ),
+                TETuple
+                  ( mock_loc,
+                    [
+                      TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
+                      TAttr
+                        ( mock_loc,
+                          TECustom
+                            ( mock_loc,
+                              [],
+                              [],
+                              [],
+                              Type_name.of_string "custom_type" ),
+                          Unique mock_loc );
+                    ] ),
+                PolyUnique (mock_loc, Poly (mock_loc, "'u0")) ),
             [
-              Typed_ast.Integer (mock_loc, TEInt mock_loc, 0);
+              Typed_ast.Integer
+                ( mock_loc,
+                  TAttr
+                    ( mock_loc,
+                      TEInt mock_loc,
+                      PolyUnique (mock_loc, Poly (mock_loc, "'u1")) ),
+                  0 );
               Typed_ast.Constructor
                 ( mock_loc,
-                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+                  TAttr
+                    ( mock_loc,
+                      TECustom
+                        (mock_loc, [], [], [], Type_name.of_string "custom_type"),
+                      PolyUnique (mock_loc, Poly (mock_loc, "'u2")) ),
                   Constructor_name.of_string "C",
-                  [ Typed_ast.Boolean (mock_loc, TEBool mock_loc, true) ] );
+                  [
+                    Typed_ast.Boolean
+                      ( mock_loc,
+                        TAttr (mock_loc, TEBool mock_loc, Shared mock_loc),
+                        true );
+                  ] );
             ] ),
         Typed_ast.UnboxedTuple
           ( mock_loc,
-            TETuple
+            TAttr
               ( mock_loc,
-                [
-                  TECustom (mock_loc, [], Type_name.of_string "custom_type");
-                  TEInt mock_loc;
-                ] ),
+                TETuple
+                  ( mock_loc,
+                    [
+                      TAttr
+                        ( mock_loc,
+                          TECustom
+                            ( mock_loc,
+                              [],
+                              [],
+                              [],
+                              Type_name.of_string "custom_type" ),
+                          PolyUnique (mock_loc, Poly (mock_loc, "'u2")) );
+                      TAttr
+                        ( mock_loc,
+                          TEInt mock_loc,
+                          PolyUnique (mock_loc, Poly (mock_loc, "'u1")) );
+                      TAttr
+                        ( mock_loc,
+                          TEPoly (mock_loc, Poly (mock_loc, "'t1")),
+                          PolyUnique (mock_loc, Poly (mock_loc, "'u3")) );
+                    ] ),
+                PolyUnique (mock_loc, Poly (mock_loc, "'u4")) ),
             [
               Typed_ast.Variable
                 ( mock_loc,
-                  TECustom (mock_loc, [], Type_name.of_string "custom_type"),
+                  TAttr
+                    ( mock_loc,
+                      TECustom
+                        (mock_loc, [], [], [], Type_name.of_string "custom_type"),
+                      Unique mock_loc ),
                   Var_name.of_string "x2" );
               Typed_ast.Variable
-                (mock_loc, TEUnit mock_loc, Var_name.of_string "x1");
+                ( mock_loc,
+                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
+                  Var_name.of_string "x1" );
               Typed_ast.Variable
-                (mock_loc, TEUnit mock_loc, Var_name.of_string "x");
+                ( mock_loc,
+                  TAttr
+                    ( mock_loc,
+                      TEPoly (mock_loc, Poly (mock_loc, "'t1")),
+                      Unique mock_loc ),
+                  Var_name.of_string "x" );
             ] ) )
   in
   let fip_expr =
@@ -181,7 +272,7 @@ let%expect_test "FIP rules for expressions : Let" =
                 Fip Value: Boolean - true
     Fip Expr: Let expr:
         Borrowed - []
-        Owned - [x, x1, x2]
+        Owned - [x, x2]
         Reuse
 
         Fip Expr: UnboxedValue
@@ -191,7 +282,7 @@ let%expect_test "FIP rules for expressions : Let" =
 
             Fip Value: Variable - x2
             Borrowed - []
-            Owned - [x1]
+            Owned - []
             Reuse
 
             Fip Value: Variable - x1
@@ -200,7 +291,7 @@ let%expect_test "FIP rules for expressions : Let" =
             Reuse
 
             Fip Value: Variable - x |}]
-
+(*
 let%expect_test "FIP rules for expressions : FunApp" =
   let expr =
     Typed_ast.FunApp
