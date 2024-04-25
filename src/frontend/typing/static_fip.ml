@@ -6,7 +6,7 @@ open Parsing
 open Reuse_credits
 open Result
 
-exception UnableFipCheck
+exception UnableFipCheck of string
 exception TailContextFailure
 
 let check_bounded_stack_allocation (function_mut_rec_id : int)
@@ -75,11 +75,11 @@ let check_bounded_stack_allocation (function_mut_rec_id : int)
   check_tail_context_calculus function_body
 
 let fip
-    (TFun (_, _, group_id, fip_option, _, params, function_body) :
+    (TFun (loc, _, group_id, fip_option, function_name, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
-    Fip_ast.expr Or_error.t =
+    Fip_ast.function_defn Or_error.t =
   match fip_option with
-  | Some (Fip n) ->
+  | Some (Fip n as fip) ->
       check_bounded_stack_allocation group_id function_body functions_env
       >>= fun _ ->
       let borrowed_set, owned_set =
@@ -122,6 +122,24 @@ let fip
         Map.equal reuse_map_entry_equal_fn fip_reuse_map reuse_map
       in
       if owned_set_restriction && reuse_map_restriction then
-        Ok fip_function_body
-      else Or_error.of_exn UnableFipCheck
-  | _ -> Or_error.of_exn UnableFipCheck
+        let fiped_function_name =
+          Function_name.of_string (Function_name.to_string function_name ^ "!")
+        in
+        let fiped_params = Fip_ast.convert_params_to_fip_params params in
+        Ok
+          (Fip_ast.TFun
+             (loc, fip, fiped_function_name, fiped_params, fip_function_body))
+      else
+        let error_string =
+          Fmt.str "%s - Unable to perform FIP transformation for function %s@."
+            (string_of_loc loc)
+            (Function_name.to_string function_name)
+        in
+        Or_error.of_exn (UnableFipCheck error_string)
+  | _ ->
+      let error_string =
+        Fmt.str "%s - Unable to perform FIP transformation for function %s@."
+          (string_of_loc loc)
+          (Function_name.to_string function_name)
+      in
+      Or_error.of_exn (UnableFipCheck error_string)

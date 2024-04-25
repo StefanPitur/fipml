@@ -132,10 +132,12 @@ let typecheck_function_defn (types_env : types_env)
 let rec typecheck_functions_defns_wrapper (types_env : types_env)
     (constructors_env : constructors_env) (functions_env : functions_env)
     (typed_ast_function_defns : Typed_ast.function_defn list)
+    (fip_ast_function_defns : Fip_ast.function_defn list)
     (functions_defns : Parser_ast.function_defn list) :
-    (functions_env * Typed_ast.function_defn list) Or_error.t =
+    (functions_env * Typed_ast.function_defn list * Fip_ast.function_defn list)
+    Or_error.t =
   match functions_defns with
-  | [] -> Ok (functions_env, typed_ast_function_defns)
+  | [] -> Ok (functions_env, typed_ast_function_defns, fip_ast_function_defns)
   | function_defn :: functions_defns_tail ->
       let open Result in
       typecheck_function_defn types_env constructors_env functions_defns
@@ -143,30 +145,34 @@ let rec typecheck_functions_defns_wrapper (types_env : types_env)
       >>= fun (functions_env, typed_function_defn) ->
       let (TFun (_, _, _, fip_option, _, _, _)) = typed_function_defn in
       let extended_typed_ast_function_defns =
+        typed_ast_function_defns @ [ typed_function_defn ]
+      in
+      let extended_fip_ast_function_defns =
         match fip_option with
-        | None -> typed_ast_function_defns @ [ typed_function_defn ]
+        | None -> fip_ast_function_defns
         | Some (Fip _) ->
-            (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
-            ignore
-              (Or_error.ok_exn
-                 (Static_fip.fip typed_function_defn functions_env));
-            typed_ast_function_defns @ [ typed_function_defn ]
+            let fip_ast_function_defn =
+              Or_error.ok_exn (Static_fip.fip typed_function_defn functions_env)
+            in
+            fip_ast_function_defn :: fip_ast_function_defns
         | Some (Fbip _) ->
-            (* TODO: Modify here when you have conversion from Fip_ast to Typed_ast *)
-            ignore
-              (Or_error.ok_exn
-                 (Static_fbip.fbip typed_function_defn functions_env));
-            typed_ast_function_defns @ [ typed_function_defn ]
+            let fbip_ast_function_defn =
+              Or_error.ok_exn
+                (Static_fbip.fbip typed_function_defn functions_env)
+            in
+            fbip_ast_function_defn :: fip_ast_function_defns
       in
       typecheck_functions_defns_wrapper types_env constructors_env functions_env
-        extended_typed_ast_function_defns functions_defns_tail
+        extended_typed_ast_function_defns extended_fip_ast_function_defns
+        functions_defns_tail
 
 let typecheck_functions_defns (types_env : Type_defns_env.types_env)
     (constructors_env : Type_defns_env.constructors_env)
     (functions_defns : Parsing.Parser_ast.function_defn list) :
-    (functions_env * Typed_ast.function_defn list) Or_error.t =
+    (functions_env * Typed_ast.function_defn list * Fip_ast.function_defn list)
+    Or_error.t =
   let open Result in
-  typecheck_functions_defns_wrapper types_env constructors_env [] []
+  typecheck_functions_defns_wrapper types_env constructors_env [] [] []
     functions_defns
-  >>= fun (functions_env, typed_function_defns) ->
-  Ok (functions_env, typed_function_defns)
+  >>= fun (functions_env, typed_function_defns, fiped_function_defns) ->
+  Ok (functions_env, typed_function_defns, fiped_function_defns)

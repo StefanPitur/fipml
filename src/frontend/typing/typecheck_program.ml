@@ -10,7 +10,7 @@ let typecheck_program
   >>= fun (types_env, constructors_env, typed_ast_type_defns) ->
   Typecheck_functions_defns.typecheck_functions_defns types_env constructors_env
     function_defns
-  >>= fun (functions_env, typed_function_defns) ->
+  >>= fun (functions_env, typed_function_defns, _) ->
   (match main_expr_option with
   | None ->
       Ok
