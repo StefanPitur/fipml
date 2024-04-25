@@ -15,11 +15,13 @@ let rec pprint_pretyped_expr ppf ~indent expr =
   | UnboxedTuple (_, ty_attr, values) ->
       print_expr (Fmt.str "UnboxedTuple - %s" (string_of_ty_attr ty_attr));
       List.iter ~f:(pprint_pretyped_value ppf ~indent:sub_expr_indent) values
-  | Let (_, ty_attr, var_names, var_typed_expr, typed_expr) ->
+  | Let (_, ty_attr, var_ty_attrs, var_names, var_typed_expr, typed_expr) ->
       let var_names_strings = List.map ~f:Var_name.to_string var_names in
+      let var_ty_attrs_strings = List.map ~f:string_of_ty_attr var_ty_attrs in
       print_expr
-        (Fmt.str "Let vars: (%s) = "
-           (String.concat ~sep:", " var_names_strings));
+        (Fmt.str "Let vars: (%s) : (%s) = "
+           (String.concat ~sep:", " var_names_strings)
+           (String.concat ~sep:", " var_ty_attrs_strings));
       pprint_pretyped_expr ppf ~indent:sub_expr_indent var_typed_expr;
       print_expr (Fmt.str "Let expr - %s" (string_of_ty_attr ty_attr));
       pprint_pretyped_expr ppf ~indent:sub_expr_indent typed_expr

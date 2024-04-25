@@ -607,8 +607,8 @@ let%expect_test "Constraints Generation Expr: Let" =
           Value: Var: y
 
       => Typing Context:
-      y : TyAttr - TyPoly - for all (t14, t15). TyCustom (TyVar t14 ; TyVarUnique u30 ; TyAttr - TyVar t15 <> TyVarUnique u31) custom_type <> TyVarUnique u29
       x : TyAttr - TyPoly - for all (). TyInt <> TyVarUnique u32
+      y : TyAttr - TyPoly - for all (t14, t15). TyCustom (TyVar t14 ; TyVarUnique u30 ; TyAttr - TyVar t15 <> TyVarUnique u31) custom_type <> TyVarUnique u29
       => Expr TyAttr:
       TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyCustom (TyVar t16 ; TyVarUnique u30 ; TyAttr - TyVar t17 <> TyVarUnique u31) custom_type <> TyVarUnique u29) <> TyVarUnique u34
       => Expr Constraints:
@@ -627,17 +627,17 @@ let%expect_test "Constraints Generation Expr: Let" =
               Value: Var: y
 
       => Typing Context:
-      y : TyAttr - TyPoly - for all (t14, t15). TyCustom (TyVar t14 ; TyVarUnique u30 ; TyAttr - TyVar t15 <> TyVarUnique u31) custom_type <> TyVarUnique u29
       x : TyAttr - TyPoly - for all (). TyInt <> TyVarUnique u32
+      y : TyAttr - TyPoly - for all (t14, t15). TyCustom (TyVar t14 ; TyVarUnique u30 ; TyAttr - TyVar t15 <> TyVarUnique u31) custom_type <> TyVarUnique u29
       => Expr TyAttr:
       TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyCustom (TyVar t16 ; TyVarUnique u30 ; TyAttr - TyVar t17 <> TyVarUnique u31) custom_type <> TyVarUnique u29) <> TyVarUnique u34
       => Expr Constraints:
       => Expr Unique Constraints;
-      (TyVarUnique u33, TyVarUnique u29)
       (TyShared, TyVarUnique u32)
+      (TyVarUnique u33, TyVarUnique u29)
       -------------------------
 
-      Pretyped Expr: Let vars: (x, y) =
+      Pretyped Expr: Let vars: (x, y) : (TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyCustom (TyVar t14 ; TyVarUnique u30 ; TyAttr - TyVar t15 <> TyVarUnique u31) custom_type <> TyVarUnique u29) =
           Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u32, TyAttr - TyVar t13 <> TyVarUnique u29) <> TyVarUnique u28
               Value: Int: 0 - TyAttr - TyInt <> TyVarUnique u32
               Value: Constructor: Atom - TyAttr - TyVar t13 <> TyVarUnique u29

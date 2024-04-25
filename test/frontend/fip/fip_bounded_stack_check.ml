@@ -13,6 +13,7 @@ let%expect_test "Free Variables" =
     Let
       ( mock_loc,
         mock_type_expr,
+        [ mock_type_expr ],
         [ Var_name.of_string "x" ],
         UnboxedSingleton
           ( mock_loc,

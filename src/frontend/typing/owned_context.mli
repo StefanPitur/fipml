@@ -2,7 +2,7 @@ open Ast.Ast_types
 open Core
 
 module OwnedSet : Set.S with type Elt.t = Var_name.t
-(** Model the context handling owned variables as a set. *)
+(** Model the context handling owned variables which have non-primitive types as a set. *)
 
 val extend_owned_set :
   element:Var_name.t ->
@@ -35,11 +35,17 @@ val combine_owned_sets :
 (** Performs union of the two sets, throws error if their intersection is not the empty set. *)
 
 val remove_element_from_owned_set :
-  element:Var_name.t -> owned_set:OwnedSet.t -> OwnedSet.t Or_error.t
+  element:Var_name.t ->
+  element_type_expr:type_expr ->
+  owned_set:OwnedSet.t ->
+  OwnedSet.t Or_error.t
 (** Remove [element] from [owned_set], returns new set or throws error if the element was not in the set to beginning with. *)
 
 val remove_elements_from_owned_set :
-  elements:Var_name.t list -> owned_set:OwnedSet.t -> OwnedSet.t Or_error.t
+  elements:Var_name.t list ->
+  elements_type_exprs:type_expr list ->
+  owned_set:OwnedSet.t ->
+  OwnedSet.t Or_error.t
 (** Remove [elements] from [owned_set], returns new set or throws error if any of the elements was not in the set to beginning with. *)
 
 val assert_owned_sets_are_equal :

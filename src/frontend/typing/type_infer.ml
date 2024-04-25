@@ -296,24 +296,28 @@ and generate_constraints (types_env : types_env)
                 var_pretyped_substs,
                 pretyped_vars ) ->
       unify var_constrs >>= fun (var_substs, extra_var_unique_constrs) ->
-      let sub_var_ty, sub_var_ty_unique =
+      let ((sub_var_ty, sub_var_ty_unique) as sub_var_ty_attr) =
         ty_attr_subst var_substs [] var_ty_attr
       in
       let sub_typing_context = ty_subst_context typing_context var_substs [] in
       let sharing_analysis_map = get_sharing_analysis expr in
-      let extended_typing_context, sharing_analysis_unique_constraints =
+      let ( extended_typing_context,
+            sharing_analysis_unique_constraints,
+            vars_ty_attrs ) =
         Or_error.ok_exn
           (match sub_var_ty with
           | TyTuple ty_attrs ->
               if List.length var_names = 1 then Or_error.of_exn TyNotMatching
               else
                 Ok
-                  (List.fold2_exn var_names ty_attrs
-                     ~init:(sub_typing_context, [])
+                  (List.fold_right2_exn var_names ty_attrs
+                     ~init:(sub_typing_context, [], [])
                      ~f:(fun
-                         (typing_context, acc_sharing_unique_constraints)
                          var_name
-                         (var_ty, var_ty_unique)
+                         ((var_ty, var_ty_unique) as var_ty_attr)
+                         ( typing_context,
+                           acc_sharing_unique_constraints,
+                           acc_var_ty_attrs )
                        ->
                        let ty_unique_sharing =
                          get_ty_unique_from_sharing_analysis
@@ -323,7 +327,8 @@ and generate_constraints (types_env : types_env)
                            (generalise typing_context var_name
                               (var_ty, var_ty_unique)),
                          (ty_unique_sharing, var_ty_unique)
-                         :: acc_sharing_unique_constraints )))
+                         :: acc_sharing_unique_constraints,
+                         var_ty_attr :: acc_var_ty_attrs )))
           | _ -> (
               match var_names with
               | [ var_name ] ->
@@ -335,7 +340,8 @@ and generate_constraints (types_env : types_env)
                     ( Or_error.ok_exn
                         (generalise sub_typing_context var_name
                            (sub_var_ty, sub_var_ty_unique)),
-                      [ (ty_unique_sharing, sub_var_ty_unique) ] )
+                      [ (ty_unique_sharing, sub_var_ty_unique) ],
+                      [ sub_var_ty_attr ] )
               | _ -> Or_error.of_exn TyNotMatching))
       in
       generate_constraints types_env constructors_env functions_env
@@ -359,7 +365,12 @@ and generate_constraints (types_env : types_env)
           @ expr_unique_constrs @ var_unique_constrs,
           expr_substs,
           Pretyped_ast.Let
-            (loc, expr_ty_attr, var_names, pretyped_vars, pretyped_expr) )
+            ( loc,
+              expr_ty_attr,
+              vars_ty_attrs,
+              var_names,
+              pretyped_vars,
+              pretyped_expr ) )
   | FunApp (loc, app_var_name, app_values) ->
       get_var_type typing_context app_var_name >>= fun app_var_ty_attr ->
       get_ty_attr_function_signature app_var_ty_attr

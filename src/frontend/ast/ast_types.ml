@@ -55,6 +55,12 @@ type typ =
 
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
+let is_primitive (type_expr : type_expr) : bool =
+  match type_expr with
+  | TPoly _ -> false
+  | TAttr (_, typ, _) -> (
+      match typ with TEUnit _ | TEInt _ | TEBool _ -> true | _ -> false)
+
 let equal_borrowed_option (borrowed_option1 : borrowed option)
     (borrowed_option2 : borrowed option) : bool =
   match (borrowed_option1, borrowed_option2) with

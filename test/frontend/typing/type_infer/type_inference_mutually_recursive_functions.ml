@@ -153,7 +153,7 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                 Type Expr: Int @ 'u1
                 OwnedParam: x
             Function Body:
-                Typed Expr: Let vars: (pred_x) =
+                Typed Expr: Let vars: (pred_x) : (Int @ u3) =
                     Typed Expr: - - Int @ u3
                         Typed Expr: UnboxedSingleton - Int @ shared
                             Value: Var: x - Int @ shared
@@ -181,7 +181,7 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                 Type Expr: Int @ 'u1
                 OwnedParam: x
             Function Body:
-                Typed Expr: Let vars: (pred_x) =
+                Typed Expr: Let vars: (pred_x) : (Int @ u14) =
                     Typed Expr: - - Int @ u14
                         Typed Expr: UnboxedSingleton - Int @ shared
                             Value: Var: x - Int @ shared
@@ -217,7 +217,7 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
                     Typed Expr: UnboxedSingleton - Int @ u24
                         Value: Var: y - Int @ u24
             Typed Main
-            Typed Expr: Let vars: (sum_x_y) =
+            Typed Expr: Let vars: (sum_x_y) : (Int @ u31) =
                 Typed Expr: FunCall - Int @ u31
                     Function Name: add
                     FunctionArg

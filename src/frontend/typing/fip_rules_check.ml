@@ -112,7 +112,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       Ok
         (Fip_ast.UnboxedTuple
            (loc, borrowed_set, owned_set, reuse_map, fip_values))
-  | Let (loc, _, var_names, var_expr, expr) ->
+  | Let (loc, _, var_type_exprs, var_names, var_expr, expr) ->
       fip_rules_check_expr expr borrowed_set functions_env >>= fun fip_expr ->
       let _, expr_extended_owned_set, expr_reuse_map =
         Fip_ast.get_fip_contexts_from_expr fip_expr
@@ -120,6 +120,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
       let expr_owned_set =
         Or_error.ok_exn
           (remove_elements_from_owned_set ~elements:var_names
+             ~elements_type_exprs:var_type_exprs
              ~owned_set:expr_extended_owned_set)
       in
       let var_expr_borrowed_set =
@@ -404,10 +405,8 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
             List.map pattern_exprs
               ~f:(fun (Typed_ast.MPattern (loc, _, matched_expr, typed_expr)) ->
                 Or_error.ok_exn
-                  (let matched_expr_vars =
-                     Parser_ast.get_matched_expr_vars
-                       (Typed_ast.convert_typed_to_parser_matched_expr
-                          matched_expr)
+                  (let matched_expr_vars, matched_expr_vars_type_exprs =
+                     Typed_ast.get_matched_expr_vars_and_type_exprs matched_expr
                    in
                    let match_expr_reuse_credits =
                      Typed_ast.get_match_expr_reuse_credits matched_expr
@@ -421,6 +420,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
                      Fip_ast.get_fip_contexts_from_expr fip_expr
                    in
                    remove_elements_from_owned_set ~elements:matched_expr_vars
+                     ~elements_type_exprs:matched_expr_vars_type_exprs
                      ~owned_set:expr_owned_set
                    >>= fun owned_set ->
                    let reuse_map =

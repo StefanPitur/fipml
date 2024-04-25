@@ -74,7 +74,7 @@ let%expect_test "Polymorphic Function Definition" =
                   Typed Expr: UnboxedSingleton - t1 @ u1
                       Value: Var: z - t1 @ u1
               Typed Main
-              Typed Expr: Let vars: (x) =
+              Typed Expr: Let vars: (x) : (Unit @ unique) =
                   Typed Expr: UnboxedSingleton - Unit @ unique
                       Value: Unit - Unit @ unique
               Typed Expr: Let expr - Bool @ u10

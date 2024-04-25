@@ -61,17 +61,27 @@ let rec construct_typed_ast_expr (pretyped_expr : Pretyped_ast.expr)
               (construct_typed_ast_value value substs substs_unique))
       in
       Ok (Typed_ast.UnboxedTuple (loc, ast_type, values_typed))
-  | Pretyped_ast.Let (loc, ty_attr, var_names, pretyped_var_expr, pretyped_expr)
+  | Pretyped_ast.Let
+      (loc, ty_attr, var_ty_attrs, var_names, pretyped_var_expr, pretyped_expr)
     ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)
         loc
       >>= fun ast_type ->
+      let var_type_exprs =
+        List.map var_ty_attrs ~f:(fun var_ty_attr ->
+            Or_error.ok_exn
+              (convert_ty_attr_to_ast_type
+                 (ty_attr_subst substs substs_unique var_ty_attr)
+                 loc))
+      in
       construct_typed_ast_expr pretyped_var_expr substs substs_unique
       >>= fun typed_var_expr ->
       construct_typed_ast_expr pretyped_expr substs substs_unique
       >>= fun typed_expr ->
-      Ok (Typed_ast.Let (loc, ast_type, var_names, typed_var_expr, typed_expr))
+      Ok
+        (Typed_ast.Let
+           (loc, ast_type, var_type_exprs, var_names, typed_var_expr, typed_expr))
   | Pretyped_ast.FunApp (loc, ty_attr, var_name, pretyped_vars) ->
       convert_ty_attr_to_ast_type
         (ty_attr_subst substs substs_unique ty_attr)

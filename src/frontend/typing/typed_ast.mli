@@ -10,7 +10,7 @@ type value =
 type expr =
   | UnboxedSingleton of loc * type_expr * value
   | UnboxedTuple of loc * type_expr * value list
-  | Let of loc * type_expr * Var_name.t list * expr * expr
+  | Let of loc * type_expr * type_expr list * Var_name.t list * expr * expr
   | FunApp of loc * type_expr * Var_name.t * value list
   | FunCall of loc * type_expr * Function_name.t * value list
   | If of loc * type_expr * expr * expr
@@ -54,6 +54,9 @@ val get_expr_type : expr -> type_expr
 (** Given an [expr], return its [type_expr] *)
 
 val get_value_loc : value -> loc
+
+val get_matched_expr_vars_and_type_exprs :
+  matched_expr -> Var_name.t list * type_expr list
 
 val get_match_expr_reuse_credits : matched_expr -> int list
 (** Given a [match_expr] return the reuse credit available by destructive match. *)

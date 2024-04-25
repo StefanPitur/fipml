@@ -11,7 +11,7 @@ type value =
 type expr =
   | UnboxedSingleton of loc * ty_attr * value
   | UnboxedTuple of loc * ty_attr * value list
-  | Let of loc * ty_attr * Var_name.t list * expr * expr
+  | Let of loc * ty_attr * ty_attr list * Var_name.t list * expr * expr
   | FunApp of loc * ty_attr * Var_name.t * value list
   | FunCall of loc * ty_attr * Function_name.t * value list
   | If of loc * ty_attr * expr * expr

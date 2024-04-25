@@ -12,6 +12,10 @@ type ( @ 'u1 @ ) custom_type =
   endmatch
 }
 */
+
+type ('t1 @ 'u1 @ 'a1) custom_type =
+| Atom
+
 {
-  let (x, y) = (1, true) in let z = 3 in (x, y, y, z, z)
+  let (x, y) = (0, Atom) in (x, x, y)
 }

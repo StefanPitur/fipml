@@ -33,7 +33,7 @@ let check_bounded_stack_allocation (function_mut_rec_id : int)
   let rec check_tail_context_calculus (expr : Typed_ast.expr) : unit Or_error.t
       =
     match expr with
-    | Let (_, _, _, var_expr, expr) ->
+    | Let (_, _, _, _, var_expr, expr) ->
         f_bar_and_fv_are_disjoint
           (Parser_ast.free_variables
              (Typed_ast.convert_typed_to_parser var_expr))
