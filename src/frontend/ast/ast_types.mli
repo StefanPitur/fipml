@@ -41,6 +41,7 @@ type typ =
 
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
+val equal_borrowed_option : borrowed option -> borrowed option -> bool
 val equal_poly : poly -> poly -> bool
 val equal_type_expr : type_expr -> type_expr -> bool
 

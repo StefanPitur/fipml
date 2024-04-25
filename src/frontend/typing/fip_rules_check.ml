@@ -6,6 +6,7 @@ open Reuse_credits
 open Result
 
 exception InstructionNotAllowedInFipFunction of string
+exception FunCallBorrowedValuePassedAsOwnedArgument of string
 
 let rec fip_rules_check_value (typed_value : Typed_ast.value)
     (borrowed_set : BorrowedSet.t) : Fip_ast.value Or_error.t =
@@ -173,58 +174,76 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
         (Fip_ast.FunApp
            (loc, borrowed_set, owned_set, reuse_map, fun_var, fip_values))
   | FunCall (loc, _, function_name, values) ->
-      Or_error.ok_exn
-        (Functions_env.assert_function_has_required_fip_type loc (Fip (-1))
-           function_name functions_env);
-      let function_allocation_credit =
-        Or_error.ok_exn
-          (Functions_env.get_fip_function_allocation_credit loc function_name
-             functions_env)
-      in
+      Functions_env.assert_function_has_required_fip_type loc (Fip (-1))
+        function_name functions_env
+      >>= fun () ->
+      Functions_env.get_fip_function_allocation_credit loc function_name
+        functions_env
+      >>= fun function_allocation_credit ->
+      Functions_env.get_function_params_borrowed_status loc function_name
+        functions_env
+      >>= fun function_params_borrowed_option ->
       let fiped_function_name =
         Ast.Ast_types.Function_name.of_string
           (Ast.Ast_types.Function_name.to_string function_name ^ "!")
       in
       let owned_set, reuse_map, fip_values, values_acc_allocation_credit =
-        List.fold_right values ~init:(OwnedSet.empty, ReuseMap.empty, [], 0)
+        List.fold_right2_exn values function_params_borrowed_option
+          ~init:(OwnedSet.empty, ReuseMap.empty, [], 0)
           ~f:(fun
               value
+              function_param_borrowed_option
               ( acc_owned_set,
                 acc_reuse_map,
                 acc_fip_values,
                 acc_allocation_credit )
             ->
-            match
-              Fip_ast.is_value_borrowed_or_top_level_fip_function loc ~value
-                ~required_fip_type:(Fip (-1)) ~borrowed_set ~functions_env
-            with
-            | Ok (var_name, allocation_credit) ->
-                let fip_value =
-                  Fip_ast.Variable
-                    (loc, borrowed_set, OwnedSet.empty, ReuseMap.empty, var_name)
-                in
-                ( acc_owned_set,
-                  acc_reuse_map,
-                  fip_value :: acc_fip_values,
-                  allocation_credit + acc_allocation_credit )
-            | _ ->
-                Or_error.ok_exn
-                  ( fip_rules_check_value value borrowed_set >>= fun fip_value ->
-                    let _, owned_set, reuse_map =
-                      Fip_ast.get_fip_contexts_from_value fip_value
-                    in
-                    let combined_reuse_map =
-                      combine_reuse_maps ~reuse_map1:acc_reuse_map
-                        ~reuse_map2:reuse_map
-                    in
-                    combine_owned_sets ~owned_set1:acc_owned_set
-                      ~owned_set2:owned_set
-                    >>= fun combined_owned_set ->
-                    Ok
-                      ( combined_owned_set,
-                        combined_reuse_map,
-                        fip_value :: acc_fip_values,
-                        acc_allocation_credit ) ))
+            Or_error.ok_exn
+              (match
+                 Fip_ast.is_value_borrowed_or_top_level_fip_function loc ~value
+                   ~required_fip_type:(Fip (-1)) ~borrowed_set ~functions_env
+               with
+              | Ok (var_name, allocation_credit)
+                when Ast.Ast_types.equal_borrowed_option
+                       function_param_borrowed_option (Some Borrowed) ->
+                  let fip_value =
+                    Fip_ast.Variable
+                      ( loc,
+                        borrowed_set,
+                        OwnedSet.empty,
+                        ReuseMap.empty,
+                        var_name )
+                  in
+                  Ok
+                    ( acc_owned_set,
+                      acc_reuse_map,
+                      fip_value :: acc_fip_values,
+                      allocation_credit + acc_allocation_credit )
+              | Error _ ->
+                  fip_rules_check_value value borrowed_set >>= fun fip_value ->
+                  let _, owned_set, reuse_map =
+                    Fip_ast.get_fip_contexts_from_value fip_value
+                  in
+                  let combined_reuse_map =
+                    combine_reuse_maps ~reuse_map1:acc_reuse_map
+                      ~reuse_map2:reuse_map
+                  in
+                  combine_owned_sets ~owned_set1:acc_owned_set
+                    ~owned_set2:owned_set
+                  >>= fun combined_owned_set ->
+                  Ok
+                    ( combined_owned_set,
+                      combined_reuse_map,
+                      fip_value :: acc_fip_values,
+                      acc_allocation_credit )
+              | _ ->
+                  let error_string =
+                    Fmt.str "%s - Value is borrowed and passed as owned"
+                      (Ast.Ast_types.string_of_loc
+                         (Typed_ast.get_value_loc value))
+                  in
+                  Or_error.of_exn
+                    (FunCallBorrowedValuePassedAsOwnedArgument error_string)))
       in
       let extended_reuse_map =
         extend_reuse_map_k_times

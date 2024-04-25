@@ -53,6 +53,8 @@ type program =
 val get_expr_type : expr -> type_expr
 (** Given an [expr], return its [type_expr] *)
 
+val get_value_loc : value -> loc
+
 val get_match_expr_reuse_credits : matched_expr -> int list
 (** Given a [match_expr] return the reuse credit available by destructive match. *)
 

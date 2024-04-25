@@ -17,6 +17,7 @@ let functions_env : Functions_env.functions_env =
         Some (Fip 0),
         Function_name.of_string "add_fun",
         [ TAttr (mock_loc, TEInt mock_loc, Unique mock_loc) ],
+        [ None ],
         TAttr
           ( mock_loc,
             TEInt mock_loc,
@@ -35,6 +36,7 @@ let functions_env : Functions_env.functions_env =
               Shared mock_loc );
           TAttr (mock_loc, TEInt mock_loc, Unique mock_loc);
         ],
+        [ Some Borrowed; None ],
         TAttr
           ( mock_loc,
             TEInt mock_loc,

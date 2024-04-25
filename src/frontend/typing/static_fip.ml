@@ -18,7 +18,7 @@ let check_bounded_stack_allocation (function_mut_rec_id : int)
          function_mut_rec_id functions_env) ~init:Parser_ast.FreeVarSet.empty
       ~f:(fun
           acc_free_var_set
-          (Functions_env.FunctionEnvEntry (_, _, fun_env_entry_name, _, _))
+          (Functions_env.FunctionEnvEntry (_, _, fun_env_entry_name, _, _, _))
         ->
         Set.add acc_free_var_set
           (Var_name.of_string (Function_name.to_string fun_env_entry_name)))

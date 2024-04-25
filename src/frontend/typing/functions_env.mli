@@ -8,7 +8,12 @@ exception FipFunctionExpected of string
 
 type function_env_entry =
   | FunctionEnvEntry of
-      int * fip option * Function_name.t * type_expr list * type_expr
+      int
+      * fip option
+      * Function_name.t
+      * type_expr list
+      * borrowed option list
+      * type_expr
       (** [FunctionEnvEntry] contains [Function_name.t] [param_types] [return_type] [fip allocation credit] *)
 
 type functions_env = function_env_entry list
@@ -27,6 +32,9 @@ val get_function_mutually_recursive_group_id :
 
 val get_function_params_type :
   Parsing.Parser_ast.function_defn -> type_expr list
+
+val get_function_params_borrowed_status :
+  loc -> Function_name.t -> functions_env -> borrowed option list Or_error.t
 
 val get_mutually_recursive_function_defns_by_group_id :
   int -> Parsing.Parser_ast.function_defn list -> functions_env

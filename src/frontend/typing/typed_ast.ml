@@ -69,6 +69,15 @@ let get_expr_type (expr : expr) : type_expr =
   | Weak (_, type_expr, _, _) -> type_expr
   | Inst (_, type_expr, _, _) -> type_expr
 
+let get_value_loc (value : value) : loc =
+  match value with
+  | Unit (loc, _)
+  | Integer (loc, _, _)
+  | Boolean (loc, _, _)
+  | Variable (loc, _, _)
+  | Constructor (loc, _, _, _) ->
+      loc
+
 let rec get_match_expr_reuse_credits (matched_expr : matched_expr) : int list =
   match matched_expr with
   | MConstructor (_, _, _, matched_exprs) ->

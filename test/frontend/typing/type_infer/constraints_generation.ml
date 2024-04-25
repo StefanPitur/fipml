@@ -791,6 +791,7 @@ let%expect_test "Constraints Generation Expr: FunCall" =
                   (mock_loc, [], [], [], Type_name.of_string "custom_type"),
                 Shared mock_loc );
           ],
+          [ None; None ],
           TAttr
             ( mock_loc,
               TETuple

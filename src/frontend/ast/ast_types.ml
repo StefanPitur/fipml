@@ -55,6 +55,13 @@ type typ =
 
 and type_expr = TAttr of loc * typ * uniqueness | TPoly of poly
 
+let equal_borrowed_option (borrowed_option1 : borrowed option)
+    (borrowed_option2 : borrowed option) : bool =
+  match (borrowed_option1, borrowed_option2) with
+  | None, None -> true
+  | Some _, Some _ -> true
+  | _ -> false
+
 let equal_poly (poly1 : poly) (poly2 : poly) : bool =
   match (poly1, poly2) with
   | Poly (_, poly1), Poly (_, poly2) -> String.( = ) poly1 poly2
