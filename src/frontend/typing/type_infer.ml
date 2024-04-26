@@ -549,9 +549,13 @@ and generate_constraints (types_env : types_env)
                  acc_substs,
                  acc_pretyped_pattern_exprs )
              ->
+             let get_ty_unique_from_sharing_analysis =
+               get_ty_unique_from_sharing_analysis
+                 (get_sharing_analysis pattern_expr)
+             in
              Or_error.ok_exn
                ( generate_constraints_matched_expr types_env constructors_env
-                   matched_expr ~verbose
+                   matched_expr get_ty_unique_from_sharing_analysis ~verbose
                >>= fun ( matched_typing_context,
                          (matched_expr_ty, matched_expr_ty_unique),
                          match_expr_constraints,
@@ -933,7 +937,9 @@ and generate_constraints_value_expr (types_env : types_env)
 
 and generate_constraints_matched_expr (types_env : types_env)
     (constructors_env : Type_defns_env.constructors_env)
-    (matched_expr : Parser_ast.matched_expr) ~(verbose : bool) :
+    (matched_expr : Parser_ast.matched_expr)
+    (get_ty_unique_from_sharing_analysis : Var_name.t -> ty_unique)
+    ~(verbose : bool) :
     (typing_context
     * ty_attr
     * constr list
@@ -952,7 +958,7 @@ and generate_constraints_matched_expr (types_env : types_env)
         ( [ TypingContextEntry (matched_var_name, (t, u)) ],
           (t, u),
           [],
-          [],
+          [ (u, get_ty_unique_from_sharing_analysis matched_var_name) ],
           Pretyped_ast.MVariable (loc, (t, u), matched_var_name) )
   | MConstructor (loc, constructor_name, matched_exprs) ->
       let u = fresh_unique () in
@@ -1009,7 +1015,7 @@ and generate_constraints_matched_expr (types_env : types_env)
             ->
             Or_error.ok_exn
               ( generate_constraints_matched_expr types_env constructors_env
-                  matched_expr ~verbose
+                  matched_expr get_ty_unique_from_sharing_analysis ~verbose
               >>= fun ( matched_typing_context,
                         (matched_expr_ty, matched_expr_ty_unique),
                         matched_expr_constraints,

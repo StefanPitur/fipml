@@ -1252,7 +1252,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       Actual value:
       Value: Int: 1
       => Value Ty:
-      TyAttr - TyInt <> TyVarUnique u70
+      TyAttr - TyInt <> TyVarUnique u71
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1266,7 +1266,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       y : TyAttr - TyVar t23 <> TyVarUnique u68
       x : TyAttr - TyCustom ( ; TyVarUnique u61 ; ) custom_type <> TyVarUnique u60
       => Expr TyAttr:
-      TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u70, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u69
+      TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u71, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u70
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1274,7 +1274,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       Actual value:
       Value: Bool: true
       => Value Ty:
-      TyAttr - TyBool <> TyVarUnique u75
+      TyAttr - TyBool <> TyVarUnique u77
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1282,7 +1282,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       Actual value:
       Value: Var: y
       => Value Ty:
-      TyAttr - TyVar t24 <> TyVarUnique u73
+      TyAttr - TyVar t24 <> TyVarUnique u74
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1293,10 +1293,10 @@ let%expect_test "Constraints Generation Expr: Match" =
           Value: Bool: true
 
       => Typing Context:
-      y : TyAttr - TyVar t24 <> TyVarUnique u73
+      y : TyAttr - TyVar t24 <> TyVarUnique u74
       x : TyAttr - TyCustom ( ; TyVarUnique u61 ; ) custom_type <> TyVarUnique u60
       => Expr TyAttr:
-      TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u73, TyAttr - TyBool <> TyVarUnique u75) <> TyVarUnique u74
+      TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u74, TyAttr - TyBool <> TyVarUnique u77) <> TyVarUnique u76
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1304,7 +1304,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       Actual value:
       Value: Bool: true
       => Value Ty:
-      TyAttr - TyBool <> TyVarUnique u78
+      TyAttr - TyBool <> TyVarUnique u80
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1312,7 +1312,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       Actual value:
       Value: Int: 0
       => Value Ty:
-      TyAttr - TyInt <> TyVarUnique u79
+      TyAttr - TyInt <> TyVarUnique u81
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1325,7 +1325,7 @@ let%expect_test "Constraints Generation Expr: Match" =
       => Typing Context:
       x : TyAttr - TyCustom ( ; TyVarUnique u61 ; ) custom_type <> TyVarUnique u60
       => Expr TyAttr:
-      TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u79, TyAttr - TyBool <> TyVarUnique u78) <> TyVarUnique u77
+      TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u81, TyAttr - TyBool <> TyVarUnique u80) <> TyVarUnique u79
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1362,51 +1362,53 @@ let%expect_test "Constraints Generation Expr: Match" =
       TyAttr - TyVar t21 <> TyVarUnique u62
       => Expr Constraints:
       (TyCustom ( ; TyVarUnique u61 ; ) custom_type, TyVar t25)
-      (TyVar t21, TyTuple (TyAttr - TyInt <> TyVarUnique u79, TyAttr - TyBool <> TyVarUnique u78))
-      (TyCustom ( ; TyVarUnique u61 ; ) custom_type, TyCustom ( ; TyVarUnique u72 ; ) custom_type)
-      (TyVar t21, TyTuple (TyAttr - TyVar t24 <> TyVarUnique u73, TyAttr - TyBool <> TyVarUnique u75))
+      (TyVar t21, TyTuple (TyAttr - TyInt <> TyVarUnique u81, TyAttr - TyBool <> TyVarUnique u80))
+      (TyCustom ( ; TyVarUnique u61 ; ) custom_type, TyCustom ( ; TyVarUnique u73 ; ) custom_type)
+      (TyVar t21, TyTuple (TyAttr - TyVar t24 <> TyVarUnique u74, TyAttr - TyBool <> TyVarUnique u77))
       (TyVar t24, TyInt)
       (TyCustom ( ; TyVarUnique u61 ; ) custom_type, TyCustom ( ; TyVarUnique u64 ; ) custom_type)
-      (TyVar t21, TyTuple (TyAttr - TyInt <> TyVarUnique u70, TyAttr - TyVar t23 <> TyVarUnique u68))
+      (TyVar t21, TyTuple (TyAttr - TyInt <> TyVarUnique u71, TyAttr - TyVar t23 <> TyVarUnique u68))
       (TyVar t23, TyBool)
       (TyCustom ( ; TyVarUnique u66 ; ) custom_type, TyCustom ( ; TyUnique ; ) custom_type)
       (TyVar t22, TyInt)
       => Expr Unique Constraints;
-      (TyVarUnique u60, TyVarUnique u76)
-      (TyVarUnique u62, TyVarUnique u77)
-      (TyVarUnique u60, TyVarUnique u71)
-      (TyVarUnique u62, TyVarUnique u74)
-      (TyVarUnique u73, TyUnique)
+      (TyVarUnique u60, TyVarUnique u78)
+      (TyVarUnique u62, TyVarUnique u79)
+      (TyVarUnique u60, TyVarUnique u72)
+      (TyVarUnique u62, TyVarUnique u76)
+      (TyVarUnique u74, TyUnique)
+      (TyVarUnique u74, TyVarUnique u75)
       (TyVarUnique u60, TyVarUnique u63)
-      (TyVarUnique u62, TyVarUnique u69)
+      (TyVarUnique u62, TyVarUnique u70)
       (TyVarUnique u68, TyVarUnique u64)
+      (TyVarUnique u68, TyVarUnique u69)
       (TyVarUnique u65, TyShared)
       (TyVarUnique u67, TyUnique)
       -------------------------
 
       Pretyped Expr: Match - TyAttr - TyVar t21 <> TyVarUnique u62
           Match Var: x - TyAttr - TyCustom ( ; TyVarUnique u61 ; ) custom_type <> TyVarUnique u60
-          PatternExpr - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u79, TyAttr - TyBool <> TyVarUnique u78) <> TyVarUnique u77
-              Pretyped MatchedExpr - TyAttr - TyVar t25 <> TyVarUnique u76: Underscore
+          PatternExpr - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u81, TyAttr - TyBool <> TyVarUnique u80) <> TyVarUnique u79
+              Pretyped MatchedExpr - TyAttr - TyVar t25 <> TyVarUnique u78: Underscore
           PatternMatchExpr
-              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u79, TyAttr - TyBool <> TyVarUnique u78) <> TyVarUnique u77
-                  Value: Int: 0 - TyAttr - TyInt <> TyVarUnique u79
-                  Value: Bool: true - TyAttr - TyBool <> TyVarUnique u78
-          PatternExpr - TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u73, TyAttr - TyBool <> TyVarUnique u75) <> TyVarUnique u74
-              Pretyped MatchedExpr - TyAttr - TyCustom ( ; TyVarUnique u72 ; ) custom_type <> TyVarUnique u71: C1
-                  Pretyped MatchedExpr - TyAttr - TyVar t24 <> TyVarUnique u73: Var y
+              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u81, TyAttr - TyBool <> TyVarUnique u80) <> TyVarUnique u79
+                  Value: Int: 0 - TyAttr - TyInt <> TyVarUnique u81
+                  Value: Bool: true - TyAttr - TyBool <> TyVarUnique u80
+          PatternExpr - TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u74, TyAttr - TyBool <> TyVarUnique u77) <> TyVarUnique u76
+              Pretyped MatchedExpr - TyAttr - TyCustom ( ; TyVarUnique u73 ; ) custom_type <> TyVarUnique u72: C1
+                  Pretyped MatchedExpr - TyAttr - TyVar t24 <> TyVarUnique u74: Var y
           PatternMatchExpr
-              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u73, TyAttr - TyBool <> TyVarUnique u75) <> TyVarUnique u74
-                  Value: Var: y - TyAttr - TyVar t24 <> TyVarUnique u73
-                  Value: Bool: true - TyAttr - TyBool <> TyVarUnique u75
-          PatternExpr - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u70, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u69
+              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyVar t24 <> TyVarUnique u74, TyAttr - TyBool <> TyVarUnique u77) <> TyVarUnique u76
+                  Value: Var: y - TyAttr - TyVar t24 <> TyVarUnique u74
+                  Value: Bool: true - TyAttr - TyBool <> TyVarUnique u77
+          PatternExpr - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u71, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u70
               Pretyped MatchedExpr - TyAttr - TyCustom ( ; TyVarUnique u64 ; ) custom_type <> TyVarUnique u63: C2
                   Pretyped MatchedExpr - TyAttr - TyVar t23 <> TyVarUnique u68: Var y
                   Pretyped MatchedExpr - TyAttr - TyCustom ( ; TyVarUnique u66 ; ) custom_type <> TyVarUnique u65: C1
                       Pretyped MatchedExpr - TyAttr - TyVar t22 <> TyVarUnique u67: Underscore
           PatternMatchExpr
-              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u70, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u69
-                  Value: Int: 1 - TyAttr - TyInt <> TyVarUnique u70
+              Pretyped Expr: UnboxedTuple - TyAttr - TyTuple (TyAttr - TyInt <> TyVarUnique u71, TyAttr - TyVar t23 <> TyVarUnique u68) <> TyVarUnique u70
+                  Value: Int: 1 - TyAttr - TyInt <> TyVarUnique u71
                   Value: Var: y - TyAttr - TyVar t23 <> TyVarUnique u68 |}]
 
 let%expect_test "Constraints Generation Expr: UnOp" =
@@ -1463,7 +1465,7 @@ let%expect_test "Constraints Generation Expr: UnOp" =
 
       => Typing Context:
       x : TyAttr - TyInt <> TyUnique
-      y : TyAttr - TyBool <> TyVarUnique u80
+      y : TyAttr - TyBool <> TyVarUnique u82
       => Expr TyAttr:
       TyAttr - TyInt <> TyUnique
       => Expr Constraints:
@@ -1477,22 +1479,22 @@ let%expect_test "Constraints Generation Expr: UnOp" =
 
       => Typing Context:
       x : TyAttr - TyInt <> TyUnique
-      y : TyAttr - TyBool <> TyVarUnique u80
+      y : TyAttr - TyBool <> TyVarUnique u82
       => Expr TyAttr:
-      TyAttr - TyInt <> TyVarUnique u81
+      TyAttr - TyInt <> TyVarUnique u83
       => Expr Constraints:
       (TyInt, TyInt)
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: - - TyAttr - TyInt <> TyVarUnique u81
+      Pretyped Expr: - - TyAttr - TyInt <> TyVarUnique u83
           Pretyped Expr: UnboxedSingleton - TyAttr - TyInt <> TyUnique
               Value: Var: x - TyAttr - TyInt <> TyUnique
 
       Actual value:
       Value: Var: y
       => Value Ty:
-      TyAttr - TyBool <> TyVarUnique u80
+      TyAttr - TyBool <> TyVarUnique u82
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1503,9 +1505,9 @@ let%expect_test "Constraints Generation Expr: UnOp" =
 
       => Typing Context:
       x : TyAttr - TyInt <> TyUnique
-      y : TyAttr - TyBool <> TyVarUnique u80
+      y : TyAttr - TyBool <> TyVarUnique u82
       => Expr TyAttr:
-      TyAttr - TyBool <> TyVarUnique u80
+      TyAttr - TyBool <> TyVarUnique u82
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1517,17 +1519,17 @@ let%expect_test "Constraints Generation Expr: UnOp" =
 
       => Typing Context:
       x : TyAttr - TyInt <> TyUnique
-      y : TyAttr - TyBool <> TyVarUnique u80
+      y : TyAttr - TyBool <> TyVarUnique u82
       => Expr TyAttr:
-      TyAttr - TyBool <> TyVarUnique u82
+      TyAttr - TyBool <> TyVarUnique u84
       => Expr Constraints:
       (TyBool, TyBool)
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: ! - TyAttr - TyBool <> TyVarUnique u82
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyBool <> TyVarUnique u80
-              Value: Var: y - TyAttr - TyBool <> TyVarUnique u80 |}]
+      Pretyped Expr: ! - TyAttr - TyBool <> TyVarUnique u84
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyBool <> TyVarUnique u82
+              Value: Var: y - TyAttr - TyBool <> TyVarUnique u82 |}]
 
 let%expect_test "Constraints Generation Expr: BinOp" =
   let typing_context_ints : Type_infer_types.typing_context =
@@ -1570,7 +1572,7 @@ let%expect_test "Constraints Generation Expr: BinOp" =
 
       => Typing Context:
       x1 : TyAttr - TyInt <> TyShared
-      x2 : TyAttr - TyInt <> TyVarUnique u83
+      x2 : TyAttr - TyInt <> TyVarUnique u85
       => Expr TyAttr:
       TyAttr - TyInt <> TyShared
       => Expr Constraints:
@@ -1580,7 +1582,7 @@ let%expect_test "Constraints Generation Expr: BinOp" =
       Actual value:
       Value: Var: x2
       => Value Ty:
-      TyAttr - TyInt <> TyVarUnique u83
+      TyAttr - TyInt <> TyVarUnique u85
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1591,9 +1593,9 @@ let%expect_test "Constraints Generation Expr: BinOp" =
 
       => Typing Context:
       x1 : TyAttr - TyInt <> TyShared
-      x2 : TyAttr - TyInt <> TyVarUnique u83
+      x2 : TyAttr - TyInt <> TyVarUnique u85
       => Expr TyAttr:
-      TyAttr - TyInt <> TyVarUnique u83
+      TyAttr - TyInt <> TyVarUnique u85
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1609,20 +1611,20 @@ let%expect_test "Constraints Generation Expr: BinOp" =
 
       => Typing Context:
       x1 : TyAttr - TyInt <> TyShared
-      x2 : TyAttr - TyInt <> TyVarUnique u83
+      x2 : TyAttr - TyInt <> TyVarUnique u85
       => Expr TyAttr:
-      TyAttr - TyInt <> TyVarUnique u84
+      TyAttr - TyInt <> TyVarUnique u86
       => Expr Constraints:
       (TyInt, TyInt)
       (TyInt, TyInt)
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: + - TyAttr - TyInt <> TyVarUnique u84
+      Pretyped Expr: + - TyAttr - TyInt <> TyVarUnique u86
           Pretyped Expr: UnboxedSingleton - TyAttr - TyInt <> TyShared
               Value: Var: x1 - TyAttr - TyInt <> TyShared
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyInt <> TyVarUnique u83
-              Value: Var: x2 - TyAttr - TyInt <> TyVarUnique u83 |}]
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyInt <> TyVarUnique u85
+              Value: Var: x2 - TyAttr - TyInt <> TyVarUnique u85 |}]
 
 let%expect_test "Constraints Generation Expr: Drop" =
   let expr_drop =
@@ -1652,7 +1654,7 @@ let%expect_test "Constraints Generation Expr: Drop" =
       Actual value:
       Value: Var: y
       => Value Ty:
-      TyAttr - TyVar t26 <> TyVarUnique u85
+      TyAttr - TyVar t26 <> TyVarUnique u87
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1662,9 +1664,9 @@ let%expect_test "Constraints Generation Expr: Drop" =
           Value: Var: y
 
       => Typing Context:
-      y : TyAttr - TyVar t26 <> TyVarUnique u85
+      y : TyAttr - TyVar t26 <> TyVarUnique u87
       => Expr TyAttr:
-      TyAttr - TyVar t26 <> TyVarUnique u85
+      TyAttr - TyVar t26 <> TyVarUnique u87
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1675,18 +1677,18 @@ let%expect_test "Constraints Generation Expr: Drop" =
               Value: Var: y
 
       => Typing Context:
-      x : TyAttr - TyInt <> TyVarUnique u86
-      y : TyAttr - TyVar t26 <> TyVarUnique u85
+      x : TyAttr - TyInt <> TyVarUnique u88
+      y : TyAttr - TyVar t26 <> TyVarUnique u87
       => Expr TyAttr:
-      TyAttr - TyVar t26 <> TyVarUnique u85
+      TyAttr - TyVar t26 <> TyVarUnique u87
       => Expr Constraints:
       => Expr Unique Constraints;
-      (TyVarUnique u86, TyUnique)
+      (TyVarUnique u88, TyUnique)
       -------------------------
 
-      Pretyped Expr: Drop (x : TyAttr - TyInt <> TyVarUnique u86) - TyAttr - TyVar t26 <> TyVarUnique u85 Expr:
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t26 <> TyVarUnique u85
-              Value: Var: y - TyAttr - TyVar t26 <> TyVarUnique u85 |}]
+      Pretyped Expr: Drop (x : TyAttr - TyInt <> TyVarUnique u88) - TyAttr - TyVar t26 <> TyVarUnique u87 Expr:
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t26 <> TyVarUnique u87
+              Value: Var: y - TyAttr - TyVar t26 <> TyVarUnique u87 |}]
 
 let%expect_test "Constraints Generation Expr: Free" =
   let expr_free =
@@ -1714,7 +1716,7 @@ let%expect_test "Constraints Generation Expr: Free" =
       Actual value:
       Value: Var: x
       => Value Ty:
-      TyAttr - TyVar t27 <> TyVarUnique u87
+      TyAttr - TyVar t27 <> TyVarUnique u89
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1724,9 +1726,9 @@ let%expect_test "Constraints Generation Expr: Free" =
           Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t27 <> TyVarUnique u87
+      x : TyAttr - TyVar t27 <> TyVarUnique u89
       => Expr TyAttr:
-      TyAttr - TyVar t27 <> TyVarUnique u87
+      TyAttr - TyVar t27 <> TyVarUnique u89
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1738,17 +1740,17 @@ let%expect_test "Constraints Generation Expr: Free" =
               Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t27 <> TyVarUnique u87
+      x : TyAttr - TyVar t27 <> TyVarUnique u89
       => Expr TyAttr:
-      TyAttr - TyVar t27 <> TyVarUnique u87
+      TyAttr - TyVar t27 <> TyVarUnique u89
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: Free 2 - TyAttr - TyVar t27 <> TyVarUnique u87
+      Pretyped Expr: Free 2 - TyAttr - TyVar t27 <> TyVarUnique u89
       Free Expr
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t27 <> TyVarUnique u87
-              Value: Var: x - TyAttr - TyVar t27 <> TyVarUnique u87 |}]
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t27 <> TyVarUnique u89
+              Value: Var: x - TyAttr - TyVar t27 <> TyVarUnique u89 |}]
 
 let%expect_test "Constraints Generation Expr: Weak" =
   let expr_weak =
@@ -1776,7 +1778,7 @@ let%expect_test "Constraints Generation Expr: Weak" =
       Actual value:
       Value: Var: x
       => Value Ty:
-      TyAttr - TyVar t28 <> TyVarUnique u88
+      TyAttr - TyVar t28 <> TyVarUnique u90
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1786,9 +1788,9 @@ let%expect_test "Constraints Generation Expr: Weak" =
           Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t28 <> TyVarUnique u88
+      x : TyAttr - TyVar t28 <> TyVarUnique u90
       => Expr TyAttr:
-      TyAttr - TyVar t28 <> TyVarUnique u88
+      TyAttr - TyVar t28 <> TyVarUnique u90
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1800,17 +1802,17 @@ let%expect_test "Constraints Generation Expr: Weak" =
               Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t28 <> TyVarUnique u88
+      x : TyAttr - TyVar t28 <> TyVarUnique u90
       => Expr TyAttr:
-      TyAttr - TyVar t28 <> TyVarUnique u88
+      TyAttr - TyVar t28 <> TyVarUnique u90
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: Weak 2 - TyAttr - TyVar t28 <> TyVarUnique u88
+      Pretyped Expr: Weak 2 - TyAttr - TyVar t28 <> TyVarUnique u90
       Weak Expr
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t28 <> TyVarUnique u88
-              Value: Var: x - TyAttr - TyVar t28 <> TyVarUnique u88 |}]
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t28 <> TyVarUnique u90
+              Value: Var: x - TyAttr - TyVar t28 <> TyVarUnique u90 |}]
 
 let%expect_test "Constraints Generation Expr: Inst" =
   let expr_inst =
@@ -1838,7 +1840,7 @@ let%expect_test "Constraints Generation Expr: Inst" =
       Actual value:
       Value: Var: x
       => Value Ty:
-      TyAttr - TyVar t29 <> TyVarUnique u89
+      TyAttr - TyVar t29 <> TyVarUnique u91
       => Value Constraints:
       => Value Uniqueness Constraints:
       -------------------------
@@ -1848,9 +1850,9 @@ let%expect_test "Constraints Generation Expr: Inst" =
           Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t29 <> TyVarUnique u89
+      x : TyAttr - TyVar t29 <> TyVarUnique u91
       => Expr TyAttr:
-      TyAttr - TyVar t29 <> TyVarUnique u89
+      TyAttr - TyVar t29 <> TyVarUnique u91
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
@@ -1862,14 +1864,14 @@ let%expect_test "Constraints Generation Expr: Inst" =
               Value: Var: x
 
       => Typing Context:
-      x : TyAttr - TyVar t29 <> TyVarUnique u89
+      x : TyAttr - TyVar t29 <> TyVarUnique u91
       => Expr TyAttr:
-      TyAttr - TyVar t29 <> TyVarUnique u89
+      TyAttr - TyVar t29 <> TyVarUnique u91
       => Expr Constraints:
       => Expr Unique Constraints;
       -------------------------
 
-      Pretyped Expr: Inst 2 - TyAttr - TyVar t29 <> TyVarUnique u89
+      Pretyped Expr: Inst 2 - TyAttr - TyVar t29 <> TyVarUnique u91
       Inst Expr
-          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t29 <> TyVarUnique u89
-              Value: Var: x - TyAttr - TyVar t29 <> TyVarUnique u89 |}]
+          Pretyped Expr: UnboxedSingleton - TyAttr - TyVar t29 <> TyVarUnique u91
+              Value: Var: x - TyAttr - TyVar t29 <> TyVarUnique u91 |}]

@@ -427,7 +427,6 @@ let join_max_sharing_analysis_map
 
 let rec get_sharing_analysis (parsed_expr : Parser_ast.expr) :
     int SharingAnalysisMap.t =
-  (* TODO: if a variable x is passed where it is expected to be shared, but account for it as being used *)
   match parsed_expr with
   | UnboxedSingleton (_, value) -> get_sharing_analysis_value value
   | UnboxedTuple (_, values) -> get_sharing_analysis_values values
