@@ -161,6 +161,7 @@ let get_function_signature (loc : loc) (function_name : Function_name.t)
   let open Result in
   get_function_by_name loc function_name functions_env
   >>= fun (FunctionEnvEntry (_, _, _, param_type_exprs, _, return_type_expr)) ->
+  (* We might want wrapping all of these in PolyUnique rather than Shared *)
   Ok
     (List.fold_right param_type_exprs ~init:return_type_expr
        ~f:(fun param_type_expr acc_type_expr ->
