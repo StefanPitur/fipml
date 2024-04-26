@@ -592,6 +592,7 @@ and generate_constraints (types_env : types_env)
                 match_expr_unique_constraints,
                 match_expr_substs,
                 pretyped_pattern_exprs ) ->
+      (* TODO: add sharing analysis to add constraints that matched vars uniqueness' are respected *)
       Ok
         ( typing_context,
           (t, u),

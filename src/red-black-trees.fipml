@@ -3,42 +3,42 @@ type color =
 | Black
 
 type tree =
-| Node of color * tree * int * bool * tree
+| Node of color @ unique * tree @ unique * int @ shared * bool @ shared * tree @ unique
 | Leaf
 
 type accum =
 | Done
-| NodeL of color * accum * int * bool * tree
-| NodeR of color * tree * int * bool * accum
+| NodeL of color @ unique * accum @ unique * int @ shared * bool @ shared * tree @ unique
+| NodeR of color @ unique * tree @ unique * int @ shared * bool @ shared * accum @ unique
 
-fip fun is_red ^(t : tree) : bool = {
+fip fun is_red ^(t : tree @ 'u1) : bool @ 'u2 = {
   match t with
   | Node (Red, _, _, _, _) -> { true }
   | _ -> { false }
   endmatch
 }
 
-fip fun set_black (t : tree) : tree = {
+fip fun set_black (t : tree @ unique) : tree @ 'u = {
   match t with
   | Node (_, l, k, v, r) -> { Node (Black, l, k, v, r) }
   | tt -> { tt }
   endmatch
 }
 
+fip fun balance ^(z : accum @ unique) (t : tree @ unique) : tree @ 'u = { t }
 
 
-/* fip(1) fun ins (t : tree) (key : int) (v : bool) (z : accum) : tree = {
+fip(1) fun ins (t : tree @ unique) (key : int @ shared) (v : bool @ shared) (z : accum @ unique) : tree @ 'u = {
   match t with
   | Node (c, l, kx, vx, r) -> { 
       if key < kx then { 
-        weak 1; ins (l, key, v, NodeL (c, z, kx, vx, r)) 
-      } else {
-        weak 1; ins (r, key, v, NodeR (c, l, kx, vx, z))
+        ins (l, key, v, NodeL (c, z, kx, vx, r))
+      } 
+      else {
+        ins (r, key, v, NodeR (c, l, kx, vx, z))
       }
       endif
-   }
+   } 
   | Leaf -> { inst 5; balance (z, Node (Red, Leaf, key, v, Leaf)) }
   endmatch
-} */
-
-// fip fun balance (z : accum) (t : tree) : tree = { t }
+}

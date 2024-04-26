@@ -448,10 +448,10 @@ let rec get_sharing_analysis (parsed_expr : Parser_ast.expr) :
         (get_sharing_analysis expr_then)
   | IfElse (_, expr_cond, expr_then, expr_else) ->
       join_sharing_analysis_map
-        (join_sharing_analysis_map
-           (get_sharing_analysis expr_cond)
-           (get_sharing_analysis expr_then))
-        (get_sharing_analysis expr_else)
+        (join_max_sharing_analysis_map
+           (get_sharing_analysis expr_then)
+           (get_sharing_analysis expr_else))
+        (get_sharing_analysis expr_cond)
   | Match (_, matched_var, pattern_exprs) ->
       let aggr_sharing_analysis_map =
         List.fold pattern_exprs ~init:SharingAnalysisMap.empty

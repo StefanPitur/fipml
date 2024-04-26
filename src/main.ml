@@ -1,7 +1,7 @@
 (* open Ast.Ast_types *)
 open Core;;
 
-let channel = In_channel.create "src/list-map.fipml" in
+let channel = In_channel.create "src/red-black-trees.fipml" in
 match
   Parsing.Lex_and_parse.parse_source_code_with_error
     (Lexing.from_channel channel)

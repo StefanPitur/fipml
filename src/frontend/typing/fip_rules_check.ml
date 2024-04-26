@@ -447,7 +447,6 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
                 in
                 o)
           in
-
           let fip_pattern_exprs_reuse_maps =
             List.map fip_pattern_exprs ~f:(fun fip_pattern_expr ->
                 let _, _, r =
@@ -482,7 +481,7 @@ and fip_rules_check_expr (typed_expr : Typed_ast.expr)
               raise
                 (Invalid_argument
                    (Fmt.str
-                      "In a borrowed match, owned contexts should be equal on \
+                      "In an owned match, owned contexts should be equal on \
                        all branches - %s."
                       (Ast.Ast_types.string_of_loc loc)))))
   | UnOp (loc, _, unary_op, expr) ->
