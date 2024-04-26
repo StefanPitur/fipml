@@ -5,12 +5,31 @@ let indent_tab = "    "
 
 (* Pretty-printing Type Definition *)
 let rec pprint_typed_defn ppf ~indent
-    (TType (_, _, type_poly_params, type_name, type_constructors)) =
+    (TType
+      ( _,
+        _,
+        typ_poly_params,
+        uniqueness_poly_params,
+        type_expr_poly_params,
+        type_name,
+        type_constructors )) =
   let sub_expr_indent = indent ^ indent_tab in
   Fmt.pf ppf "%sType Name: %s@." indent (Type_name.to_string type_name);
   Fmt.pf ppf "%sType Poly Params:@." indent;
-  let poly_ids = List.map string_of_type type_poly_params in
-  List.iter (Fmt.pf ppf "%sType Poly Param: %s@." sub_expr_indent) poly_ids;
+  let typ_poly_ids = List.map string_of_typ typ_poly_params in
+  let uniqueness_poly_ids =
+    List.map string_of_uniqueness uniqueness_poly_params
+  in
+  let type_expr_poly_ids = List.map string_of_type type_expr_poly_params in
+  List.iter
+    (Fmt.pf ppf "%sType Typ Poly Param: %s@." sub_expr_indent)
+    typ_poly_ids;
+  List.iter
+    (Fmt.pf ppf "%sType Unique Poly Param: %s@." sub_expr_indent)
+    uniqueness_poly_ids;
+  List.iter
+    (Fmt.pf ppf "%sType TypeExpr Poly Param: %s@." sub_expr_indent)
+    type_expr_poly_ids;
   Fmt.pf ppf "%sType Constructors:@." indent;
   List.iter
     (pprint_typed_constructor ppf ~indent:sub_expr_indent)
@@ -133,10 +152,13 @@ and pprint_typed_expr ppf ~indent expr =
   | UnboxedTuple (_, type_expr, values) ->
       print_expr (Fmt.str "UnboxedTuple - %s" (string_of_type type_expr));
       List.iter (pprint_typed_value ppf ~indent:sub_expr_indent) values
-  | Let (_, type_expr, var_names, var_typed_expr, typed_expr) ->
+  | Let (_, type_expr, var_type_exprs, var_names, var_typed_expr, typed_expr) ->
       let var_names_strings = List.map Var_name.to_string var_names in
+      let var_type_exprs_strings = List.map string_of_type var_type_exprs in
       print_expr
-        (Fmt.str "Let vars: (%s) = " (String.concat ", " var_names_strings));
+        (Fmt.str "Let vars: (%s) : (%s) = "
+           (String.concat ", " var_names_strings)
+           (String.concat " * " var_type_exprs_strings));
       pprint_typed_expr ppf ~indent:sub_expr_indent var_typed_expr;
       print_expr (Fmt.str "Let expr - %s" (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent typed_expr
@@ -162,10 +184,11 @@ and pprint_typed_expr ppf ~indent expr =
       pprint_typed_expr ppf ~indent:sub_expr_indent then_expr;
       Fmt.pf ppf "%sElse@." indent;
       pprint_typed_expr ppf ~indent:sub_expr_indent else_expr
-  | Match (_, type_expr, var_name, typed_pattern_exprs) ->
+  | Match (_, type_expr, var_type_expr, var_name, typed_pattern_exprs) ->
       print_expr (Fmt.str "Match - %s" (string_of_type type_expr));
-      Fmt.pf ppf "%sMatch Var: %s@." sub_expr_indent
-        (Var_name.to_string var_name);
+      Fmt.pf ppf "%sMatch Var: %s - %s@." sub_expr_indent
+        (Var_name.to_string var_name)
+        (string_of_type var_type_expr);
       pprint_typed_pattern_exprs ppf ~indent:sub_expr_indent typed_pattern_exprs
   | UnOp (_, type_expr, unary_op, typed_expr) ->
       print_expr
@@ -180,10 +203,11 @@ and pprint_typed_expr ppf ~indent expr =
            (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent typed_expr_left;
       pprint_typed_expr ppf ~indent:sub_expr_indent typed_expr_right
-  | Drop (_, type_expr, dropped_var_name, expr) ->
+  | Drop (_, type_expr, dropped_var_type_expr, dropped_var_name, expr) ->
       print_expr
-        (Fmt.str "Drop %s - %s Expr:"
+        (Fmt.str "Drop %s : %s - %s Expr:"
            (Var_name.to_string dropped_var_name)
+           (string_of_type dropped_var_type_expr)
            (string_of_type type_expr));
       pprint_typed_expr ppf ~indent:sub_expr_indent expr
   | Free (_, type_expr, k, expr) ->

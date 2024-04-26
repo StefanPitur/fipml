@@ -1,5 +1,8 @@
 val pprint_typed_program : Format.formatter -> Typed_ast.program -> unit
 
+val pprint_typed_defn :
+  Format.formatter -> indent:string -> Typed_ast.type_defn -> unit
+
 val pprint_typed_matched_expr :
   Format.formatter -> indent:string -> Typed_ast.matched_expr -> unit
 

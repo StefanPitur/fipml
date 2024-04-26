@@ -9,14 +9,19 @@ exception FipFunctionExpected of string
 
 type function_env_entry =
   | FunctionEnvEntry of
-      int * fip option * Function_name.t * type_expr list * type_expr
+      int
+      * fip option
+      * Function_name.t
+      * type_expr list
+      * borrowed option list
+      * type_expr
 
 type functions_env = function_env_entry list
 
 let filter_functions_env_by_name (function_name : Function_name.t)
     (functions_env : functions_env) : functions_env =
   List.filter functions_env
-    ~f:(fun (FunctionEnvEntry (_, _, function_env_entry_name, _, _)) ->
+    ~f:(fun (FunctionEnvEntry (_, _, function_env_entry_name, _, _, _)) ->
       Function_name.( = ) function_name function_env_entry_name)
 
 let assert_function_in_functions_env (loc : loc)
@@ -71,12 +76,20 @@ let get_function_params_type
     =
   List.map function_params ~f:(fun (TParam (type_expr, _, _)) -> type_expr)
 
+let get_function_params_borrowed_status (loc : loc)
+    (function_name : Function_name.t) (functions_env : functions_env) :
+    borrowed option list Or_error.t =
+  let open Result in
+  get_function_by_name loc function_name functions_env
+  >>= fun (FunctionEnvEntry (_, _, _, _, function_params_borrowed_option, _)) ->
+  Ok function_params_borrowed_option
+
 let get_function_mutually_recursive_group_id (loc : loc)
     (function_name : Function_name.t) (functions_env : functions_env) :
     int Or_error.t =
   let open Result in
   get_function_by_name loc function_name functions_env
-  >>= fun (FunctionEnvEntry (group_id, _, _, _, _)) -> Ok group_id
+  >>= fun (FunctionEnvEntry (group_id, _, _, _, _, _)) -> Ok group_id
 
 let add_fip_function_defns_to_functions_env (functions_env : functions_env) :
     functions_env =
@@ -88,6 +101,7 @@ let add_fip_function_defns_to_functions_env (functions_env : functions_env) :
             fip_option,
             function_name,
             param_type_exprs,
+            param_borrowed_options,
             return_type_expr ))
       ->
       match fip_option with
@@ -101,6 +115,7 @@ let add_fip_function_defns_to_functions_env (functions_env : functions_env) :
               fip_option,
               fiped_function_name,
               param_type_exprs,
+              param_borrowed_options,
               return_type_expr )
           :: acc_functions_env)
 
@@ -114,37 +129,48 @@ let get_mutually_recursive_function_defns_by_group_id (group_id : int)
   List.map mutually_recursive_functions
     ~f:(fun
         (TFun
-           (_, group_id, fip_option, function_name, _, _, function_return_type)
-         as function_defn)
+           ( _,
+             group_id,
+             fip_option,
+             function_name,
+             function_params,
+             _,
+             function_return_type ) as function_defn)
       ->
       let function_params_type = get_function_params_type function_defn in
+      let function_params_borrowed_option =
+        List.map function_params ~f:(fun (TParam (_, _, borrowed_option)) ->
+            borrowed_option)
+      in
       FunctionEnvEntry
         ( group_id,
           fip_option,
           function_name,
           function_params_type,
+          function_params_borrowed_option,
           function_return_type ))
 
 let get_mutually_recursive_functions_env_by_group_id (group_id : int)
     (functions_env : functions_env) : functions_env =
   List.filter functions_env
-    ~f:(fun (FunctionEnvEntry (fun_env_entry_group_id, _, _, _, _)) ->
+    ~f:(fun (FunctionEnvEntry (fun_env_entry_group_id, _, _, _, _, _)) ->
       Int.( = ) group_id fun_env_entry_group_id)
 
 let get_function_signature (loc : loc) (function_name : Function_name.t)
     (functions_env : functions_env) : type_expr Or_error.t =
   let open Result in
   get_function_by_name loc function_name functions_env
-  >>= fun (FunctionEnvEntry (_, _, _, param_type_exprs, return_type_expr)) ->
+  >>= fun (FunctionEnvEntry (_, _, _, param_type_exprs, _, return_type_expr)) ->
+  (* We might want wrapping all of these in PolyUnique rather than Shared *)
   Ok
     (List.fold_right param_type_exprs ~init:return_type_expr
        ~f:(fun param_type_expr acc_type_expr ->
-         TEArrow (loc, param_type_expr, acc_type_expr)))
+         TAttr (loc, TEArrow (loc, param_type_expr, acc_type_expr), Shared loc)))
 
 let get_fip_function_allocation_credit loc (function_name : Function_name.t)
     (functions_env : functions_env) : int Or_error.t =
   match get_function_by_name loc function_name functions_env with
-  | Ok (FunctionEnvEntry (_, fip_option, _, _, _)) -> (
+  | Ok (FunctionEnvEntry (_, fip_option, _, _, _, _)) -> (
       match fip_option with
       | Some (Fip n) | Some (Fbip n) -> Ok n
       | None ->
@@ -158,7 +184,7 @@ let assert_function_has_required_fip_type (loc : loc) (required_fip_type : fip)
     unit Or_error.t =
   let open Result in
   get_function_by_name loc function_name functions_env
-  >>= fun (FunctionEnvEntry (_, fip_option, _, _, _)) ->
+  >>= fun (FunctionEnvEntry (_, fip_option, _, _, _, _)) ->
   match fip_option with
   | None ->
       let error_string =
@@ -169,7 +195,7 @@ let assert_function_has_required_fip_type (loc : loc) (required_fip_type : fip)
       raise (FipFunctionExpected error_string)
   | Some fip -> (
       match (required_fip_type, fip) with
-      | Fip _, Fip _ | Fbip _, Fbip _ -> Ok ()
+      | Fip _, Fip _ | Fbip _, _ -> Ok ()
       | _ ->
           let error_string =
             Fmt.str "Expected fun of fip type %s at %s@."
@@ -187,6 +213,7 @@ let pprint_functions_env (ppf : Format.formatter)
             fip_option,
             function_name,
             function_params_type,
+            function_params_borrowed_option,
             function_return_type ))
       ->
       Fmt.pf ppf "Function Name - %s@." (Function_name.to_string function_name);
@@ -194,7 +221,11 @@ let pprint_functions_env (ppf : Format.formatter)
       Fmt.pf ppf "Function Type - %s@." (string_of_fip_option fip_option);
       Fmt.pf ppf "Function Params Types - %s@."
         (String.concat
-           (List.map function_params_type ~f:string_of_type)
+           (List.map2_exn function_params_type function_params_borrowed_option
+              ~f:(fun function_param_type function_param_borrowed_option ->
+                Fmt.str "%s (%s)"
+                  (string_of_borrowed_option function_param_borrowed_option)
+                  (string_of_type function_param_type)))
            ~sep:" -> ");
       Fmt.pf ppf "Function Return Type - %s\n@."
         (string_of_type function_return_type))

@@ -114,6 +114,9 @@ and pattern_expr =
       * Typed_ast.matched_expr
       * expr
 
+type param = TParam of Var_name.t * borrowed option
+type function_defn = TFun of loc * fip * Function_name.t * param list * expr
+
 val get_fip_contexts_from_value :
   value -> BorrowedSet.t * OwnedSet.t * reuse_map_entry ReuseMap.t
 
@@ -130,3 +133,5 @@ val is_value_borrowed_or_top_level_fip_function :
   borrowed_set:BorrowedSet.t ->
   functions_env:Functions_env.functions_env ->
   (Var_name.t * int) Or_error.t
+
+val convert_params_to_fip_params : Ast.Ast_types.param list -> param list

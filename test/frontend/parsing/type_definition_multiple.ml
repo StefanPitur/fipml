@@ -4,8 +4,9 @@ let%expect_test "multiple type definitions" =
     \    type custom_simple_type = \n\
     \    | SimpleConstructor1\n\n\
     \    type custom_complex_type =\n\
-    \    | ComplexConstructor1 of custom_simple_type\n\
-    \    | ComplexConstructor2 of int * bool * unit * custom_simple_type\n\
+    \    | ComplexConstructor1 of custom_simple_type @ unique\n\
+    \    | ComplexConstructor2 of int @ shared * bool @ unique * unit @ shared \
+     * custom_simple_type @ unique\n\
     \  "
   in
   Pprint_parser_ast.pprint_parser_ast source_code;
@@ -20,9 +21,9 @@ let%expect_test "multiple type definitions" =
         Type Poly Params:
         Type Constructors:
             Type Constructor Name: ComplexConstructor1
-                Type Expr: custom_simple_type
+                Type Expr: ( ;  ; ) custom_simple_type @ unique
             Type Constructor Name: ComplexConstructor2
-                Type Expr: Int
-                Type Expr: Bool
-                Type Expr: Unit
-                Type Expr: custom_simple_type |}]
+                Type Expr: Int @ shared
+                Type Expr: Bool @ unique
+                Type Expr: Unit @ shared
+                Type Expr: ( ;  ; ) custom_simple_type @ unique |}]

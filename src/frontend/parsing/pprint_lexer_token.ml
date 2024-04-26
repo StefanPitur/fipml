@@ -6,10 +6,9 @@ let pprint_lexer_token ppf token =
     | INT i -> Fmt.str "INT: %d@." i
     | LID lid -> Fmt.str "LID: %s@." lid
     | UID uid -> Fmt.str "UID: %s@." uid
+    | AT -> "@"
     | LPAREN -> "("
     | RPAREN -> ")"
-    | LSQPAREN -> "["
-    | RSQPAREN -> "]"
     | LCURLY -> "{"
     | RCURLY -> "}"
     | COMMA -> ","
@@ -54,10 +53,12 @@ let pprint_lexer_token ppf token =
     | TYPE_INT -> "int"
     | TYPE_BOOL -> "bool"
     | TYPE_UNIT -> "unit"
-    | TYPE_POLY (_, poly_id) -> "Poly " ^ poly_id
     | FREE -> "free"
     | DROP -> "drop"
     | WEAK -> "weak"
     | INST -> "inst"
     | FIP -> "fip"
-    | FBIP -> "fbip")
+    | FBIP -> "fbip"
+    | UNIQUE -> "unique"
+    | SHARED -> "shared"
+    | POLY poly -> poly)
