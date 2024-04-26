@@ -141,7 +141,7 @@ let%expect_test "Type Inference on Mutually Recursive Functions" =
   in
   match Typecheck_program.typecheck_program parsed_prog with
   | Error err -> print_string (Error.to_string_hum err)
-  | Ok (typed_program, _) ->
+  | Ok (typed_program, _, _) ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect
         {|

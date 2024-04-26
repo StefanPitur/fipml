@@ -4,13 +4,16 @@ open Type_infer
 
 let typecheck_program
     (Parser_ast.TProg (loc, type_defns, function_defns, main_expr_option)) :
-    (Typed_ast.program * Functions_env.functions_env) Or_error.t =
+    (Typed_ast.program
+    * Functions_env.functions_env
+    * Fip_ast.function_defn list)
+    Or_error.t =
   let open Result in
   Typecheck_type_defns.typecheck_type_defns type_defns
   >>= fun (types_env, constructors_env, typed_ast_type_defns) ->
   Typecheck_functions_defns.typecheck_functions_defns types_env constructors_env
     function_defns
-  >>= fun (functions_env, typed_function_defns, _) ->
+  >>= fun (functions_env, typed_function_defns, fiped_function_defns) ->
   (match main_expr_option with
   | None ->
       Ok
@@ -29,4 +32,5 @@ let typecheck_program
           typed_main_expr_type,
           typed_function_defns,
           typed_main_expr_option ),
-      functions_env )
+      functions_env,
+      fiped_function_defns )

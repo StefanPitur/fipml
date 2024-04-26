@@ -1,7 +1,7 @@
 (* open Ast.Ast_types *)
 open Core;;
 
-let channel = In_channel.create "src/main.fipml" in
+let channel = In_channel.create "src/list-map.fipml" in
 match
   Parsing.Lex_and_parse.parse_source_code_with_error
     (Lexing.from_channel channel)
@@ -10,8 +10,15 @@ with
     (* Parsing.Pprint_parser_ast.pprint_program Fmt.stdout parsed_program; *)
     match Typing.Typecheck_program.typecheck_program parsed_program with
     | Error err -> print_string (Error.to_string_hum err)
-    | Ok (typed_program, _) ->
-        Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program
+    | Ok (typed_program, functions_env, fiped_function_defns) ->
+        Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
+        Fmt.pf Fmt.stdout "\n\n<><><><><>\n";
+        Typing.Functions_env.pprint_functions_env Fmt.stdout functions_env;
+        Fmt.pf Fmt.stdout "\n\n<><><><><>\n";
+        List.iter fiped_function_defns
+          ~f:
+            (Typing.Pprint_fip_ast.pprint_fip_function_defn Fmt.stdout
+               ~indent:"")
         (* let (TProg (_, _, typed_function_defns, _)) = typed_program in
            List.iter typed_function_defns ~f:(fun typed_function_defn ->
                let (TFun (_, _, _, _, typed_function_name, _, _)) =
