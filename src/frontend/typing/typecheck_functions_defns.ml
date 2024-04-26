@@ -154,13 +154,13 @@ let rec typecheck_functions_defns_wrapper (types_env : types_env)
             let fip_ast_function_defn =
               Or_error.ok_exn (Static_fip.fip typed_function_defn functions_env)
             in
-            fip_ast_function_defn :: fip_ast_function_defns
+            fip_ast_function_defns @ [ fip_ast_function_defn ]
         | Some (Fbip _) ->
             let fbip_ast_function_defn =
               Or_error.ok_exn
                 (Static_fbip.fbip typed_function_defn functions_env)
             in
-            fbip_ast_function_defn :: fip_ast_function_defns
+            fip_ast_function_defns @ [ fbip_ast_function_defn ]
       in
       typecheck_functions_defns_wrapper types_env constructors_env functions_env
         extended_typed_ast_function_defns extended_fip_ast_function_defns

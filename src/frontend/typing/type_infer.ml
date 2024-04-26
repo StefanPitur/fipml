@@ -885,8 +885,6 @@ and generate_constraints_value_expr (types_env : types_env)
                         constructor_typ_value_constraints,
                         constructor_uniqueness_value_constraints,
                         pretyped_constructor_value ) ->
-                (* TODO : Remove after debugging *)
-                (* Ast.Pprint_ast_types.pprint_type_expr Fmt.stdout ~indent:"FIND ME! -->   " constructor_value_type_expr; *)
                 let ( converted_constructor_value_typ,
                       converted_constructor_value_uniqueness ) =
                   convert_ast_type_to_ty_attr constructor_value_type_expr
