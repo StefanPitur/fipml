@@ -1,7 +1,8 @@
 let%expect_test "function definition with borrowed parameters" =
   let source_code =
     "\n\
-    \    fun function_name ^(x : int) ^(y : bool) : unit = {\n\
+    \    fun function_name ^(x : int @ shared) ^(y : bool @ shared) : unit @ \
+     shared = {\n\
     \      ()\n\
     \    }\n\
     \  "
@@ -13,11 +14,11 @@ let%expect_test "function definition with borrowed parameters" =
         Function Name: function_name
         Mutually Recursive Group Id: 1
         Param Types:
-            Type Expr: Int
+            Type Expr: Int @ shared
             BorrowedParam: x
-            Type Expr: Bool
+            Type Expr: Bool @ shared
             BorrowedParam: y
-        Return Type: Unit
+        Return Type: Unit @ shared
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

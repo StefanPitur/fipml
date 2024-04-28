@@ -7,3 +7,6 @@ val pprint_fip_value :
 
 val pprint_fip_pattern_exprs :
   Format.formatter -> indent:string -> Fip_ast.pattern_expr list -> unit
+
+val pprint_fip_function_defn :
+  Format.formatter -> indent:string -> Fip_ast.function_defn -> unit

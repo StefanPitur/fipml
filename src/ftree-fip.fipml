@@ -444,7 +444,7 @@ fun test_iter (n : int) (iter : int) : unit = {
 }
 
 fun test (n : int) : unit = {
-  let div = if n <= 0 then { 1 } else { n } endif in
+  let div = if n <= 1 then { 1 } else { n } endif in
   let steps = 10000000 / div in
   test_iter (n, steps)
 }

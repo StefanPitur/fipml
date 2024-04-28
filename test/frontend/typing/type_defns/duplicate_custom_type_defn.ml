@@ -11,6 +11,8 @@ let%expect_test "typing type defn: duplicated custom type definition" =
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type",
         [ TTypeConstructor (mock_loc, Constructor_name.of_string "C1", []) ] )
   in
@@ -18,10 +20,14 @@ let%expect_test "typing type defn: duplicated custom type definition" =
     TType
       ( mock_loc,
         [],
+        [],
+        [],
         Type_name.of_string "custom_type",
         [
           TTypeConstructor
-            (mock_loc, Constructor_name.of_string "C2", [ TEUnit mock_loc ]);
+            ( mock_loc,
+              Constructor_name.of_string "C2",
+              [ TAttr (mock_loc, TEUnit mock_loc, Unique mock_loc) ] );
         ] )
   in
   match typecheck_type_defns [ custom_type; duplicated_custom_type ] with
@@ -29,4 +35,4 @@ let%expect_test "typing type defn: duplicated custom type definition" =
   | Error err ->
       print_string (Error.to_string_hum err);
       [%expect
-        {| ("Typing.Type_defns_env.TypeAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of type () custom_type\")") |}]
+        {| ("Typing.Type_defns_env.TypeAlreadyExists(\"File: mock - Line: 0 - Column: 1. Duplicate definition of type ( ;  ; ) custom_type\")") |}]

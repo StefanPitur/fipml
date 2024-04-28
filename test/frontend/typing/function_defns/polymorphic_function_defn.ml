@@ -15,13 +15,25 @@ let%expect_test "Polymorphic Function Definition" =
           None,
           Function_name.of_string "poly_id",
           [
-            TParam (TEPoly (mock_loc, "'a"), Var_name.of_string "x", None);
-            TParam (TEInt mock_loc, Var_name.of_string "y", None);
-            TParam (TEPoly (mock_loc, "'b"), Var_name.of_string "z", None);
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEPoly (mock_loc, Poly (mock_loc, "'t")),
+                    Unique mock_loc ),
+                Var_name.of_string "x",
+                None );
+            TParam
+              ( TAttr
+                  ( mock_loc,
+                    TEInt mock_loc,
+                    PolyUnique (mock_loc, Poly (mock_loc, "'u")) ),
+                Var_name.of_string "y",
+                None );
+            TParam (TPoly (Poly (mock_loc, "'a")), Var_name.of_string "z", None);
           ],
           UnboxedSingleton
             (mock_loc, Variable (mock_loc, Var_name.of_string "z")),
-          TEPoly (mock_loc, "'b") );
+          TPoly (Poly (mock_loc, "'a")) );
     ]
   in
   let parsed_main =
@@ -43,34 +55,34 @@ let%expect_test "Polymorphic Function Definition" =
   in
   match Typecheck_program.typecheck_program parsed_prog with
   | Error err -> print_string (Error.to_string_hum err)
-  | Ok (typed_program, _) ->
+  | Ok (typed_program, _, _) ->
       Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
       [%expect
         {|
-        Typed Program - Bool
-            Function Name: poly_id
-            Function Mutually Recursive Group Id - 1
-            Return Type: t2
-            Param List:
-                Type Expr: 'a
-                OwnedParam: x
-                Type Expr: Int
-                OwnedParam: y
-                Type Expr: 'b
-                OwnedParam: z
-            Function Body:
-                Typed Expr: UnboxedSingleton - t2
-                    Value: Var: z - t2
-            Typed Main
-            Typed Expr: Let vars: (x) =
-                Typed Expr: UnboxedSingleton - Unit
-                    Value: Unit - Unit
-            Typed Expr: Let expr - Bool
-                Typed Expr: FunCall - Bool
-                    Function Name: poly_id
-                    FunctionArg
-                        Value: Var: x - Unit
-                    FunctionArg
-                        Value: Int: 0 - Int
-                    FunctionArg
-                        Value: Bool: true - Bool |}]
+          Typed Program - Bool @ u10
+              Function Name: poly_id
+              Function Mutually Recursive Group Id - 1
+              Return Type: t1 @ u1
+              Param List:
+                  Type Expr: 't @ unique
+                  OwnedParam: x
+                  Type Expr: Int @ 'u
+                  OwnedParam: y
+                  Type Expr: 'a
+                  OwnedParam: z
+              Function Body:
+                  Typed Expr: UnboxedSingleton - t1 @ u1
+                      Value: Var: z - t1 @ u1
+              Typed Main
+              Typed Expr: Let vars: (x) : (Unit @ unique) =
+                  Typed Expr: UnboxedSingleton - Unit @ unique
+                      Value: Unit - Unit @ unique
+              Typed Expr: Let expr - Bool @ u10
+                  Typed Expr: FunCall - Bool @ u10
+                      Function Name: poly_id
+                      FunctionArg
+                          Value: Var: x - Unit @ unique
+                      FunctionArg
+                          Value: Int: 0 - Int @ u11
+                      FunctionArg
+                          Value: Bool: true - Bool @ u10 |}]

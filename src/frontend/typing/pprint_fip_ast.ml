@@ -130,3 +130,24 @@ and pprint_fip_pattern_exprs ppf ~indent = function
             matched_expr;
           Fmt.pf ppf "%sPatternMatchExpr@." indent;
           pprint_fip_expr ppf ~indent:sub_expr_indent fip_expr)
+
+let pprint_fip_param ppf ~indent = function
+  | TParam (param_name, param_borrowed) ->
+      Fmt.pf ppf "%s%sParam: %s@." indent
+        (string_of_borrowed_option param_borrowed)
+        (Var_name.to_string param_name)
+
+let pprint_fip_params ppf ~indent = function
+  | [] -> Fmt.pf ppf "%sVoid@." indent
+  | params -> List.iter ~f:(pprint_fip_param ppf ~indent) params
+
+let pprint_fip_function_defn ppf ~indent
+    (TFun (_, fip_option, function_name, function_args, function_body)) =
+  let sub_expr_indent = indent ^ indent_tab in
+  Fmt.pf ppf "%s%sFunction Name: %s@." indent
+    (string_of_fip_option (Some fip_option))
+    (Function_name.to_string function_name);
+  Fmt.pf ppf "%sParam List:@." indent;
+  pprint_fip_params ppf ~indent:sub_expr_indent function_args;
+  Fmt.pf ppf "%sFunction Body:@." indent;
+  pprint_fip_expr ppf ~indent:sub_expr_indent function_body

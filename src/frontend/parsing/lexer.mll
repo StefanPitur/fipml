@@ -28,10 +28,9 @@ let newline_regex_expression = '\r' | '\n' | "\r\n"
 
 rule token = parse
   | whitespace_regex_expression { token lexbuf }
+  | "@" { AT }
   | "(" { LPAREN }
   | ")" { RPAREN }
-  | "[" { LSQPAREN }
-  | "]" { RSQPAREN }
   | "{" { LCURLY }
   | "}" { RCURLY }
   | "," { COMMA }
@@ -72,10 +71,12 @@ rule token = parse
   | "match" { MATCH }
   | "endmatch" { ENDMATCH }
   | "with" { WITH }
-  | "'" lid_regex_expression { TYPE_POLY (Lexing.lexeme_start_p lexbuf, Lexing.lexeme lexbuf) }
+  | "'" lid_regex_expression { POLY (Lexing.lexeme lexbuf) }
   | "int" { TYPE_INT }
   | "bool" { TYPE_BOOL }
   | "unit" { TYPE_UNIT }
+  | "unique" { UNIQUE }
+  | "shared" { SHARED }
   | "fip" { FIP }
   | "fbip" { FBIP }
   | "drop" { DROP }

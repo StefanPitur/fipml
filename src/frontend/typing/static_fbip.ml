@@ -1,4 +1,4 @@
-open Ast
+open Ast.Ast_types
 open Borrowed_context
 open Core
 open Owned_context
@@ -8,22 +8,23 @@ open Result
 exception UnableFbipCheck
 
 let fbip
-    (TFun (_, _, _, fip_option, _, params, function_body) :
+    (TFun (loc, _, _, fip_option, function_name, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
-    Fip_ast.expr Or_error.t =
+    Fip_ast.function_defn Or_error.t =
   match fip_option with
-  | Some (Fbip n) ->
+  | Some (Fbip n as fbip) ->
       let borrowed_set, owned_set =
         List.fold params ~init:(BorrowedSet.empty, OwnedSet.empty)
           ~f:(fun
               (acc_borrowed_set, acc_owned_set)
-              (Ast_types.TParam (_, param_name, param_borrowed_option))
+              (TParam (param_type_expr, param_name, param_borrowed_option))
             ->
             match param_borrowed_option with
             | None ->
                 let extended_owned_set =
                   Or_error.ok_exn
                     (extend_owned_set ~element:param_name
+                       ~element_type_expr:param_type_expr
                        ~owned_set:acc_owned_set)
                 in
                 (acc_borrowed_set, extended_owned_set)
@@ -38,7 +39,7 @@ let fbip
       let reuse_map =
         extend_reuse_map_k_times
           ~reuse_size:(allocation_credit_size ())
-          ~reuse_var:(Ast_types.Var_name.of_string "_new")
+          ~reuse_var:(Var_name.of_string "_new")
           ~k:n ~reuse_map:ReuseMap.empty
       in
       Fip_rules_check.fip_rules_check_expr function_body borrowed_set
@@ -52,6 +53,12 @@ let fbip
         Map.equal reuse_map_entry_equal_fn fip_reuse_map reuse_map
       in
       if owned_set_restriction && reuse_map_restriction then
-        Ok fip_function_body
+        let fbiped_function_name =
+          Function_name.of_string (Function_name.to_string function_name ^ "!")
+        in
+        let fbiped_params = Fip_ast.convert_params_to_fip_params params in
+        Ok
+          (Fip_ast.TFun
+             (loc, fbip, fbiped_function_name, fbiped_params, fip_function_body))
       else Or_error.of_exn UnableFbipCheck
   | _ -> Or_error.of_exn UnableFbipCheck

@@ -1,8 +1,9 @@
 let%expect_test "function definition with polymorphic parameters" =
   let source_code =
     "\n\
-    \    fun my_poly_function (x : 'a option) ^(y : int custom_type) : 'a \
-     custom_type option = { \n\
+    \    fun my_poly_function (x : ( ; ; 'a) option @ unique) ^(y : ( ; ; int \
+     @ unique) custom_type @ unique) : ( ; ; ( ; ; 'a) custom_type @ unique) \
+     option @ unique = { \n\
     \      () \n\
     \    }\n\
     \  "
@@ -14,11 +15,11 @@ let%expect_test "function definition with polymorphic parameters" =
         Function Name: my_poly_function
         Mutually Recursive Group Id: 1
         Param Types:
-            Type Expr: ('a) option
+            Type Expr: ( ;  ; 'a) option @ unique
             OwnedParam: x
-            Type Expr: (Int) custom_type
+            Type Expr: ( ;  ; Int @ unique) custom_type @ unique
             BorrowedParam: y
-        Return Type: (('a) custom_type) option
+        Return Type: ( ;  ; ( ;  ; 'a) custom_type @ unique) option @ unique
         Function Body Expr
             Expr: UnboxedSingleton
                 Value: Unit |}]

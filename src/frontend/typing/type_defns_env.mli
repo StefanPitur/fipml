@@ -17,11 +17,16 @@ type constructor_env_entry =
 type constructors_env = constructor_env_entry list
 
 type types_env_entry =
-  | TypesEnvEntry of Ast_types.type_expr list * Ast_types.Type_name.t
+  | TypesEnvEntry of
+      Ast_types.typ list
+      * Ast_types.uniqueness list
+      * Ast_types.type_expr list
+      * Ast_types.Type_name.t
 
 type types_env = types_env_entry list
 
 val assert_type_defined : Ast_types.type_expr -> types_env -> unit Or_error.t
+val assert_typ_defined : Ast_types.typ -> types_env -> unit Or_error.t
 
 val assert_custom_type_in_types_env :
   Ast_types.loc -> types_env_entry -> types_env -> unit Or_error.t
