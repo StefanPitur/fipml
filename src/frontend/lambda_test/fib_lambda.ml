@@ -58,3 +58,7 @@ let write_fib () =
   Emitcode.to_file fd "Fib" "fib.cmo" ~required_globals:Ident.Set.empty
     instructions;
   close_out fd
+
+let pprint () =
+  let fmt = Format.formatter_of_out_channel stdout in
+  Printlambda.lambda fmt fib_lambda
