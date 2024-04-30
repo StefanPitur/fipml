@@ -17,6 +17,12 @@ end)
 
 type constructor_tag_map_entry = int
 
+(*
+   let translate = function
+   | Let (pat, rhs, e) -> translate (Match (e, [pat, rhs]))
+   ...
+*)
+
 let convert_types_env_to_constructors_tag (constructors_env : constructors_env)
     : constructor_tag_map_entry ConstructorTagMap.t =
   let constructor_tag_map, _ =
@@ -46,12 +52,14 @@ let rec convert_typed_ast_value (value : Typed_ast.value)
               (convert_typed_ast_value arg ident_context constructor_tag_map))
       in
       let constructor_tag = Map.find_exn constructor_tag_map constructor_name in
-      let shape = List.map args ~f:(fun _ -> Pgenval) in
-      Ok
-        (Lprim
-           ( Pmakeblock (constructor_tag, Mutable, Some shape),
-             lambda_args,
-             Loc_unknown ))
+      if List.length args = 0 then Ok (Lconst (const_int constructor_tag))
+      else
+        let shape = List.map args ~f:(fun _ -> Pgenval) in
+        Ok
+          (Lprim
+             ( Pmakeblock (constructor_tag, Mutable, Some shape),
+               lambda_args,
+               Loc_unknown ))
 
 let rec convert_typed_ast_expr (expr : Typed_ast.expr)
     (ident_context : ident_context)
@@ -230,28 +238,55 @@ let convert_typed_ast_program
   | Some main_typed_ast_expr ->
       convert_typed_ast_expr main_typed_ast_expr functions_ident_context
         ConstructorTagMap.empty)
-  >>= fun main_lambda ->
-  let main_lambda_body =
-    Lletrec
-      ( functions_ident_lambda,
-        Lprim
-          ( Pmakeblock (0, Mutable, Some [ Pgenval ]),
-            [ main_lambda ],
-            Loc_unknown ) )
+  >>= fun main_lambda_body ->
+  let main_function_ident = Ident.create_local "main" in
+  let main_arg_ident = Ident.create_local "main_arg" in
+  let main_function_lambda =
+    lfunction ~kind:Curried
+      ~params:[ (main_arg_ident, Pgenval) ]
+      ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown
+      ~body:main_lambda_body
   in
-  let main = Ident.create_local "main" in
   Ok
     (Lprim
        ( Psetglobal (Ident.create_persistent "Fip"),
          [
-           Llet
-             ( Strict,
-               Pgenval,
-               main,
-               main_lambda_body,
-               Lprim
-                 ( Pmakeblock (0, Mutable, Some [ Pgenval ]),
-                   [ Lvar main ],
-                   Loc_unknown ) );
+           Lletrec
+             ( (main_function_ident, main_function_lambda)
+               :: functions_ident_lambda,
+               Lapply
+                 {
+                   ap_func = Lvar main_function_ident;
+                   ap_args = [ lambda_unit ];
+                   ap_loc = Loc_unknown;
+                   ap_tailcall = Default_tailcall;
+                   ap_inlined = Default_inline;
+                   ap_specialised = Default_specialise;
+                 } );
          ],
          Loc_unknown ))
+
+(* This actually works
+   Ok
+     (Lprim
+        ( Psetglobal (Ident.create_persistent "Fip"),
+          [
+            Lletrec
+              ( (main_function_ident, main_function_lambda)
+                :: functions_ident_lambda,
+                Lsequence
+                  ( Lapply
+                      {
+                        ap_func = Lvar main_function_ident;
+                        ap_args = [ lambda_unit ];
+                        ap_loc = Loc_unknown;
+                        ap_tailcall = Default_tailcall;
+                        ap_inlined = Default_inline;
+                        ap_specialised = Default_specialise;
+                      },
+                    Lprim
+                      ( Pmakeblock (0, Immutable, Some [ Pgenval ]),
+                        [ Lvar main_function_ident ],
+                        Loc_unknown ) ) );
+          ],
+          Loc_unknown )) *)
