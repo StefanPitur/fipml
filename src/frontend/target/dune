@@ -1,4 +1,4 @@
 (library
  (name target)
- (modules convert_typed_ast_to_lambda stefan_lambda)
+ (modules convert_typed_ast_to_lambda print_int_lambda)
  (libraries compiler-libs.bytecomp typing core))

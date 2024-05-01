@@ -1,6 +1,7 @@
 open Ast.Ast_types
 open Core
 open Lambda
+open Print_int_lambda
 open Typing
 open Typing.Type_defns_env
 open Result
@@ -17,11 +18,11 @@ end)
 
 type constructor_tag_map_entry = int
 
-(*
-   let translate = function
-   | Let (pat, rhs, e) -> translate (Match (e, [pat, rhs]))
-   ...
-*)
+let fresh_var =
+  let index = ref 0 in
+  fun () ->
+    index := !index + 1;
+    Ident.create_local (Fmt.str "v%i" !index)
 
 let convert_types_env_to_constructors_tag (constructors_env : constructors_env)
     : constructor_tag_map_entry ConstructorTagMap.t =
@@ -69,7 +70,6 @@ let rec convert_typed_ast_expr (expr : Typed_ast.expr)
   | UnboxedSingleton (_, _, value) ->
       convert_typed_ast_value value ident_context constructor_tag_map
   | UnboxedTuple (_, _, values) ->
-      (* We will make allocation for unboxed tuple at the moment *)
       let lambda_values =
         List.map values ~f:(fun value ->
             Or_error.ok_exn
@@ -78,7 +78,67 @@ let rec convert_typed_ast_expr (expr : Typed_ast.expr)
       let shape = List.map values ~f:(fun _ -> Pgenval) in
       Ok
         (Lprim (Pmakeblock (0, Mutable, Some shape), lambda_values, Loc_unknown))
-  | Let _ -> Or_error.of_exn (Invalid_argument "not implemented yet")
+  | Let (_, _, _, vars, vars_expr, expr) -> (
+      match vars with
+      | [ var ] ->
+          let var_ident = Ident.create_local (Var_name.to_string var) in
+          convert_typed_ast_expr vars_expr ident_context constructor_tag_map
+          >>= fun lambda_var_expr ->
+          Type_context_env.extend_typing_context ident_context var var_ident
+          >>= fun ident_context ->
+          convert_typed_ast_expr expr ident_context constructor_tag_map
+          >>= fun lambda_expr ->
+          Ok (Llet (Strict, Pgenval, var_ident, lambda_var_expr, lambda_expr))
+      | _ ->
+          convert_typed_ast_expr vars_expr ident_context constructor_tag_map
+          >>= fun lambda_vars_expr ->
+          let extended_ident_context, vars_idents =
+            List.fold vars ~init:(ident_context, [])
+              ~f:(fun (acc_ident_context, acc_var_idents) var ->
+                let var_ident = Ident.create_local (Var_name.to_string var) in
+                ( Or_error.ok_exn
+                    (Type_context_env.extend_typing_context acc_ident_context
+                       var var_ident),
+                  acc_var_idents @ [ var_ident ] ))
+          in
+          convert_typed_ast_expr expr extended_ident_context constructor_tag_map
+          >>= fun lambda_expr ->
+          let p = Ident.create_local "p" in
+          let _, letrec_args =
+            List.fold vars_idents ~init:(0, [])
+              ~f:(fun (field_index, acc_args) var_ident ->
+                ( field_index + 1,
+                  acc_args
+                  @ [
+                      ( var_ident,
+                        Lprim
+                          ( Pfield (field_index, Pointer, Mutable),
+                            [ Lvar p ],
+                            Loc_unknown ) );
+                    ] ))
+          in
+          let let_function_lambda =
+            lfunction ~kind:Tupled
+              ~params:[ (p, Pgenval) ]
+              ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown
+              ~body:(Lletrec (letrec_args, lambda_expr))
+          in
+          let let_function_ident = fresh_var () in
+          Ok
+            (Llet
+               ( Strict,
+                 Pgenval,
+                 let_function_ident,
+                 let_function_lambda,
+                 Lapply
+                   {
+                     ap_func = Lvar let_function_ident;
+                     ap_args = [ lambda_vars_expr ];
+                     ap_loc = Loc_unknown;
+                     ap_tailcall = Default_tailcall;
+                     ap_inlined = Default_inline;
+                     ap_specialised = Default_specialise;
+                   } )))
   | FunApp (_, _, function_var, values) ->
       let lambda_values =
         List.map values ~f:(fun value ->
@@ -132,7 +192,8 @@ let rec convert_typed_ast_expr (expr : Typed_ast.expr)
       convert_typed_ast_expr expr_else ident_context constructor_tag_map
       >>= fun lambda_expr_else ->
       Ok (Lifthenelse (lambda_expr_cond, lambda_expr_then, lambda_expr_else))
-  | Match _ -> Or_error.of_exn (Invalid_argument "not implemented yet")
+  | Match (_, _, _, var, patterns) ->
+      convert_typed_ast_match_expr var patterns ident_context
   | UnOp (_, _, unary_op, expr) ->
       convert_typed_ast_expr expr ident_context constructor_tag_map
       >>= fun lambda_expr ->
@@ -171,6 +232,20 @@ let rec convert_typed_ast_expr (expr : Typed_ast.expr)
   | Inst (_, _, _, expr)
   | Weak (_, _, _, expr) ->
       convert_typed_ast_expr expr ident_context constructor_tag_map
+
+and convert_typed_ast_match_expr var _ ident_context : lambda Or_error.t =
+  Type_context_env.get_var_type ident_context var >>= fun var_ident ->
+  Ok
+    (Lswitch
+       ( Lvar var_ident,
+         {
+           sw_numconsts = 0;
+           sw_consts = [];
+           sw_numblocks = 0;
+           sw_blocks = [];
+           sw_failaction = Some (Lstaticraise (0, []));
+         },
+         Loc_unknown ))
 
 let convert_params (function_params : param list) :
     ((Ident.t * value_kind) list * ident_context) Or_error.t =
@@ -228,9 +303,8 @@ let convert_typed_ast_function_defns
 let convert_typed_ast_program
     (TProg (_, _, typed_function_defns, typed_main_option) : Typed_ast.program)
     (constructors_env : constructors_env) : lambda Or_error.t =
-  let constructor_tag_map =
-    convert_types_env_to_constructors_tag constructors_env
-  in
+  Ok (convert_types_env_to_constructors_tag constructors_env)
+  >>= fun constructor_tag_map ->
   convert_typed_ast_function_defns typed_function_defns constructor_tag_map
   >>= fun (functions_ident_context, functions_ident_lambda) ->
   (match typed_main_option with
@@ -253,11 +327,23 @@ let convert_typed_ast_program
          [
            Lletrec
              ( (main_function_ident, main_function_lambda)
-               :: functions_ident_lambda,
+               :: functions_ident_lambda
+               @ import_print_int_lambda_letrecs (),
                Lapply
                  {
-                   ap_func = Lvar main_function_ident;
-                   ap_args = [ lambda_unit ];
+                   ap_func = Lvar _print_int_ident;
+                   ap_args =
+                     [
+                       Lapply
+                         {
+                           ap_func = Lvar main_function_ident;
+                           ap_args = [ lambda_unit ];
+                           ap_loc = Loc_unknown;
+                           ap_tailcall = Default_tailcall;
+                           ap_inlined = Default_inline;
+                           ap_specialised = Default_specialise;
+                         };
+                     ];
                    ap_loc = Loc_unknown;
                    ap_tailcall = Default_tailcall;
                    ap_inlined = Default_inline;
@@ -265,28 +351,3 @@ let convert_typed_ast_program
                  } );
          ],
          Loc_unknown ))
-
-(* This actually works
-   Ok
-     (Lprim
-        ( Psetglobal (Ident.create_persistent "Fip"),
-          [
-            Lletrec
-              ( (main_function_ident, main_function_lambda)
-                :: functions_ident_lambda,
-                Lsequence
-                  ( Lapply
-                      {
-                        ap_func = Lvar main_function_ident;
-                        ap_args = [ lambda_unit ];
-                        ap_loc = Loc_unknown;
-                        ap_tailcall = Default_tailcall;
-                        ap_inlined = Default_inline;
-                        ap_specialised = Default_specialise;
-                      },
-                    Lprim
-                      ( Pmakeblock (0, Immutable, Some [ Pgenval ]),
-                        [ Lvar main_function_ident ],
-                        Loc_unknown ) ) );
-          ],
-          Loc_unknown )) *)
