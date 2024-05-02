@@ -22,18 +22,35 @@ let fresh_var =
   let index = ref 0 in
   fun () ->
     index := !index + 1;
-    Ident.create_local (Fmt.str "v%i" !index)
+    Ident.create_local (Fmt.str "_u%i" !index)
 
-let convert_types_env_to_constructors_tag (constructors_env : constructors_env)
-    : constructor_tag_map_entry ConstructorTagMap.t =
-  let constructor_tag_map, _ =
-    List.fold constructors_env ~init:(ConstructorTagMap.empty, 1)
-      ~f:(fun
-          (acc_map, acc_index) (ConstructorEnvEntry (_, constructor_name, _)) ->
-        ( Map.add_exn acc_map ~key:constructor_name ~data:acc_index,
-          acc_index + 1 ))
-  in
-  constructor_tag_map
+let convert_types_env_to_constructors_tag (types_env : types_env)
+    (constructors_env : constructors_env) :
+    constructor_tag_map_entry ConstructorTagMap.t =
+  List.fold types_env ~init:ConstructorTagMap.empty
+    ~f:(fun acc_constructor_tag_map (TypesEnvEntry (_, _, _, type_name)) ->
+      let type_constructors =
+        List.filter constructors_env
+          ~f:(fun (ConstructorEnvEntry (constructor_type, _, _)) ->
+            Type_name.( = ) type_name constructor_type)
+      in
+      let constructor_tag_map, _, _ =
+        List.fold type_constructors ~init:(acc_constructor_tag_map, 0, 0)
+          ~f:(fun
+              (acc_map, acc_index, acc_atom_index)
+              (ConstructorEnvEntry
+                (_, constructor_name, constructor_type_exprs))
+            ->
+            if List.length constructor_type_exprs = 0 then
+              ( Map.add_exn acc_map ~key:constructor_name ~data:acc_atom_index,
+                acc_index,
+                acc_atom_index + 1 )
+            else
+              ( Map.add_exn acc_map ~key:constructor_name ~data:acc_index,
+                acc_index + 1,
+                acc_atom_index ))
+      in
+      constructor_tag_map)
 
 let rec convert_typed_ast_value (value : Typed_ast.value)
     (ident_context : ident_context)
@@ -302,8 +319,9 @@ let convert_typed_ast_function_defns
 
 let convert_typed_ast_program
     (TProg (_, _, typed_function_defns, typed_main_option) : Typed_ast.program)
-    (constructors_env : constructors_env) : lambda Or_error.t =
-  Ok (convert_types_env_to_constructors_tag constructors_env)
+    (types_env : types_env) (constructors_env : constructors_env) :
+    lambda Or_error.t =
+  Ok (convert_types_env_to_constructors_tag types_env constructors_env)
   >>= fun constructor_tag_map ->
   convert_typed_ast_function_defns typed_function_defns constructor_tag_map
   >>= fun (functions_ident_context, functions_ident_lambda) ->
