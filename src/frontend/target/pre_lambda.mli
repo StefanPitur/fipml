@@ -44,3 +44,7 @@ val compute_custom_constructors_tags :
   Type_defns_env.types_env ->
   Type_defns_env.constructors_env ->
   int ConstructorTagMap.t
+
+val fresh_var : unit -> Var_name.t
+val replace_underscores_with_dummy_vars : matched_expr -> matched_expr
+val var_subst : Var_name.t -> Var_name.t -> expr -> expr

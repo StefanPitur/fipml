@@ -1,4 +1,12 @@
 (library
  (name target)
- (modules convert_typed_ast_to_lambda print_int_lambda)
- (libraries compiler-libs.bytecomp typing core))
+ (modules
+  convert_typed_ast_to_pre_lambda
+  convert_fip_ast_to_pre_lambda
+  convert_pre_lambda_to_lambda
+  pattern_matching_compiler
+  print_int_lambda
+  match_lambda
+  pre_lambda
+  pprint_pre_lambda)
+ (libraries ast compiler-libs.bytecomp core typing))

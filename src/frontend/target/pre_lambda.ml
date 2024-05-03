@@ -75,3 +75,110 @@ let compute_custom_constructors_tags (types_env : Type_defns_env.types_env)
                 acc_atom_index ))
       in
       constructor_tag_map)
+
+let fresh_var =
+  let index = ref 0 in
+  fun () ->
+    index := !index + 1;
+    Var_name.of_string (Fmt.str "_v%i" !index)
+
+let rec replace_underscores_with_dummy_vars (matched_expr : matched_expr) :
+    matched_expr =
+  match matched_expr with
+  | MUnderscore -> MVariable (fresh_var ())
+  | MVariable _ -> matched_expr
+  | MConstructor (constructor_name, constructor_values) ->
+      let replaced_underscored_values =
+        List.map constructor_values ~f:replace_underscores_with_dummy_vars
+      in
+      MConstructor (constructor_name, replaced_underscored_values)
+
+let rec var_subst_value (var : Var_name.t) (subst_var : Var_name.t)
+    (value : value) : value =
+  match value with
+  | Unit | Integer _ | Boolean _ -> value
+  | Variable variable_var ->
+      if Var_name.( = ) variable_var var then Variable subst_var else value
+  | Constructor
+      (constructor_kind, constructor_tag, constructor_name, constructor_values)
+    ->
+      let constructor_subst_values =
+        List.map constructor_values ~f:(var_subst_value var subst_var)
+      in
+      Constructor
+        ( constructor_kind,
+          constructor_tag,
+          constructor_name,
+          constructor_subst_values )
+
+let rec var_subst (var : Var_name.t) (subst_var : Var_name.t) (expr : expr) :
+    expr =
+  match expr with
+  | UnboxedSingleton value ->
+      UnboxedSingleton (var_subst_value var subst_var value)
+  | UnboxedTuple values ->
+      let tuple_subst_values =
+        List.map values ~f:(var_subst_value var subst_var)
+      in
+      UnboxedTuple tuple_subst_values
+  | Let (let_vars, let_expr, expr) ->
+      let subst_let_expr = var_subst var subst_var let_expr in
+      let subst_expr = var_subst var subst_var expr in
+      Let (let_vars, subst_let_expr, subst_expr)
+  | FunApp (fun_var, values) ->
+      let subst_values = List.map values ~f:(var_subst_value var subst_var) in
+      let subst_fun_var =
+        if Var_name.( = ) fun_var var then subst_var else fun_var
+      in
+      FunApp (subst_fun_var, subst_values)
+  | FunCall (function_name, values) ->
+      let subst_values = List.map values ~f:(var_subst_value var subst_var) in
+      FunCall (function_name, subst_values)
+  | If (expr_cond, expr_then) ->
+      let subst_expr_cond = var_subst var subst_var expr_cond in
+      let subst_expr_then = var_subst var subst_var expr_then in
+      If (subst_expr_cond, subst_expr_then)
+  | IfElse (expr_cond, expr_then, expr_else) ->
+      let subst_expr_cond = var_subst var subst_var expr_cond in
+      let subst_expr_then = var_subst var subst_var expr_then in
+      let subst_expr_else = var_subst var subst_var expr_else in
+      IfElse (subst_expr_cond, subst_expr_then, subst_expr_else)
+  | Match (matched_var_type_expr, matched_var, patterns) ->
+      let subst_matched_var =
+        if Var_name.( = ) matched_var var then subst_var else matched_var
+      in
+      let subst_patterns =
+        List.map patterns ~f:(var_subst_pattern var subst_var)
+      in
+      Match (matched_var_type_expr, subst_matched_var, subst_patterns)
+  | UnOp (unary_op, expr) ->
+      let subst_expr = var_subst var subst_var expr in
+      UnOp (unary_op, subst_expr)
+  | BinaryOp (binary_op, expr_left, expr_right) ->
+      let subst_expr_left = var_subst var subst_var expr_left in
+      let subst_expr_right = var_subst var subst_var expr_right in
+      BinaryOp (binary_op, subst_expr_left, subst_expr_right)
+  | Raise -> Raise
+
+and var_subst_pattern (var : Var_name.t) (subst_var : Var_name.t)
+    (pattern : pattern_expr) : pattern_expr =
+  let (MPattern (matched_expr, expr)) = pattern in
+  let subst_expr = var_subst var subst_var expr in
+  let subst_matched_expr = var_subst_matched_expr var subst_var matched_expr in
+  MPattern (subst_matched_expr, subst_expr)
+
+and var_subst_matched_expr (var : Var_name.t) (subst_var : Var_name.t)
+    (matched_expr : matched_expr) : matched_expr =
+  match matched_expr with
+  | MUnderscore ->
+      raise (Invalid_argument "No underscores allowed at this point")
+  | MVariable matched_var ->
+      let subst_matched_var =
+        if Var_name.( = ) matched_var var then subst_var else matched_var
+      in
+      MVariable subst_matched_var
+  | MConstructor (constructor_name, matched_exprs) ->
+      let subst_matched_exprs =
+        List.map matched_exprs ~f:(var_subst_matched_expr var subst_var)
+      in
+      MConstructor (constructor_name, subst_matched_exprs)
