@@ -39,7 +39,7 @@ let arity (loc : loc) (constructor_name : Constructor_name.t)
 
 let constructors (loc : loc) (constructor_name : Constructor_name.t)
     (constructors_env : Type_defns_env.constructors_env) :
-    Constructor_name.t list Or_error.t =
+    (int * int * Constructor_name.t list) Or_error.t =
   Type_defns_env.get_constructor_by_name loc constructor_name constructors_env
   >>= fun (Type_defns_env.ConstructorEnvEntry (constructor_type, _, _)) ->
   let filtered_constructors_env =
@@ -47,10 +47,17 @@ let constructors (loc : loc) (constructor_name : Constructor_name.t)
       ~f:(fun (ConstructorEnvEntry (constructor_env_type, _, _)) ->
         Type_name.( = ) constructor_env_type constructor_type)
   in
+  let atom_count =
+    List.count filtered_constructors_env
+      ~f:(fun (ConstructorEnvEntry (_, _, type_exprs)) ->
+        Int.( = ) (List.length type_exprs) 0)
+  in
   Ok
-    (List.map filtered_constructors_env
-       ~f:(fun (ConstructorEnvEntry (_, constructor_name, _)) ->
-         constructor_name))
+    ( atom_count,
+      List.length filtered_constructors_env - atom_count,
+      List.map filtered_constructors_env
+        ~f:(fun (ConstructorEnvEntry (_, constructor_name, _)) ->
+          constructor_name) )
 
 let is_var ((patterns, _) : equation) : bool =
   match patterns with
@@ -90,7 +97,7 @@ and match_var match_kind constructors_env us qs def =
 
 and match_con match_kind constructors_env us qs def =
   let constructor_name = get_con (List.hd_exn qs) in
-  let cs =
+  let atom_count, nonatom_count, cs =
     Or_error.ok_exn (constructors mock_loc constructor_name constructors_env)
   in
   let u = List.hd_exn us in
@@ -99,7 +106,7 @@ and match_con match_kind constructors_env us qs def =
     List.map cs ~f:(fun c ->
         match_clause match_kind constructors_env c (u :: us) (choose c qs) def)
   in
-  Match (match_kind, u, patterns)
+  Match (match_kind, atom_count, nonatom_count, u, patterns)
 
 and match_clause match_kind constructors_env c us qs def =
   let k = Or_error.ok_exn (arity mock_loc c constructors_env) in

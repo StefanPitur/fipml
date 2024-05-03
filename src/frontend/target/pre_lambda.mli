@@ -23,7 +23,7 @@ type expr =
   | FunCall of Function_name.t * value list
   | If of expr * expr
   | IfElse of expr * expr * expr
-  | Match of match_kind * Var_name.t * pattern_expr list
+  | Match of match_kind * int * int * Var_name.t * pattern_expr list
   | UnOp of unary_op * expr
   | BinaryOp of binary_op * expr * expr
   | Raise
@@ -48,3 +48,4 @@ val compute_custom_constructors_tags :
 val fresh_var : unit -> Var_name.t
 val replace_underscores_with_dummy_vars : matched_expr -> matched_expr
 val var_subst : Var_name.t -> Var_name.t -> expr -> expr
+val split_patterns : pattern_expr list -> pattern_expr list * pattern_expr list

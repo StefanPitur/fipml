@@ -115,8 +115,12 @@ and pprint_pre_lambda_expr ppf ~indent expr =
       pprint_pre_lambda_expr ppf ~indent:sub_expr_indent then_expr;
       Fmt.pf ppf "%sElse@." indent;
       pprint_pre_lambda_expr ppf ~indent:sub_expr_indent else_expr
-  | Match (match_kind, var_name, pre_lambda_pattern_exprs) ->
+  | Match
+      (match_kind, atom_count, nonatom_count, var_name, pre_lambda_pattern_exprs)
+    ->
       print_expr (Fmt.str "Match - %s" (string_of_match_kind match_kind));
+      Fmt.pf ppf "%sAtom Count: %d@." indent atom_count;
+      Fmt.pf ppf "%sNon Atom Count: %d@." indent nonatom_count;
       Fmt.pf ppf "%sMatch Var: %s@." sub_expr_indent
         (Var_name.to_string var_name);
       pprint_pre_lambda_pattern_exprs ppf ~indent:sub_expr_indent

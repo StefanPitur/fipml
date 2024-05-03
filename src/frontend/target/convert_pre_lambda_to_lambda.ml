@@ -4,9 +4,10 @@ open Lambda
 open Pre_lambda
 open Result
 open Typing
+open Typing.Reuse_credits
 
-let rec target_value (value : value) (ident_context : ident_context) :
-    lambda Or_error.t =
+let rec target_value (value : value) (ident_context : ident_context)
+    (reuse_map : int ReuseMap.t) : lambda Or_error.t =
   match value with
   | Unit -> Ok lambda_unit
   | Integer n -> Ok (Lconst (const_int n))
@@ -17,7 +18,7 @@ let rec target_value (value : value) (ident_context : ident_context) :
   | Constructor (constructor_kind, constructor_tag, _, values) -> (
       let lambda_values =
         List.map values ~f:(fun value ->
-            Or_error.ok_exn (target_value value ident_context))
+            Or_error.ok_exn (target_value value ident_context reuse_map))
       in
       match constructor_kind with
       | Atom -> Ok (Lconst (const_int constructor_tag))
@@ -29,14 +30,15 @@ let rec target_value (value : value) (ident_context : ident_context) :
                  lambda_values,
                  Loc_unknown )))
 
-let rec target_expr (expr : expr) (ident_context : ident_context) :
-    lambda Or_error.t =
+let rec target_expr (expr : expr) (ident_context : ident_context)
+    (constructor_tag_map : int ConstructorTagMap.t) (reuse_map : int ReuseMap.t)
+    : lambda Or_error.t =
   match expr with
-  | UnboxedSingleton value -> target_value value ident_context
+  | UnboxedSingleton value -> target_value value ident_context reuse_map
   | UnboxedTuple values ->
       let lambda_values =
         List.map values ~f:(fun value ->
-            Or_error.ok_exn (target_value value ident_context))
+            Or_error.ok_exn (target_value value ident_context reuse_map))
       in
       let shape = List.map values ~f:(fun _ -> Pgenval) in
       Ok
@@ -45,13 +47,16 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
       match vars with
       | [ var ] ->
           let var_ident = Ident.create_local (Var_name.to_string var) in
-          target_expr vars_expr ident_context >>= fun lambda_vars_expr ->
+          target_expr vars_expr ident_context constructor_tag_map reuse_map
+          >>= fun lambda_vars_expr ->
           Type_context_env.extend_typing_context ident_context var var_ident
           >>= fun extended_ident_context ->
-          target_expr expr extended_ident_context >>= fun lambda_expr ->
+          target_expr expr extended_ident_context constructor_tag_map reuse_map
+          >>= fun lambda_expr ->
           Ok (Llet (Strict, Pgenval, var_ident, lambda_vars_expr, lambda_expr))
       | _ ->
-          target_expr vars_expr ident_context >>= fun lambda_vars_expr ->
+          target_expr vars_expr ident_context constructor_tag_map reuse_map
+          >>= fun lambda_vars_expr ->
           let extended_ident_context, vars_idents =
             List.fold_right vars ~init:(ident_context, [])
               ~f:(fun var (acc_ident_context, acc_vars_idents) ->
@@ -61,7 +66,8 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
                        var var_ident),
                   var_ident :: acc_vars_idents ))
           in
-          target_expr expr extended_ident_context >>= fun lambda_expr ->
+          target_expr expr extended_ident_context constructor_tag_map reuse_map
+          >>= fun lambda_expr ->
           let tupled_param_ident = Ident.create_local "tupled_param" in
           let letrec_vars_detupling, _ =
             List.fold vars_idents ~init:([], 0)
@@ -102,7 +108,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
   | FunApp (var_function, values) ->
       let lambda_values =
         List.map values ~f:(fun value ->
-            Or_error.ok_exn (target_value value ident_context))
+            Or_error.ok_exn (target_value value ident_context reuse_map))
       in
       Type_context_env.get_var_type ident_context var_function
       >>= fun var_function_ident ->
@@ -122,7 +128,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
       in
       let lambda_values =
         List.map values ~f:(fun value ->
-            Or_error.ok_exn (target_value value ident_context))
+            Or_error.ok_exn (target_value value ident_context reuse_map))
       in
       Type_context_env.get_var_type ident_context function_var_name
       >>= fun function_ident ->
@@ -137,24 +143,115 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
              ap_specialised = Default_specialise;
            })
   | If (expr_cond, expr_then) ->
-      target_expr expr_cond ident_context >>= fun lambda_expr_cond ->
-      target_expr expr_then ident_context >>= fun lambda_expr_then ->
+      target_expr expr_cond ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_cond ->
+      target_expr expr_then ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_then ->
       Ok (Lifthenelse (lambda_expr_cond, lambda_expr_then, lambda_unit))
   | IfElse (expr_cond, expr_then, expr_else) ->
-      target_expr expr_cond ident_context >>= fun lambda_expr_cond ->
-      target_expr expr_then ident_context >>= fun lambda_expr_then ->
-      target_expr expr_else ident_context >>= fun lambda_expr_else ->
+      target_expr expr_cond ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_cond ->
+      target_expr expr_then ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_then ->
+      target_expr expr_else ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_else ->
       Ok (Lifthenelse (lambda_expr_cond, lambda_expr_then, lambda_expr_else))
-  | Match _ -> Or_error.of_exn (Invalid_argument "not implemented")
+  | Match (_, atom_count, nonatom_count, match_var, patterns) ->
+      Type_context_env.get_var_type ident_context match_var
+      >>= fun match_var_ident ->
+      let atom_patterns, nonatom_patterns =
+        Pre_lambda.split_patterns patterns
+      in
+      let sw_atoms =
+        List.fold atom_patterns ~init:[]
+          ~f:(fun acc_sw_atoms (MPattern (atom_matched_expr, expr)) ->
+            Or_error.ok_exn
+              (match atom_matched_expr with
+              | MConstructor (constructor_name, []) ->
+                  target_expr expr ident_context constructor_tag_map reuse_map
+                  >>= fun lambda_expr ->
+                  Ok
+                    (( Map.find_exn constructor_tag_map constructor_name,
+                       lambda_expr )
+                    :: acc_sw_atoms)
+              | _ ->
+                  Or_error.of_exn
+                    (Invalid_argument "Atom matched expression expected")))
+      in
+      let sw_nonatoms =
+        List.fold nonatom_patterns ~init:[]
+          ~f:(fun acc_sw_nonatoms (MPattern (nonatom_matched_expr, expr)) ->
+            Or_error.ok_exn
+              (match nonatom_matched_expr with
+              | MConstructor (constructor_name, constructor_matched_exprs) ->
+                  let extended_ident_context, letrec, _ =
+                    List.fold constructor_matched_exprs
+                      ~init:(ident_context, [], 0)
+                      ~f:(fun
+                          (acc_ident_context, acc_letrecs, field_index)
+                          constructor_matched_expr
+                        ->
+                        Or_error.ok_exn
+                          (match constructor_matched_expr with
+                          | MVariable v ->
+                              let v_ident =
+                                Ident.create_local (Var_name.to_string v)
+                              in
+                              let v_lambda =
+                                Lprim
+                                  ( Pfield (field_index, Pointer, Mutable),
+                                    [ Lvar match_var_ident ],
+                                    Loc_unknown )
+                              in
+                              Ok
+                                ( Or_error.ok_exn
+                                    (Type_context_env.extend_typing_context
+                                       acc_ident_context v v_ident),
+                                  (v_ident, v_lambda) :: acc_letrecs,
+                                  field_index + 1 )
+                          | _ ->
+                              Or_error.of_exn
+                                (Invalid_argument
+                                   "Non Atom should have vars only")))
+                  in
+                  let constructor_tag =
+                    Map.find_exn constructor_tag_map constructor_name
+                  in
+                  target_expr expr extended_ident_context constructor_tag_map
+                    reuse_map
+                  >>= fun expr_lambda ->
+                  Ok
+                    ((constructor_tag, Lletrec (letrec, expr_lambda))
+                    :: acc_sw_nonatoms)
+              | _ ->
+                  Or_error.of_exn
+                    (Invalid_argument "Non Atom matched expression expected")))
+      in
+      let lswitch =
+        Lswitch
+          ( Lvar match_var_ident,
+            {
+              sw_numconsts = atom_count;
+              sw_consts = sw_atoms;
+              sw_numblocks = nonatom_count;
+              sw_blocks = sw_nonatoms;
+              sw_failaction = None;
+            },
+            Loc_unknown )
+      in
+      Ok lswitch
   | UnOp (unary_op, expr) ->
-      target_expr expr ident_context >>= fun lambda_expr ->
+      target_expr expr ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr ->
       let unary_op_primitive =
         match unary_op with UnOpNot -> Pnot | UnOpNeg -> Pnegint
       in
       Ok (Lprim (unary_op_primitive, [ lambda_expr ], Loc_unknown))
   | BinaryOp (binary_op, expr_left, expr_right) ->
-      target_expr expr_left ident_context >>= fun lambda_expr_left ->
-      target_expr expr_right ident_context >>= fun lambda_expr_right ->
+      target_expr expr_left ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_left ->
+      target_expr expr_right ident_context constructor_tag_map reuse_map
+      >>= fun lambda_expr_right ->
       let binary_op_primitive =
         match binary_op with
         | BinOpPlus -> Paddint
@@ -176,7 +273,12 @@ let rec target_expr (expr : expr) (ident_context : ident_context) :
            ( binary_op_primitive,
              [ lambda_expr_left; lambda_expr_right ],
              Loc_unknown ))
-  | Raise -> Ok (Lstaticraise (0, []))
+  | Raise ->
+      Ok
+        (Lprim
+           ( Praise Raise_regular,
+             [ Lconst (Const_immstring "match failure") ],
+             Loc_unknown ))
 
 let target_params (function_params : Var_name.t list) :
     ((Ident.t * value_kind) list * ident_context) Or_error.t =
@@ -192,10 +294,12 @@ let target_params (function_params : Var_name.t list) :
                 function_param ident_param) )))
 
 let target_function_defn
-    (TFun (function_name, function_params, function_body) : function_defn) :
+    (TFun (function_name, function_params, function_body) : function_defn)
+    (constructor_tag_map : int ConstructorTagMap.t) :
     (Ident.t * lambda) Or_error.t =
   target_params function_params >>= fun (function_params, ident_context) ->
-  target_expr function_body ident_context >>= fun lambda_function_body ->
+  target_expr function_body ident_context constructor_tag_map ReuseMap.empty
+  >>= fun lambda_function_body ->
   let function_ident =
     Ident.create_local (Function_name.to_string function_name)
   in
@@ -205,7 +309,8 @@ let target_function_defn
         ~loc:Loc_unknown ~attr:default_function_attribute
         ~body:lambda_function_body )
 
-let target_function_defns (function_defns : function_defn list) :
+let target_function_defns (function_defns : function_defn list)
+    (constructor_tag_map : int ConstructorTagMap.t) :
     (ident_context * (Ident.t * lambda) list) Or_error.t =
   Ok
     (List.fold function_defns ~init:([], [])
@@ -217,20 +322,23 @@ let target_function_defns (function_defns : function_defn list) :
            Var_name.of_string (Function_name.to_string function_name)
          in
          let function_ident, function_lambda =
-           Or_error.ok_exn (target_function_defn function_defn)
+           Or_error.ok_exn
+             (target_function_defn function_defn constructor_tag_map)
          in
          ( Or_error.ok_exn
              (Type_context_env.extend_typing_context acc_functions_ident_context
                 function_var function_ident),
            (function_ident, function_lambda) :: acc_functions_ident_lambda )))
 
-let target_program (TProg (_, function_defns, main_option) : program) :
-    lambda Or_error.t =
-  target_function_defns function_defns
+let target_program (TProg (_, function_defns, main_option) : program)
+    (constructor_tag_map : int ConstructorTagMap.t) : lambda Or_error.t =
+  target_function_defns function_defns constructor_tag_map
   >>= fun (functions_ident_context, functions_ident_lambda) ->
   (match main_option with
   | None -> Ok lambda_unit
-  | Some main_expr -> target_expr main_expr functions_ident_context)
+  | Some main_expr ->
+      target_expr main_expr functions_ident_context constructor_tag_map
+        ReuseMap.empty)
   >>= fun main_lambda ->
   let main_function_ident = Ident.create_local "main" in
   let main_param_ident = Ident.create_local "main_param" in

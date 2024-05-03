@@ -30,7 +30,7 @@ type expr =
   | FunCall of Function_name.t * value list
   | If of expr * expr
   | IfElse of expr * expr * expr
-  | Match of match_kind * Var_name.t * pattern_expr list
+  | Match of match_kind * int * int * Var_name.t * pattern_expr list
   | UnOp of unary_op * expr
   | BinaryOp of binary_op * expr * expr
   | Raise
@@ -143,14 +143,19 @@ let rec var_subst (var : Var_name.t) (subst_var : Var_name.t) (expr : expr) :
       let subst_expr_then = var_subst var subst_var expr_then in
       let subst_expr_else = var_subst var subst_var expr_else in
       IfElse (subst_expr_cond, subst_expr_then, subst_expr_else)
-  | Match (matched_var_type_expr, matched_var, patterns) ->
+  | Match (match_kind, atom_count, nonatom_count, matched_var, patterns) ->
       let subst_matched_var =
         if Var_name.( = ) matched_var var then subst_var else matched_var
       in
       let subst_patterns =
         List.map patterns ~f:(var_subst_pattern var subst_var)
       in
-      Match (matched_var_type_expr, subst_matched_var, subst_patterns)
+      Match
+        ( match_kind,
+          atom_count,
+          nonatom_count,
+          subst_matched_var,
+          subst_patterns )
   | UnOp (unary_op, expr) ->
       let subst_expr = var_subst var subst_var expr in
       UnOp (unary_op, subst_expr)
@@ -182,3 +187,13 @@ and var_subst_matched_expr (var : Var_name.t) (subst_var : Var_name.t)
         List.map matched_exprs ~f:(var_subst_matched_expr var subst_var)
       in
       MConstructor (constructor_name, subst_matched_exprs)
+
+let is_atom (matched_expr : matched_expr) : bool =
+  match matched_expr with
+  | MConstructor (_, type_exprs) -> Int.( = ) (List.length type_exprs) 0
+  | _ -> false
+
+let split_patterns (patterns : pattern_expr list) :
+    pattern_expr list * pattern_expr list =
+  List.partition_tf patterns ~f:(fun (MPattern (matched_expr, _)) ->
+      is_atom matched_expr)

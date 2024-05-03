@@ -3,7 +3,7 @@ type mlist =
 | Cons of int @ shared * mlist @ unique
 
 {
-  let xs = Cons (1, Cons (2, Cons (3, Nil))) in
+  let xs = Nil in
   match xs with
   | Nil -> { 0 }
   | Cons (x, x2) -> {
