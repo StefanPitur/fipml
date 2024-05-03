@@ -1,0 +1,16 @@
+type mlist =
+| Nil
+| Cons of int @ shared * mlist @ unique
+
+{
+  let xs = Cons (1, Cons (2, Cons (3, Nil))) in
+  match xs with
+  | Nil -> { 0 }
+  | Cons (x, x2) -> {
+      match x2 with
+      | Cons (y, Nil) -> { x + y }
+      | Cons (y, Cons (z, _)) -> { x + y + z }
+      endmatch
+    }
+  endmatch
+}

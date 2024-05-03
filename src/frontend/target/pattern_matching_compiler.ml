@@ -77,14 +77,8 @@ let rec match_var_con match_kind constructors_env us qs def : expr =
   | _ -> raise (Invalid_argument "not allowed")
 
 and match_var match_kind constructors_env us qs def =
-  Fmt.pf Fmt.stdout "FINE ME - VAR RULE!\n";
   let u = List.hd_exn us in
   let us = List.tl_exn us in
-  Fmt.pf Fmt.stdout "Print u : %s@." (Var_name.to_string u);
-  Fmt.pf Fmt.stdout "Print us:@.";
-  List.iter us ~f:(fun u ->
-      Fmt.pf Fmt.stdout "    u : %s@." (Var_name.to_string u));
-  Fmt.pf Fmt.stdout "\n\n";
   let updated_qs =
     List.map qs ~f:(fun (patterns, expr) ->
         Or_error.ok_exn
@@ -92,30 +86,15 @@ and match_var match_kind constructors_env us qs def =
           | MVariable v :: patterns -> Ok (patterns, var_subst v u expr)
           | _ -> Or_error.of_exn VariableExpected))
   in
-  Fmt.pf Fmt.stdout "Updates qs :@.";
-  pprint_equations updated_qs;
-  Fmt.pf Fmt.stdout "Finish updates qs\n@.";
   compile_pattern_matching match_kind constructors_env us updated_qs def
 
 and match_con match_kind constructors_env us qs def =
-  Fmt.pf Fmt.stdout "FINE ME - CONSTR RULE!\n";
   let constructor_name = get_con (List.hd_exn qs) in
   let cs =
     Or_error.ok_exn (constructors mock_loc constructor_name constructors_env)
   in
-  Fmt.pf Fmt.stdout "Constructor name - %s@."
-    (Constructor_name.to_string constructor_name);
-  Fmt.pf Fmt.stdout "Constructors:@.";
-  List.iter cs ~f:(fun c ->
-      Fmt.pf Fmt.stdout "    Constructor name - %s@."
-        (Constructor_name.to_string c));
   let u = List.hd_exn us in
   let us = List.tl_exn us in
-  Fmt.pf Fmt.stdout "Print u : %s@." (Var_name.to_string u);
-  Fmt.pf Fmt.stdout "Print us:@.";
-  List.iter us ~f:(fun u ->
-      Fmt.pf Fmt.stdout "    u : %s@." (Var_name.to_string u));
-  Fmt.pf Fmt.stdout "\n\n";
   let patterns =
     List.map cs ~f:(fun c ->
         match_clause match_kind constructors_env c (u :: us) (choose c qs) def)
@@ -123,9 +102,7 @@ and match_con match_kind constructors_env us qs def =
   Match (match_kind, u, patterns)
 
 and match_clause match_kind constructors_env c us qs def =
-  Fmt.pf Fmt.stdout "FINE ME - CLAUSE RULE!\n";
   let k = Or_error.ok_exn (arity mock_loc c constructors_env) in
-  Fmt.pf Fmt.stdout "arity - %d@." k;
   let us = List.tl_exn us in
   let us' = List.init k ~f:(fun _ -> fresh_var ()) in
   let qs' =
@@ -142,28 +119,20 @@ and match_clause match_kind constructors_env c us qs def =
 and compile_pattern_matching (match_kind : match_kind)
     (constructors_env : Type_defns_env.constructors_env) (us : Var_name.t list)
     (qs : equation list) (def : expr) : expr =
-  let expr =
-    match us with
-    | [] ->
-        let exprs =
-          List.map qs ~f:(fun (patterns, expr) ->
-              Or_error.ok_exn
-                (match patterns with
-                | [] -> Ok expr
-                | _ -> Or_error.of_exn EmptyPatternExpected))
-        in
-        List.fold_right exprs ~init:def ~f:fatbar
-    | u :: us ->
-        let partitioned_qs = partition is_var qs in
-        List.iter partitioned_qs ~f:pprint_equations;
-        Fmt.pf Fmt.stdout "DONE\n<><><><><><><><><><><><><><><><><>\n\n";
-        List.fold_right partitioned_qs ~init:def
-          ~f:(match_var_con match_kind constructors_env (u :: us))
-  in
-  Fmt.pf Fmt.stdout "exit compile pattern matching:@.";
-  Pprint_pre_lambda.pprint_pre_lambda_expr Fmt.stdout ~indent:"    " expr;
-  Fmt.pf Fmt.stdout "exit compile pattern matching!@.";
-  expr
+  match us with
+  | [] ->
+      let exprs =
+        List.map qs ~f:(fun (patterns, expr) ->
+            Or_error.ok_exn
+              (match patterns with
+              | [] -> Ok expr
+              | _ -> Or_error.of_exn EmptyPatternExpected))
+      in
+      List.fold_right exprs ~init:def ~f:fatbar
+  | u :: us ->
+      let partitioned_qs = partition is_var qs in
+      List.fold_right partitioned_qs ~init:def
+        ~f:(match_var_con match_kind constructors_env (u :: us))
 
 and pprint_equation ((patterns, expr) : equation) : unit =
   Fmt.pf Fmt.stdout "Equation entry - \n";

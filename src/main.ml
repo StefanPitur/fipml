@@ -1,27 +1,34 @@
-(* open Ast.Ast_types
-   open Core;;
+open Core
+open Result;;
 
-   let channel = In_channel.create "src/red-black-trees.fipml" in
-   match
-     Parsing.Lex_and_parse.parse_source_code_with_error
-       (Lexing.from_channel channel)
-   with
-   | Ok parsed_program -> (
-       (* Parsing.Pprint_parser_ast.pprint_program Fmt.stdout parsed_program; *)
-       match Typing.Typecheck_program.typecheck_program parsed_program with
-       | Error err -> print_string (Error.to_string_hum err)
-       | Ok (typed_program, functions_env, _) ->
-           Typing.Pprint_typed_ast.pprint_typed_program Fmt.stdout typed_program;
-           Fmt.pf Fmt.stdout "\n\n<><><><><>\n";
-           Typing.Functions_env.pprint_functions_env Fmt.stdout functions_env
-           (* Fmt.pf Fmt.stdout "\n\n<><><><><>\n";
-              List.iter fiped_function_defns
-                ~f:
-                  (Typing.Pprint_fip_ast.pprint_fip_function_defn Fmt.stdout
-                     ~indent:"")
-                        fiped_function_defn)) *))
-   | Error err -> print_string (Error.to_string_hum err) *)
+let channel = In_channel.create "src/pattern_matching.fipml" in
+Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_channel channel)
+>>= fun parsed_program ->
+Typing.Typecheck_program.typecheck_program parsed_program
+>>= fun (typed_program, _, types_env, constructors_env, fip_function_defns) ->
+let constructor_tag_map =
+  Target.Pre_lambda.compute_custom_constructors_tags types_env constructors_env
+in
+let (Target.Pre_lambda.TProg (_, function_defn, main_expr_option)) =
+  Target.Convert_typed_ast_to_pre_lambda.convert_typed_ast_to_pre_lambda_program
+    constructors_env constructor_tag_map typed_program
+in
+let pre_lambda_fip_function_defns =
+  Target.Convert_fip_ast_to_pre_lambda
+  .convert_fip_ast_to_pre_lambda_function_defns constructors_env
+    constructor_tag_map fip_function_defns
+in
+let pre_lambda_program =
+  Target.Pre_lambda.TProg
+    ( constructor_tag_map,
+      function_defn @ pre_lambda_fip_function_defns,
+      main_expr_option )
+in
+Ok
+  (Target.Pprint_pre_lambda.pprint_pre_lambda_program Fmt.stdout
+     pre_lambda_program)
 
+(*
 open Ast.Ast_types
 open Core
 open Lambda
@@ -42,64 +49,64 @@ let write_lambda (lambda : lambda) : unit =
   Out_channel.close fd
 ;;
 
-let typed_function =
+let typed_function_defn =
   Typed_ast.TFun
     ( mock_loc,
       TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
       0,
       None,
-      Function_name.of_string "my_function",
+      Function_name.of_string "some_function",
       [
         TParam
-          ( TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-            Var_name.of_string "x",
-            None );
-        TParam
-          ( TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-            Var_name.of_string "y",
+          ( TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+            Var_name.of_string "a",
             None );
       ],
-      Typed_ast.BinaryOp
+      UnboxedSingleton
         ( mock_loc,
           TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
-          BinOpPlus,
-          Typed_ast.UnboxedSingleton
+          Variable
             ( mock_loc,
-              TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-              Typed_ast.Variable
-                ( mock_loc,
-                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-                  Var_name.of_string "x" ) ),
-          Typed_ast.UnboxedSingleton
-            ( mock_loc,
-              TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-              Typed_ast.Variable
-                ( mock_loc,
-                  TAttr (mock_loc, TEInt mock_loc, Unique mock_loc),
-                  Var_name.of_string "y" ) ) ) )
+              TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+              Var_name.of_string "a" ) ) )
 in
 let typed_main_expr =
-  Typed_ast.FunCall
+  Typed_ast.Let
     ( mock_loc,
       TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
-      Function_name.of_string "my_function",
-      [
-        Typed_ast.Integer
-          (mock_loc, TAttr (mock_loc, TEInt mock_loc, Shared mock_loc), 2);
-        Typed_ast.Integer
-          (mock_loc, TAttr (mock_loc, TEInt mock_loc, Shared mock_loc), 40);
-      ] )
+      [],
+      [ Var_name.of_string "x1" ],
+      FunCall
+        ( mock_loc,
+          TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+          Function_name.of_string "some_function",
+          [
+            Integer
+              (mock_loc, TAttr (mock_loc, TEInt mock_loc, Shared mock_loc), -13);
+          ] ),
+      Typed_ast.UnOp
+        ( mock_loc,
+          TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+          UnOpNeg,
+          Typed_ast.UnboxedSingleton
+            ( mock_loc,
+              TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+              Typed_ast.Variable
+                ( mock_loc,
+                  TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
+                  Var_name.of_string "x1" ) ) ) )
 in
 match
   Convert_typed_ast_to_lambda.convert_typed_ast_program
     (Typed_ast.TProg
        ( [],
          TAttr (mock_loc, TEInt mock_loc, Shared mock_loc),
-         [ typed_function ],
+         [ typed_function_defn ],
          Some typed_main_expr ))
-    []
+    [] []
 with
 | Error _ -> print_string "some error occurred"
 | Ok program_lambda ->
     Printlambda.lambda Fmt.stdout program_lambda;
     write_lambda program_lambda
+*)

@@ -1,4 +1,0 @@
-(library
- (name lambda_test)
- (modules revacc_lambda fib_lambda mutation_lambda)
- (libraries compiler-libs.bytecomp core))

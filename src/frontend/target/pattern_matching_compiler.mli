@@ -8,3 +8,6 @@ val compile_pattern_matching :
   (Pre_lambda.matched_expr list * Pre_lambda.expr) list ->
   Pre_lambda.expr ->
   Pre_lambda.expr
+
+val pprint_equations :
+  (Pre_lambda.matched_expr list * Pre_lambda.expr) list -> unit
