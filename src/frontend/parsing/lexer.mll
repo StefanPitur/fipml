@@ -20,7 +20,7 @@ let letter = lowercase | uppercase
 
 (** Regexes for finding tokens *)
 let integer_regex_expression = '-'? digit+
-let lid_regex_expression = lowercase (letter | digit | '_')*
+let lid_regex_expression = lowercase (letter | digit | '_')* '!'?
 let uid_regex_expression = uppercase (letter | digit | '_')*
 let whitespace_regex_expression = [' ' '\t']+
 let newline_regex_expression = '\r' | '\n' | "\r\n"

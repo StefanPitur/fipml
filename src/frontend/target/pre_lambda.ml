@@ -13,6 +13,7 @@ end)
 type ident_context = Ident.t Type_context_env.typing_context
 type constructor_kind = Atom | NonAtom
 type match_kind = Destructive | NonDestructive
+type function_kind = Fip | NonFip
 
 type value =
   | Unit
@@ -33,6 +34,8 @@ type expr =
   | Match of match_kind * int * int * Var_name.t * pattern_expr list
   | UnOp of unary_op * expr
   | BinaryOp of binary_op * expr * expr
+  | Inst of int * expr
+  | Free of int * expr
   | Raise
 
 and pattern_expr = MPattern of matched_expr * expr
@@ -43,7 +46,8 @@ and matched_expr =
   | MVariable of Var_name.t
   | MConstructor of Constructor_name.t * matched_expr list
 
-type function_defn = TFun of Function_name.t * Var_name.t list * expr
+type function_defn =
+  | TFun of function_kind * Function_name.t * Var_name.t list * expr
 
 type program =
   | TProg of int ConstructorTagMap.t * function_defn list * expr option
@@ -163,6 +167,12 @@ let rec var_subst (var : Var_name.t) (subst_var : Var_name.t) (expr : expr) :
       let subst_expr_left = var_subst var subst_var expr_left in
       let subst_expr_right = var_subst var subst_var expr_right in
       BinaryOp (binary_op, subst_expr_left, subst_expr_right)
+  | Inst (k, expr) ->
+      let subst_expr = var_subst var subst_var expr in
+      Inst (k, subst_expr)
+  | Free (k, expr) ->
+      let subst_expr = var_subst var subst_var expr in
+      Free (k, subst_expr)
   | Raise -> Raise
 
 and var_subst_pattern (var : Var_name.t) (subst_var : Var_name.t)
@@ -197,3 +207,9 @@ let split_patterns (patterns : pattern_expr list) :
     pattern_expr list * pattern_expr list =
   List.partition_tf patterns ~f:(fun (MPattern (matched_expr, _)) ->
       is_atom matched_expr)
+
+let equal_function_kind (function_kind1 : function_kind)
+    (function_kind2 : function_kind) : bool =
+  match (function_kind1, function_kind2) with
+  | Fip, Fip | NonFip, NonFip -> true
+  | _ -> false

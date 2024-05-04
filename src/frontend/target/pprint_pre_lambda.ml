@@ -6,9 +6,12 @@ let indent_tab = "    "
 
 (* Pretty-printing Type Definition *)
 let rec pprint_pre_lambda_function_defn ppf ~indent
-    (TFun (function_name, function_params, function_body)) =
+    (TFun (function_kind, function_name, function_params, function_body)) =
   let sub_expr_indent = indent ^ indent_tab in
-  Fmt.pf ppf "%sFunction Name: %s@." indent
+  let function_kind =
+    match function_kind with Fip -> "Fip" | NonFip -> "NonFip"
+  in
+  Fmt.pf ppf "%s%s Function Name: %s@." indent function_kind
     (Function_name.to_string function_name);
   Fmt.pf ppf "%sParam List:@." indent;
   List.iter function_params ~f:(fun function_param ->
@@ -132,6 +135,12 @@ and pprint_pre_lambda_expr ppf ~indent expr =
       print_expr (string_of_binary_op binary_op);
       pprint_pre_lambda_expr ppf ~indent:sub_expr_indent pre_lambda_expr_left;
       pprint_pre_lambda_expr ppf ~indent:sub_expr_indent pre_lambda_expr_right
+  | Inst (k, pre_lambda_expr) ->
+      Fmt.pf ppf "%sInst: %d@." indent k;
+      pprint_pre_lambda_expr ppf ~indent:sub_expr_indent pre_lambda_expr
+  | Free (k, pre_lambda_expr) ->
+      Fmt.pf ppf "%sFree: %d@." indent k;
+      pprint_pre_lambda_expr ppf ~indent:sub_expr_indent pre_lambda_expr
   | Raise -> print_expr "Raise"
 
 and pprint_pre_lambda_program ppf

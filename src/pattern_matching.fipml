@@ -2,15 +2,18 @@ type mlist =
 | Nil
 | Cons of int @ shared * mlist @ unique
 
-{
-  let xs = Nil in
+fip fun update_mlist (xs : mlist @ unique) (v : int @ shared) : mlist @ 'u = {
   match xs with
+  | Nil -> { Nil }
+  | Cons (_, tl) -> { Cons (v, tl) }
+  endmatch
+}
+
+{
+  let xs = Cons (1, Nil) in
+  let result = update_mlist! (xs, 42) in
+  match result with
   | Nil -> { 0 }
-  | Cons (x, x2) -> {
-      match x2 with
-      | Cons (y, Nil) -> { x + y }
-      | Cons (y, Cons (z, _)) -> { x + y + z }
-      endmatch
-    }
+  | Cons (v, _) -> { v }
   endmatch
 }

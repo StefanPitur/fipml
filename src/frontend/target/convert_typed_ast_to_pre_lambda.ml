@@ -154,7 +154,11 @@ let convert_typed_ast_to_pre_lambda_function_defn
     convert_typed_ast_to_pre_lambda constructors_env constructor_tag_map
       function_body
   in
-  TFun (function_name, pre_lambda_function_params, pre_lambda_function_body)
+  TFun
+    ( Pre_lambda.NonFip,
+      function_name,
+      pre_lambda_function_params,
+      pre_lambda_function_body )
 
 let convert_typed_ast_to_pre_lambda_program
     (constructors_env : Type_defns_env.constructors_env)

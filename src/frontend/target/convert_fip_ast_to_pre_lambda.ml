@@ -163,7 +163,11 @@ let convert_fip_ast_to_pre_lambda_function_defn
     convert_fip_ast_to_pre_lambda constructors_env constructor_tag_map
       function_body
   in
-  TFun (function_name, pre_lambda_function_params, pre_lambda_function_body)
+  TFun
+    ( Pre_lambda.Fip,
+      function_name,
+      pre_lambda_function_params,
+      pre_lambda_function_body )
 
 let convert_fip_ast_to_pre_lambda_function_defns
     (constructors_env : Type_defns_env.constructors_env)
