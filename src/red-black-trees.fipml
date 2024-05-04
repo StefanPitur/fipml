@@ -149,3 +149,7 @@ fun test (n : int @ shared) : unit @ 'u = {
 fun main (n : int @ shared) : unit @ 'u = {
   test (n)
 }
+
+{
+  main (10)
+}

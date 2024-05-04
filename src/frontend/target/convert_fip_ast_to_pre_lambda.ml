@@ -116,10 +116,17 @@ let rec convert_fip_ast_to_pre_lambda
           expr_right
       in
       BinaryOp (binary_op, pre_lambda_expr_left, pre_lambda_expr_right)
-  | Drop (_, _, _, _, _, expr)
-  | Free (_, _, _, _, _, expr)
-  | Weak (_, _, _, _, _, expr)
-  | Inst (_, _, _, _, _, expr) ->
+  | Inst (_, _, _, _, k, expr) ->
+      let pre_lambda_expr =
+        convert_fip_ast_to_pre_lambda constructors_env constructor_tag_map expr
+      in
+      Inst (k, pre_lambda_expr)
+  | Free (_, _, _, _, k, expr) ->
+      let pre_lambda_expr =
+        convert_fip_ast_to_pre_lambda constructors_env constructor_tag_map expr
+      in
+      Free (k, pre_lambda_expr)
+  | Drop (_, _, _, _, _, expr) | Weak (_, _, _, _, _, expr) ->
       convert_fip_ast_to_pre_lambda constructors_env constructor_tag_map expr
 
 and convert_fip_ast_to_pre_lambda_pattern

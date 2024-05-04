@@ -13,9 +13,18 @@ type ( @ 'u1 @ ) custom_type =
 }
 */
 
-type ('t1 @ 'u1 @ 'a1) custom_type =
+type custom_type =
 | Atom
+| NonAtom of int @ shared
+
+fip(1) fun create_non_atom (v : int @ shared) : custom_type @ 'u = {
+  inst 1; NonAtom (v)
+}
 
 {
-  let (x, y) = (0, Atom) in (x, x, y)
+  let x = create_non_atom! (420691923) in
+  match x with
+  | Atom -> { 0 }
+  | NonAtom (v) -> { v }
+  endmatch
 }

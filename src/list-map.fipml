@@ -1,12 +1,12 @@
-type ( @ 'u @ ) list =
-| Cons of int @ 'u * (;'u;) list @ unique
+type mylist =
+| Cons of int @ shared * mylist @ unique
 | Nil
 
-fip fun add_1 (x : int @ 'u1) : int @ 'u2 = {
-  x + 1
+fip fun succ (x : int @ shared) : int @ 'u = {
+  x + 10
 }
 
-fip fun map_fn (xs : (;'u1;) list @ unique) ^(f : (int @ 'u1 -> int @ 'u2) @ 'u3) : (;'u5;) list @ 'u4 = {
+fip fun map_fn (xs : mylist @ unique) ^(f : (int @ shared -> int @ shared) @ 'u) : mylist @ 'u1 = {
   match xs with
   | Cons (x, xxs) -> { let fx = ^f (x) in let fxs = map_fn (xxs, f) in Cons (fx, fxs) }
   | Nil -> { Nil }
@@ -15,5 +15,9 @@ fip fun map_fn (xs : (;'u1;) list @ unique) ^(f : (int @ 'u1 -> int @ 'u2) @ 'u3
 
 {
   let xs = Cons (1, Cons (2, Cons (3, Nil))) in
-  map_fn (xs, add_1)
+  let new_xs = map_fn! (xs, succ) in
+  match new_xs with
+  | Nil -> { 0 }
+  | Cons (x, _) -> { x }
+  endmatch
 }

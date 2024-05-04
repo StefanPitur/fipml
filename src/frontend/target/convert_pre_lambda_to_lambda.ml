@@ -38,18 +38,26 @@ let rec target_value (value : value) (ident_context : ident_context)
                 (Type_context_env.get_var_type ident_context reuse_var)
             in
             reuse_map := extend_reuse_map;
-            let _, lambda_expr =
-              List.fold lambda_values ~init:(0, Lvar reuse_var_ident)
-                ~f:(fun (field_index, acc_lambda) lambda_value ->
-                  ( field_index + 1,
-                    Lsequence
-                      ( Lprim
-                          ( Psetfield (field_index, Pointer, Assignment),
-                            [ Lvar reuse_var_ident; lambda_value ],
-                            Loc_unknown ),
-                        acc_lambda ) ))
-            in
-            Ok lambda_expr)
+            let reuse_var_string = Var_name.to_string reuse_var in
+            if not (String.is_prefix reuse_var_string ~prefix:"_t") then
+              let _, lambda_expr =
+                List.fold lambda_values ~init:(0, Lvar reuse_var_ident)
+                  ~f:(fun (field_index, acc_lambda) lambda_value ->
+                    ( field_index + 1,
+                      Lsequence
+                        ( Lprim
+                            ( Psetfield (field_index, Pointer, Assignment),
+                              [ Lvar reuse_var_ident; lambda_value ],
+                              Loc_unknown ),
+                          acc_lambda ) ))
+              in
+              Ok lambda_expr
+            else
+              Ok
+                (Lprim
+                   ( Pmakeblock (constructor_tag, Mutable, Some shape),
+                     lambda_values,
+                     Loc_unknown )))
           else
             Ok
               (Lprim
@@ -317,6 +325,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
              [ lambda_expr_left; lambda_expr_right ],
              Loc_unknown ))
   | Inst (k, expr) ->
+      Fmt.pf Fmt.stdout "FIND ME\n";
       let fresh_var = fresh_var () in
       if equal_function_kind expr_kind Fip then
         reuse_map :=
@@ -344,10 +353,11 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
              [ Lconst (Const_immstring "match failure") ],
              Loc_unknown ))
 
-let target_params (function_params : Var_name.t list) :
+let target_params (function_params : Var_name.t list)
+    (functions_ident_context : ident_context) :
     ((Ident.t * value_kind) list * ident_context) Or_error.t =
   Ok
-    (List.fold_right function_params ~init:([], [])
+    (List.fold_right function_params ~init:([], functions_ident_context)
        ~f:(fun function_param (acc_function_args, acc_ident_context) ->
          let ident_param =
            Ident.create_local (Var_name.to_string function_param)
@@ -358,42 +368,55 @@ let target_params (function_params : Var_name.t list) :
                 function_param ident_param) )))
 
 let target_function_defn
-    (TFun (function_kind, function_name, function_params, function_body) :
-      function_defn) (constructor_tag_map : int ConstructorTagMap.t) :
-    (Ident.t * lambda) Or_error.t =
-  target_params function_params >>= fun (function_params, ident_context) ->
+    (TFun (function_kind, _, function_params, function_body) : function_defn)
+    (constructor_tag_map : int ConstructorTagMap.t)
+    (functions_ident_context : ident_context) : lambda Or_error.t =
+  target_params function_params functions_ident_context
+  >>= fun (function_params, ident_context) ->
   reuse_map := ReuseMap.empty;
   target_expr function_body ident_context constructor_tag_map function_kind
   >>= fun lambda_function_body ->
-  let function_ident =
-    Ident.create_local (Function_name.to_string function_name)
-  in
   Ok
-    ( function_ident,
-      lfunction ~kind:Curried ~params:function_params ~return:Pgenval
-        ~loc:Loc_unknown ~attr:default_function_attribute
-        ~body:lambda_function_body )
+    (lfunction ~kind:Curried ~params:function_params ~return:Pgenval
+       ~loc:Loc_unknown ~attr:default_function_attribute
+       ~body:lambda_function_body)
 
 let target_function_defns (function_defns : function_defn list)
     (constructor_tag_map : int ConstructorTagMap.t) :
     (ident_context * (Ident.t * lambda) list) Or_error.t =
+  let ident_context =
+    List.fold function_defns ~init:[]
+      ~f:(fun acc_ident_context (TFun (_, function_name, _, _)) ->
+        let function_var =
+          Var_name.of_string (Function_name.to_string function_name)
+        in
+        let function_ident =
+          Ident.create_local (Var_name.to_string function_var)
+        in
+        Or_error.ok_exn
+          (Type_context_env.extend_typing_context acc_ident_context function_var
+             function_ident))
+  in
   Ok
-    (List.fold function_defns ~init:([], [])
-       ~f:(fun
-           (acc_functions_ident_context, acc_functions_ident_lambda)
-           (TFun (_, function_name, _, _) as function_defn)
-         ->
-         let function_var =
-           Var_name.of_string (Function_name.to_string function_name)
-         in
-         let function_ident, function_lambda =
-           Or_error.ok_exn
-             (target_function_defn function_defn constructor_tag_map)
-         in
-         ( Or_error.ok_exn
-             (Type_context_env.extend_typing_context acc_functions_ident_context
-                function_var function_ident),
-           (function_ident, function_lambda) :: acc_functions_ident_lambda )))
+    ( ident_context,
+      List.fold function_defns ~init:[]
+        ~f:(fun
+            acc_functions_ident_lambda
+            (TFun (_, function_name, _, _) as function_defn)
+          ->
+          let function_var =
+            Var_name.of_string (Function_name.to_string function_name)
+          in
+          let function_ident =
+            Or_error.ok_exn
+              (Type_context_env.get_var_type ident_context function_var)
+          in
+          let function_lambda =
+            Or_error.ok_exn
+              (target_function_defn function_defn constructor_tag_map
+                 ident_context)
+          in
+          (function_ident, function_lambda) :: acc_functions_ident_lambda) )
 
 let target_program (TProg (_, function_defns, main_option) : program)
     (constructor_tag_map : int ConstructorTagMap.t) : lambda Or_error.t =

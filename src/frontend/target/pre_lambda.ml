@@ -84,7 +84,7 @@ let fresh_var =
   let index = ref 0 in
   fun () ->
     index := !index + 1;
-    Var_name.of_string (Fmt.str "_v%i" !index)
+    Var_name.of_string (Fmt.str "_t%i" !index)
 
 let rec replace_underscores_with_dummy_vars (matched_expr : matched_expr) :
     matched_expr =

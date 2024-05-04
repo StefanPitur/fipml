@@ -21,7 +21,7 @@ let write_fip (program_lambda : Lambda.lambda) =
   Out_channel.close fd
 ;;
 
-let channel = In_channel.create "src/pattern_matching.fipml" in
+let channel = In_channel.create "src/red-black-trees.fipml" in
 Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_channel channel)
 >>= fun parsed_program ->
 Typing.Typecheck_program.typecheck_program parsed_program
@@ -44,6 +44,7 @@ let pre_lambda_program =
       function_defn @ pre_lambda_fip_function_defns,
       main_expr_option )
 in
+Target.Pprint_pre_lambda.pprint_pre_lambda_program Fmt.stdout pre_lambda_program;
 Target.Convert_pre_lambda_to_lambda.target_program pre_lambda_program
   constructor_tag_map
 >>= fun lambda_program -> Ok (write_fip lambda_program)
