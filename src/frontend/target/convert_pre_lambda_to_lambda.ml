@@ -325,7 +325,6 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
              [ lambda_expr_left; lambda_expr_right ],
              Loc_unknown ))
   | Inst (k, expr) ->
-      Fmt.pf Fmt.stdout "FIND ME\n";
       let fresh_var = fresh_var () in
       if equal_function_kind expr_kind Fip then
         reuse_map :=
