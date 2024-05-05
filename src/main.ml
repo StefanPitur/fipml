@@ -2,7 +2,7 @@ open Core
 open Result
 
 let write_fip (program_lambda : Lambda.lambda) =
-  let fd = Out_channel.create "src/experiments/msort/fip.cmo" in
+  let fd = Out_channel.create "src/experiments/rbtree/fip.cmo" in
 
   (*
      Running .cmo by
@@ -16,12 +16,14 @@ let write_fip (program_lambda : Lambda.lambda) =
   Printlambda.lambda Fmt.stdout program_lambda;
   let instructions = Bytegen.compile_implementation "Fip" program_lambda in
   (* Write the sequence of instructions to the file revacc.cmo *)
-  Emitcode.to_file fd "Fip" "src/experiments/msort/fip.cmo"
+  Emitcode.to_file fd "Fip" "src/experiments/rbtree/fip.cmo"
     ~required_globals:Ident.Set.empty instructions;
   Out_channel.close fd
 ;;
 
-let channel = In_channel.create "src/experiments/msort/msort.fipml" in
+let channel =
+  In_channel.create "src/experiments/rbtree/red-black-trees.fipml"
+in
 Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_channel channel)
 >>= fun parsed_program ->
 Typing.Typecheck_program.typecheck_program parsed_program
