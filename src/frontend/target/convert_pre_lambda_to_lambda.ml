@@ -40,8 +40,21 @@ let rec target_value (value : value) (ident_context : ident_context)
             reuse_map := extend_reuse_map;
             let reuse_var_string = Var_name.to_string reuse_var in
             if not (String.is_prefix reuse_var_string ~prefix:"_t") then
+              let initial_lambda =
+                Lsequence
+                  ( Lprim
+                      ( Pccall
+                          (Primitive.simple ~name:"caml_obj_set_tag" ~arity:2
+                             ~alloc:false),
+                        [
+                          Lvar reuse_var_ident;
+                          Lconst (const_int constructor_tag);
+                        ],
+                        Loc_unknown ),
+                    Lvar reuse_var_ident )
+              in
               let _, lambda_expr =
-                List.fold lambda_values ~init:(0, Lvar reuse_var_ident)
+                List.fold lambda_values ~init:(0, initial_lambda)
                   ~f:(fun (field_index, acc_lambda) lambda_value ->
                     ( field_index + 1,
                       Lsequence
@@ -112,7 +125,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
                 ->
                 ( ( var_ident,
                     Lprim
-                      ( Pfield (detupling_field_index, Pointer, Mutable),
+                      ( Pfield detupling_field_index,
                         [ Lvar tupled_param_ident ],
                         Loc_unknown ) )
                   :: acc_letrec_vars_detupling,
@@ -241,7 +254,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
                               in
                               let v_lambda =
                                 Lprim
-                                  ( Pfield (field_index, Pointer, Mutable),
+                                  ( Pfield field_index,
                                     [ Lvar match_var_ident ],
                                     Loc_unknown )
                               in
