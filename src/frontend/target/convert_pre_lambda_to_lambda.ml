@@ -180,10 +180,8 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
   | If (expr_cond, expr_then) ->
       target_expr expr_cond ident_context constructor_tag_map expr_kind
       >>= fun lambda_expr_cond ->
-      let initial_reuse_map = !reuse_map in
       target_expr expr_then ident_context constructor_tag_map expr_kind
       >>= fun lambda_expr_then ->
-      reuse_map := initial_reuse_map;
       Ok (Lifthenelse (lambda_expr_cond, lambda_expr_then, lambda_unit))
   | IfElse (expr_cond, expr_then, expr_else) ->
       target_expr expr_cond ident_context constructor_tag_map expr_kind
@@ -194,7 +192,6 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
       reuse_map := initial_reuse_map;
       target_expr expr_else ident_context constructor_tag_map expr_kind
       >>= fun lambda_expr_else ->
-      reuse_map := initial_reuse_map;
       Ok (Lifthenelse (lambda_expr_cond, lambda_expr_then, lambda_expr_else))
   | Match (_, atom_count, nonatom_count, match_var, patterns) ->
       let initial_reuse_map = !reuse_map in
@@ -252,7 +249,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
                                 ( Or_error.ok_exn
                                     (Type_context_env.extend_typing_context
                                        acc_ident_context v v_ident),
-                                  (v_ident, v_lambda) :: acc_letrecs,
+                                  acc_letrecs @ [ (v_ident, v_lambda) ],
                                   field_index + 1 )
                           | _ ->
                               Or_error.of_exn

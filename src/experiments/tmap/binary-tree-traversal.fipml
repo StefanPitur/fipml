@@ -1,5 +1,5 @@
 type 'a tree =
-| Bin of 'a tree * 'a tree
+| Bin of 'a tree @ unique * 'a tree @ unique
 | Tip of 'a
 
 type ('a, 'b) tzipper =
