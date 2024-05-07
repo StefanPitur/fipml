@@ -8,4 +8,4 @@
   print_int_lambda
   pre_lambda
   pprint_pre_lambda)
- (libraries ast compiler-libs.bytecomp core typing))
+ (libraries ast compiler-libs.bytecomp compiler-libs.optcomp core typing))

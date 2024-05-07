@@ -428,7 +428,8 @@ let target_function_defns (function_defns : function_defn list)
           (function_ident, function_lambda) :: acc_functions_ident_lambda) )
 
 let target_program (TProg (_, function_defns, main_option) : program)
-    (constructor_tag_map : int ConstructorTagMap.t) : lambda Or_error.t =
+    (constructor_tag_map : int ConstructorTagMap.t) (program_modname : Ident.t)
+    : lambda Or_error.t =
   target_function_defns function_defns constructor_tag_map
   >>= fun (functions_ident_context, functions_ident_lambda) ->
   (match main_option with
@@ -447,8 +448,9 @@ let target_program (TProg (_, function_defns, main_option) : program)
   in
   Ok
     (Lprim
-       ( Psetglobal (Ident.create_persistent "Fip"),
+       ( Psetfield (0, Pointer, Root_initialization),
          [
+           Lprim (Pgetglobal program_modname, [], Loc_unknown);
            Lletrec
              ( (main_function_ident, main_function_lambda)
                :: functions_ident_lambda
@@ -475,28 +477,57 @@ let target_program (TProg (_, function_defns, main_option) : program)
                  } );
          ],
          Loc_unknown ))
-
 (* Ok
-    (Lletrec
-       ( ((main_function_ident, main_function_lambda) :: functions_ident_lambda)
-         @ Print_int_lambda.import_print_int_lambda_letrecs (),
-         Lapply
-           {
-             ap_func = Lvar Print_int_lambda._print_int_ident;
-             ap_args =
-               [
-                 Lapply
-                   {
-                     ap_func = Lvar main_function_ident;
-                     ap_args = [ lambda_unit ];
-                     ap_loc = Loc_unknown;
-                     ap_tailcall = Default_tailcall;
-                     ap_inlined = Default_inline;
-                     ap_specialised = Default_specialise;
-                   };
-               ];
-             ap_loc = Loc_unknown;
-             ap_tailcall = Default_tailcall;
-             ap_inlined = Default_inline;
-             ap_specialised = Default_specialise;
-           } )) *)
+   (Lletrec
+      ( ((main_function_ident, main_function_lambda) :: functions_ident_lambda)
+        @ Print_int_lambda.import_print_int_lambda_letrecs (),
+        Lapply
+          {
+            ap_func = Lvar Print_int_lambda._print_int_ident;
+            ap_args =
+              [
+                Lapply
+                  {
+                    ap_func = Lvar main_function_ident;
+                    ap_args = [ lambda_unit ];
+                    ap_loc = Loc_unknown;
+                    ap_tailcall = Default_tailcall;
+                    ap_inlined = Default_inline;
+                    ap_specialised = Default_specialise;
+                  };
+              ];
+            ap_loc = Loc_unknown;
+            ap_tailcall = Default_tailcall;
+            ap_inlined = Default_inline;
+            ap_specialised = Default_specialise;
+          } )) *)
+(* Ok
+   (Lprim
+      ( Psetglobal (Ident.create_persistent "Fip"),
+        [
+          Lletrec
+            ( (main_function_ident, main_function_lambda)
+              :: functions_ident_lambda
+              @ Print_int_lambda.import_print_int_lambda_letrecs (),
+              Lapply
+                {
+                  ap_func = Lvar Print_int_lambda._print_int_ident;
+                  ap_args =
+                    [
+                      Lapply
+                        {
+                          ap_func = Lvar main_function_ident;
+                          ap_args = [ lambda_unit ];
+                          ap_loc = Loc_unknown;
+                          ap_tailcall = Default_tailcall;
+                          ap_inlined = Default_inline;
+                          ap_specialised = Default_specialise;
+                        };
+                    ];
+                  ap_loc = Loc_unknown;
+                  ap_tailcall = Default_tailcall;
+                  ap_inlined = Default_inline;
+                  ap_specialised = Default_specialise;
+                } );
+        ],
+        Loc_unknown )) *)

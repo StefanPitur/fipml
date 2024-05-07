@@ -279,12 +279,19 @@ fip fun first_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = 
   endmatch
 } 
 
+fip fun second_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
+  match xs with
+  | Cons (_, Cons (x, _)) -> { x }
+  | _ -> { d }
+  endmatch
+}
+
 fun test_iter (n : int @ shared) (iter : int @ shared) : int @ shared = {
   if iter == 0 then { 0 } else {
     let xs = rand_list (n) in
     let sequences_res = sequences! (xs) in
     let ys = merge_all! (sequences_res) in
-    let first_element_ys = first_element! (ys, 0) in
+    let first_element_ys = second_element! (ys, 0) in
     let pred_iter = iter - 1 in
     first_element_ys + test_iter (n, pred_iter)
   }
