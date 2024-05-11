@@ -11,6 +11,7 @@ let fbip
     (TFun (loc, _, _, fip_option, function_name, params, function_body) :
       Typed_ast.function_defn) (functions_env : Functions_env.functions_env) :
     Fip_ast.function_defn Or_error.t =
+  Fmt.pf Fmt.stdout "Find me - %s@." (Function_name.to_string function_name);
   match fip_option with
   | Some (Fbip n as fbip) ->
       let borrowed_set, owned_set =
@@ -42,7 +43,7 @@ let fbip
           ~reuse_var:(Var_name.of_string "_new")
           ~k:n ~reuse_map:ReuseMap.empty
       in
-      Fip_rules_check.fip_rules_check_expr function_body borrowed_set
+      Fbip_rules_check.fbip_rules_check_expr function_body borrowed_set
         functions_env
       >>= fun fip_function_body ->
       let _, fip_owned_set, fip_reuse_map =

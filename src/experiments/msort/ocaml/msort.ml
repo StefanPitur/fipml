@@ -16,13 +16,13 @@ let rec reverse_go (c : sublist) (acc : sublist) (u : unit2) : sublist =
   | STuple (a, b) -> (
       match u with Unit2 (Pad, Pad) -> SCons (b, SCons (a, acc)))
 
-let reverse_sublist (sublst : sublist) : sublist =
+and reverse_sublist (sublst : sublist) : sublist =
   match sublst with
   | SCons (a, SCons (b, c)) -> reverse_go c (STuple (b, a)) (Unit2 (Pad, Pad))
   | SCons (a, STuple (b, c)) -> SCons (c, STuple (b, a))
   | STuple (a, b) -> STuple (b, a)
 
-let rec sequences (xs : int_list) : partition =
+and sequences (xs : int_list) : partition =
   match xs with
   | Cons (a, Cons (b, xs1)) ->
       if a > b then
@@ -56,14 +56,14 @@ and ascending (a : int) (sublist : sublist) (bs : int_list) : sublist * int_list
       let reverse_sublist_res = reverse_sublist sublist in
       (reverse_sublist_res, bs2)
 
-let rec to_list (c : sublist) (u : unit2) : int_list =
+and to_list (c : sublist) (u : unit2) : int_list =
   match c with
   | SCons (a, cs) ->
       let cs_to_list = to_list cs u in
       Cons (a, cs_to_list)
   | STuple (a, b) -> ( match u with Unit2 (_, _) -> Cons (a, Cons (b, Nil)))
 
-let rec merge_all (xs : partition) : int_list =
+and merge_all (xs : partition) : int_list =
   match xs with
   | Sublist (x, End) -> to_list x (Unit2 (Pad, Pad))
   | Singleton (x, End) -> Cons (x, Nil)
@@ -164,17 +164,17 @@ and merge_left (p : pair) (d : int) (u : unit2) : sublist =
             SCons (a, scons_arg2)
           else SCons (d, STuple (a, b)))
 
-let rec rand_list (n : int) : int_list =
+and rand_list (n : int) : int_list =
   if n > 0 then
     let pred_n = n - 1 in
     let rand_list_res = rand_list pred_n in
     Cons (n, rand_list_res)
   else Nil
 
-let second_element (xs : int_list) (d : int) : int =
+and second_element (xs : int_list) (d : int) : int =
   match xs with Cons (_, Cons (x, _)) -> x | _ -> d
 
-let rec test_iter (n : int) (iter : int) : int =
+and test_iter (n : int) (iter : int) : int =
   if iter == 0 then 0
   else
     let xs = rand_list n in
@@ -184,6 +184,9 @@ let rec test_iter (n : int) (iter : int) : int =
     let pred_iter = iter - 1 in
     first_element_ys + test_iter n pred_iter
 
-let test (n : int) : int = test_iter n n;;
+and test (n : int) (iter : int) : int = test_iter n iter
+and main () = test 10 10
+;;
 
-print_int (test 10000)
+print_int (main ())
+(* print_int (test 2000000 100) *)

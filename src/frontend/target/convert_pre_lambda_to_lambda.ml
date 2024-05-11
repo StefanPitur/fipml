@@ -8,6 +8,11 @@ open Typing.Reuse_credits
 
 let reuse_map : reuse_map_entry ReuseMap.t ref = ref ReuseMap.empty
 
+let decompose_letrec_to_lets let_recs lambda_expr =
+  List.fold_right let_recs ~init:lambda_expr
+    ~f:(fun (let_lambda_ident, let_lambda) acc_lambda ->
+      Llet (Strict, Pgenval, let_lambda_ident, let_lambda, acc_lambda))
+
 let rec target_value (value : value) (ident_context : ident_context)
     (value_kind : function_kind) : lambda Or_error.t =
   match value with
@@ -16,7 +21,7 @@ let rec target_value (value : value) (ident_context : ident_context)
   | Boolean b -> Ok (Lconst (const_int (Bool.to_int b)))
   | Variable var ->
       Type_context_env.get_var_type ident_context var >>= fun var_ident ->
-      Ok (Lmutvar var_ident)
+      Ok (Lvar var_ident)
   | Constructor (constructor_kind, constructor_tag, _, values) -> (
       let constructor_arity = List.length values in
       let lambda_values =
@@ -135,7 +140,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
             lfunction ~kind:Tupled
               ~params:[ (tupled_param_ident, Pgenval) ]
               ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown
-              ~body:(Lletrec (letrec_vars_detupling, lambda_expr))
+              ~body:(decompose_letrec_to_lets letrec_vars_detupling lambda_expr)
           in
           let let_tupled_function_ident = Ident.create_local "let_vars_fun" in
           Ok
@@ -281,9 +286,7 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
                     expr_kind
                   >>= fun expr_lambda ->
                   reuse_map := initial_reuse_map;
-                  Ok
-                    ((constructor_tag, Lletrec (letrec, expr_lambda))
-                    :: acc_sw_nonatoms)
+                  Ok ((constructor_tag, decompose_letrec_to_lets letrec expr_lambda) :: acc_sw_nonatoms)
               | _ ->
                   Or_error.of_exn
                     (Invalid_argument "Non Atom matched expression expected")))
@@ -408,10 +411,10 @@ let target_function_defns (function_defns : function_defn list)
   in
   Ok
     ( ident_context,
-      List.fold function_defns ~init:[]
+      List.fold_right function_defns ~init:[]
         ~f:(fun
-            acc_functions_ident_lambda
             (TFun (_, function_name, _, _) as function_defn)
+            acc_functions_ident_lambda
           ->
           let function_var =
             Var_name.of_string (Function_name.to_string function_name)
@@ -446,37 +449,104 @@ let target_program (TProg (_, function_defns, main_option) : program)
       ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown
       ~body:main_lambda
   in
+  let combined_functions =
+    (main_function_ident, main_function_lambda)
+    :: Print_int_lambda.import_print_int_lambda_letrecs ()
+    @ functions_ident_lambda
+  in
+  let combined_functions_length = List.length combined_functions in
+  let psetfields_root, _ =
+    List.fold_right combined_functions
+      ~init:(lambda_unit, combined_functions_length - 1)
+      ~f:(fun (combined_function_ident, _) (acc_psetfields_root, index) ->
+        if Int.( = ) index (combined_functions_length - 1) then
+          ( Lprim
+              ( Psetfield (index, Pointer, Root_initialization),
+                [
+                  Lprim (Pgetglobal program_modname, [], Loc_unknown);
+                  Lvar combined_function_ident;
+                ],
+                Loc_unknown ),
+            index - 1 )
+        else
+          ( Lsequence
+              ( Lprim
+                  ( Psetfield (index, Pointer, Root_initialization),
+                    [
+                      Lprim (Pgetglobal program_modname, [], Loc_unknown);
+                      Lvar combined_function_ident;
+                    ],
+                    Loc_unknown ),
+                acc_psetfields_root ),
+            index - 1 ))
+  in
+  let main_global =
+    Lprim
+      ( Pfield 0,
+        [ Lprim (Pgetglobal program_modname, [], Loc_unknown) ],
+        Loc_unknown )
+  in
+  let print_int_global =
+    Lprim
+      ( Pfield 1,
+        [ Lprim (Pgetglobal program_modname, [], Loc_unknown) ],
+        Loc_unknown )
+  in
   Ok
-    (Lprim
-       ( Psetfield (0, Pointer, Root_initialization),
-         [
-           Lprim (Pgetglobal program_modname, [], Loc_unknown);
-           Lletrec
-             ( (main_function_ident, main_function_lambda)
-               :: functions_ident_lambda
-               @ Print_int_lambda.import_print_int_lambda_letrecs (),
-               Lapply
-                 {
-                   ap_func = Lvar Print_int_lambda._print_int_ident;
-                   ap_args =
-                     [
-                       Lapply
-                         {
-                           ap_func = Lvar main_function_ident;
-                           ap_args = [ lambda_unit ];
-                           ap_loc = Loc_unknown;
-                           ap_tailcall = Default_tailcall;
-                           ap_inlined = Default_inline;
-                           ap_specialised = Default_specialise;
-                         };
-                     ];
-                   ap_loc = Loc_unknown;
-                   ap_tailcall = Default_tailcall;
-                   ap_inlined = Default_inline;
-                   ap_specialised = Default_specialise;
-                 } );
-         ],
-         Loc_unknown ))
+    (Lsequence
+       ( Lletrec (combined_functions, psetfields_root),
+         Lapply
+           {
+             ap_func = print_int_global;
+             ap_args =
+               [
+                 Lapply
+                   {
+                     ap_func = main_global;
+                     ap_args = [ lambda_unit ];
+                     ap_loc = Loc_unknown;
+                     ap_tailcall = Default_tailcall;
+                     ap_inlined = Default_inline;
+                     ap_specialised = Default_specialise;
+                   };
+               ];
+             ap_loc = Loc_unknown;
+             ap_tailcall = Default_tailcall;
+             ap_inlined = Default_inline;
+             ap_specialised = Default_specialise;
+           } ))
+
+(* Ok
+   (Lprim
+      ( Psetfield (0, Pointer, Root_initialization),
+        [
+          Lprim (Pgetglobal program_modname, [], Loc_unknown);
+          Lletrec
+            ( (main_function_ident, main_function_lambda)
+              :: functions_ident_lambda
+              @ Print_int_lambda.import_print_int_lambda_letrecs (),
+              Lapply
+                {
+                  ap_func = Lvar Print_int_lambda._print_int_ident;
+                  ap_args =
+                    [
+                      Lapply
+                        {
+                          ap_func = Lvar main_function_ident;
+                          ap_args = [ lambda_unit ];
+                          ap_loc = Loc_unknown;
+                          ap_tailcall = Default_tailcall;
+                          ap_inlined = Default_inline;
+                          ap_specialised = Default_specialise;
+                        };
+                    ];
+                  ap_loc = Loc_unknown;
+                  ap_tailcall = Default_tailcall;
+                  ap_inlined = Default_inline;
+                  ap_specialised = Default_specialise;
+                } );
+        ],
+        Loc_unknown )) *)
 (* Ok
    (Lletrec
       ( ((main_function_ident, main_function_lambda) :: functions_ident_lambda)

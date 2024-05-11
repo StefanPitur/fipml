@@ -96,8 +96,8 @@ let _print_int_lambda =
 
 let import_print_int_lambda_letrecs () : (Ident.t * lambda) list =
   [
+    (_print_int_ident, _print_int_lambda);
     (_string_of_int_ident, _string_of_int_lambda);
     (_string_length_ident, _string_length_lambda);
     (_print_string_ident, _print_string_lambda);
-    (_print_int_ident, _print_int_lambda);
   ]

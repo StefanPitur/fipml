@@ -63,11 +63,11 @@ let compute_custom_constructors_tags (types_env : Type_defns_env.types_env)
             Type_name.( = ) type_name constructor_type)
       in
       let constructor_tag_map, _, _ =
-        List.fold type_constructors ~init:(acc_constructor_tag_map, 0, 0)
+        List.fold_right type_constructors ~init:(acc_constructor_tag_map, 0, 0)
           ~f:(fun
-              (acc_map, acc_index, acc_atom_index)
               (ConstructorEnvEntry
                 (_, constructor_name, constructor_type_exprs))
+              (acc_map, acc_index, acc_atom_index)
             ->
             if List.length constructor_type_exprs = 0 then
               ( Map.add_exn acc_map ~key:constructor_name ~data:acc_atom_index,

@@ -1,0 +1,434 @@
+(seq
+     (letrec
+       (main/205 (function main_param/206 (apply test/30 10 10))
+         _print_int/10
+           (function x/11[int]
+             (let (s/12 = (apply _string_of_int/4 x/11))
+               (apply _print_string/8 s/12)))
+         _string_of_int/4 (function x/5[int] (caml_format_int #"%d" x/5))
+         _string_length/6 (function s/7 (caml_ml_string_length s/7))
+         _print_string/8
+           (function s/9
+             (caml_ml_output (caml_ml_open_descriptor_out 1) s/9 0
+               (apply _string_length/6 s/9)))
+         reverse_go/13
+           (function c/198 acc/197 u/196
+             (switch* c/198
+              case tag 0:
+               (let (_u6/203 = (field 0 c/198) _u5/204 = (field 1 c/198))
+                 (apply reverse_go/13 *_u5/204
+                   (makemutable 0 *_u6/203 *acc/197) *u/196))
+              case tag 1:
+               (let (_u4/199 = (field 0 c/198) _u3/200 = (field 1 c/198))
+                 (switch* u/196
+                  case tag 0:
+                   (let (_u2/201 = (field 0 u/196) _u1/202 = (field 1 u/196))
+                     (switch* _u2/201
+                      case int 0:
+                       (switch* _u1/202
+                        case int 0:
+                         (makemutable 0 *_u3/200
+                           (makemutable 0 *_u4/199 *acc/197)))))))))
+         reverse_sublist/14
+           (function sublst/187
+             (switch* sublst/187
+              case tag 0:
+               (let
+                 (_u10/190 = (field 0 sublst/187)
+                  _u9/191 = (field 1 sublst/187))
+                 (switch* _u9/191
+                  case tag 0:
+                   (let
+                     (_u14/194 = (field 0 _u9/191)
+                      _u13/195 = (field 1 _u9/191))
+                     (apply reverse_go/13 *_u13/195
+                       (makemutable 1 *_u14/194 *_u10/190)
+                       (makemutable 0 0 0)))
+                  case tag 1:
+                   (let
+                     (_u12/192 = (field 0 _u9/191)
+                      _u11/193 = (field 1 _u9/191))
+                     (makemutable 0 *_u11/193
+                       (makemutable 1 *_u12/192 *_u10/190)))))
+              case tag 1:
+               (let
+                 (_u8/188 = (field 0 sublst/187)
+                  _u7/189 = (field 1 sublst/187))
+                 (makemutable 1 *_u7/189 *_u8/188))))
+         sequences/15
+           (function xs/172
+             (switch* xs/172
+              case int 0: 0
+              case tag 0:
+               (let (_u16/173 = (field 0 xs/172) _u15/174 = (field 1 xs/172))
+                 (switch* _u15/174
+                  case int 0: (makemutable 1 *_u16/173 0)
+                  case tag 0:
+                   (let
+                     (_u18/175 = (field 0 _u15/174)
+                      _u17/176 = (field 1 _u15/174))
+                     (if (> *_u16/173 *_u18/175)
+                       (let
+                         (let_vars_fun/181 =
+                            (function (tupled_param/180)
+                              (letrec
+                                (bs/177 (field 1 tupled_param/180)
+                                  sublist/178 (field 0 tupled_param/180))
+                                (let
+                                  (res_sequences/179 =
+                                     (apply sequences/15 *bs/177))
+                                  (makemutable 0 *sublist/178
+                                    *res_sequences/179)))))
+                         (apply let_vars_fun/181
+                           (apply descending/16 *_u18/175
+                             (makemutable 1 *_u18/175 *_u16/173) *_u17/176)))
+                       (let
+                         (let_vars_fun/186 =
+                            (function (tupled_param/185)
+                              (letrec
+                                (bs/182 (field 1 tupled_param/185)
+                                  sublist/183 (field 0 tupled_param/185))
+                                (let
+                                  (res_sequences/184 =
+                                     (apply sequences/15 *bs/182))
+                                  (makemutable 0 *sublist/183
+                                    *res_sequences/184)))))
+                         (apply let_vars_fun/186
+                           (apply ascending/17 *_u18/175
+                             (makemutable 1 *_u18/175 *_u16/173) *_u17/176)))))))))
+         descending/16
+           (function a/169 sublist/168 bs/167
+             (switch* bs/167
+              case int 0: (makemutable 0 *sublist/168 *bs/167)
+              case tag 0:
+               (let (_u20/170 = (field 0 bs/167) _u19/171 = (field 1 bs/167))
+                 (if (> *a/169 *_u20/170)
+                   (apply descending/16 *_u20/170
+                     (makemutable 0 *_u20/170 *sublist/168) *_u19/171)
+                   (makemutable 0 *sublist/168
+                     (makemutable 0 *_u20/170 *_u19/171))))))
+         ascending/17
+           (function a/162 sublist/161 bs/160
+             (switch* bs/160
+              case int 0:
+               (let
+                 (reverse_sublist_res/163 =
+                    (apply reverse_sublist/14 *sublist/161))
+                 (makemutable 0 *reverse_sublist_res/163 *bs/160))
+              case tag 0:
+               (let (_u22/164 = (field 0 bs/160) _u21/165 = (field 1 bs/160))
+                 (if (<= *a/162 *_u22/164)
+                   (apply ascending/17 *_u22/164
+                     (makemutable 0 *_u22/164 *sublist/161) *_u21/165)
+                   (let
+                     (reverse_sublist_res/166 =
+                        (apply reverse_sublist/14 *sublist/161))
+                     (makemutable 0 *reverse_sublist_res/166
+                       (makemutable 0 *_u22/164 *_u21/165)))))))
+         to_list/18
+           (function c/152 u/151
+             (switch* c/152
+              case tag 0:
+               (let
+                 (_u28/157 = (field 0 c/152)
+                  _u27/158 = (field 1 c/152)
+                  cs_to_list/159 = (apply to_list/18 *_u27/158 *u/151))
+                 (makemutable 0 *_u28/157 *cs_to_list/159))
+              case tag 1:
+               (let (_u26/153 = (field 0 c/152) _u25/154 = (field 1 c/152))
+                 (switch* u/151
+                  case tag 0:
+                   (let
+                     (_u24/155 = (field 0 u/151) _u23/156 = (field 1 u/151))
+                     (makemutable 0 *_u26/153 (makemutable 0 *_u25/154 0)))))))
+         merge_all/19
+           (function xs/133
+             (switch* xs/133
+              case int 0:
+               (let (merge_pairs_res/134 = (apply merge_pairs/20 *xs/133))
+                 (apply merge_all/19 *merge_pairs_res/134))
+              case tag 0:
+               (let (_u36/143 = (field 0 xs/133) _u35/144 = (field 1 xs/133))
+                 (switch* _u35/144
+                  case int 0:
+                   (apply to_list/18 *_u36/143 (makemutable 0 0 0))
+                  case tag 0:
+                   (let
+                     (_u40/148 = (field 0 _u35/144)
+                      _u39/149 = (field 1 _u35/144)
+                      merge_pairs_res/150 = (apply merge_pairs/20 *xs/133))
+                     (apply merge_all/19 *merge_pairs_res/150))
+                  case tag 1:
+                   (let
+                     (_u38/145 = (field 0 _u35/144)
+                      _u37/146 = (field 1 _u35/144)
+                      merge_pairs_res/147 = (apply merge_pairs/20 *xs/133))
+                     (apply merge_all/19 *merge_pairs_res/147))))
+              case tag 1:
+               (let (_u30/135 = (field 0 xs/133) _u29/136 = (field 1 xs/133))
+                 (switch* _u29/136
+                  case int 0: (makemutable 0 *_u30/135 0)
+                  case tag 0:
+                   (let
+                     (_u34/140 = (field 0 _u29/136)
+                      _u33/141 = (field 1 _u29/136)
+                      merge_pairs_res/142 = (apply merge_pairs/20 *xs/133))
+                     (apply merge_all/19 *merge_pairs_res/142))
+                  case tag 1:
+                   (let
+                     (_u32/137 = (field 0 _u29/136)
+                      _u31/138 = (field 1 _u29/136)
+                      merge_pairs_res/139 = (apply merge_pairs/20 *xs/133))
+                     (apply merge_all/19 *merge_pairs_res/139))))))
+         merge_pairs/20
+           (function xs/112
+             (switch* xs/112
+              case int 0: *xs/112
+              case tag 0:
+               (let (_u48/123 = (field 0 xs/112) _u47/124 = (field 1 xs/112))
+                 (switch* _u47/124
+                  case int 0: *xs/112
+                  case tag 0:
+                   (let
+                     (_u52/129 = (field 0 _u47/124)
+                      _u51/130 = (field 1 _u47/124)
+                      merge_res/131 =
+                        (apply merge/21 *_u48/123 *_u52/129
+                          (makemutable 0 0 0))
+                      merge_pairs_res/132 = (apply merge_pairs/20 *_u51/130))
+                     (makemutable 0 *merge_res/131 *merge_pairs_res/132))
+                  case tag 1:
+                   (let
+                     (_u50/125 = (field 0 _u47/124)
+                      _u49/126 = (field 1 _u47/124)
+                      merge_last_left_res/127 =
+                        (apply merge_last_left/23 *_u48/123 *_u50/125
+                          (makemutable 0 0 0))
+                      merge_pairs_res/128 = (apply merge_pairs/20 *_u49/126))
+                     (makemutable 0 *merge_last_left_res/127
+                       *merge_pairs_res/128))))
+              case tag 1:
+               (let (_u42/113 = (field 0 xs/112) _u41/114 = (field 1 xs/112))
+                 (switch* _u41/114
+                  case int 0: *xs/112
+                  case tag 0:
+                   (let
+                     (_u46/119 = (field 0 _u41/114)
+                      _u45/120 = (field 1 _u41/114)
+                      merge_last_right_res/121 =
+                        (apply merge_last_right/22 *_u42/113 *_u46/119
+                          (makemutable 0 0 0))
+                      merge_pairs_res/122 = (apply merge_pairs/20 *_u45/120))
+                     (makemutable 0 *merge_last_right_res/121
+                       *merge_pairs_res/122))
+                  case tag 1:
+                   (let
+                     (_u44/115 = (field 0 _u41/114)
+                      _u43/116 = (field 1 _u41/114)
+                      sublist_arg1/117 =
+                        (if (<= *_u42/113 *_u44/115)
+                          (makemutable 1 *_u42/113 *_u44/115)
+                          (makemutable 1 *_u44/115 *_u42/113))
+                      merge_pairs_res/118 = (apply merge_pairs/20 *_u43/116))
+                     (makemutable 0 *sublist_arg1/117 *merge_pairs_res/118))))))
+         merge/21
+           (function c1/91 c2/90 u/89
+             (switch* c1/91
+              case tag 0:
+               (let (_u64/102 = (field 0 c1/91) _u63/103 = (field 1 c1/91))
+                 (switch* c2/90
+                  case tag 0:
+                   (let
+                     (_u56/108 = (field 0 c2/90) _u55/109 = (field 1 c2/90))
+                     (if (<= *_u64/102 *_u56/108)
+                       (let
+                         (merge_res/110 =
+                            (apply merge/21 *_u63/103
+                              (makemutable 0 *_u56/108 *_u55/109) *u/89))
+                         (makemutable 0 *_u64/102 *merge_res/110))
+                       (let
+                         (merge_res/111 =
+                            (apply merge/21
+                              (makemutable 0 *_u64/102 *_u63/103) *_u55/109
+                              *u/89))
+                         (makemutable 0 *_u56/108 *merge_res/111))))
+                  case tag 1:
+                   (let
+                     (_u54/104 = (field 0 c2/90) _u53/105 = (field 1 c2/90))
+                     (if (<= *_u64/102 *_u54/104)
+                       (let
+                         (merge_res/106 =
+                            (apply merge/21 *_u63/103
+                              (makemutable 1 *_u54/104 *_u53/105) *u/89))
+                         (makemutable 0 *_u64/102 *merge_res/106))
+                       (let
+                         (merge_last_left_res/107 =
+                            (apply merge_last_left/23
+                              (makemutable 0 *_u64/102 *_u63/103) *_u53/105
+                              *u/89))
+                         (makemutable 0 *_u54/104 *merge_last_left_res/107))))))
+              case tag 1:
+               (let (_u62/92 = (field 0 c1/91) _u61/93 = (field 1 c1/91))
+                 (switch* c2/90
+                  case tag 0:
+                   (let (_u60/98 = (field 0 c2/90) _u59/99 = (field 1 c2/90))
+                     (if (<= *_u62/92 *_u60/98)
+                       (let
+                         (merge_last_right_res/100 =
+                            (apply merge_last_right/22 *_u61/93
+                              (makemutable 0 *_u60/98 *_u59/99) *u/89))
+                         (makemutable 0 *_u62/92 *merge_last_right_res/100))
+                       (let
+                         (merge_res/101 =
+                            (apply merge/21 (makemutable 1 *_u62/92 *_u61/93)
+                              *_u59/99 *u/89))
+                         (makemutable 0 *_u60/98 *merge_res/101))))
+                  case tag 1:
+                   (let (_u58/94 = (field 0 c2/90) _u57/95 = (field 1 c2/90))
+                     (if (<= *_u62/92 *_u58/94)
+                       (let
+                         (merge_right_res/96 =
+                            (apply merge_right/24 *_u61/93
+                              (makemutable 0 *_u58/94 *_u57/95) *u/89))
+                         (makemutable 0 *_u62/92 *merge_right_res/96))
+                       (let
+                         (merge_left_res/97 =
+                            (apply merge_left/25
+                              (makemutable 0 *_u62/92 *_u61/93) *_u57/95
+                              *u/89))
+                         (makemutable 0 *_u58/94 *merge_left_res/97))))))))
+         merge_last_right/22
+           (function a/81 c2/80 u/79
+             (switch* c2/80
+              case tag 0:
+               (let (_u70/84 = (field 0 c2/80) _u69/85 = (field 1 c2/80))
+                 (if (<= *a/81 *_u70/84)
+                   (switch* u/79
+                    case tag 0:
+                     (let (_u66/86 = (field 0 u/79) _u65/87 = (field 1 u/79))
+                       (makemutable 0 *a/81
+                         (makemutable 0 *_u70/84 *_u69/85))))
+                   (let
+                     (merge_last_right_res/88 =
+                        (apply merge_last_right/22 *a/81 *_u69/85 *u/79))
+                     (makemutable 0 *_u70/84 *merge_last_right_res/88))))
+              case tag 1:
+               (let (_u68/82 = (field 0 c2/80) _u67/83 = (field 1 c2/80))
+                 (apply merge_right/24 *a/81
+                   (makemutable 0 *_u68/82 *_u67/83) *u/79))))
+         merge_last_left/23
+           (function c2/71 d/70 u/69
+             (switch* c2/71
+              case tag 0:
+               (let (_u76/74 = (field 0 c2/71) _u75/75 = (field 1 c2/71))
+                 (if (<= *_u76/74 *d/70)
+                   (let
+                     (merge_last_left_res/76 =
+                        (apply merge_last_left/23 *_u75/75 *d/70 *u/69))
+                     (makemutable 0 *_u76/74 *merge_last_left_res/76))
+                   (switch* u/69
+                    case tag 0:
+                     (let (_u72/77 = (field 0 u/69) _u71/78 = (field 1 u/69))
+                       (makemutable 0 *d/70
+                         (makemutable 0 *_u76/74 *_u75/75))))))
+              case tag 1:
+               (let (_u74/72 = (field 0 c2/71) _u73/73 = (field 1 c2/71))
+                 (apply merge_left/25 (makemutable 0 *_u74/72 *_u73/73) *d/70
+                   *u/69))))
+         merge_right/24
+           (function a/63 p/62 u/61
+             (switch* u/61
+              case tag 0:
+               (let (_u80/64 = (field 0 u/61) _u79/65 = (field 1 u/61))
+                 (switch* p/62
+                  case tag 0:
+                   (let (_u78/66 = (field 0 p/62) _u77/67 = (field 1 p/62))
+                     (if (<= *a/63 *_u78/66)
+                       (makemutable 0 *a/63
+                         (makemutable 1 *_u78/66 *_u77/67))
+                       (let
+                         (scons_arg2/68 =
+                            (if (<= *a/63 *_u77/67)
+                              (makemutable 1 *a/63 *_u77/67)
+                              (makemutable 1 *_u77/67 *a/63)))
+                         (makemutable 0 *_u78/66 *scons_arg2/68))))))))
+         merge_left/25
+           (function p/55 d/54 u/53
+             (switch* u/53
+              case tag 0:
+               (let (_u84/56 = (field 0 u/53) _u83/57 = (field 1 u/53))
+                 (switch* p/55
+                  case tag 0:
+                   (let (_u82/58 = (field 0 p/55) _u81/59 = (field 1 p/55))
+                     (if (<= *_u82/58 *d/54)
+                       (let
+                         (scons_arg2/60 =
+                            (if (<= *_u81/59 *d/54)
+                              (makemutable 1 *_u81/59 *d/54)
+                              (makemutable 1 *d/54 *_u81/59)))
+                         (makemutable 0 *_u82/58 *scons_arg2/60))
+                       (makemutable 0 *d/54
+                         (makemutable 1 *_u82/58 *_u81/59))))))))
+         rand_list/26
+           (function n/50
+             (if (> *n/50 0)
+               (let
+                 (pred_n/51 = (- *n/50 1)
+                  rand_list_res/52 = (apply rand_list/26 *pred_n/51))
+                 (makemutable 0 *n/50 *rand_list_res/52))
+               0))
+         first_element/27
+           (function xs/47 d/46
+             (switch* xs/47
+              case int 0: *d/46
+              case tag 0:
+               (let (_u86/48 = (field 0 xs/47) _u85/49 = (field 1 xs/47))
+                 *_u86/48)))
+         second_element/28
+           (function xs/41 d/40
+             (switch* xs/41
+              case int 0: *d/40
+              case tag 0:
+               (let (_u88/42 = (field 0 xs/41) _u87/43 = (field 1 xs/41))
+                 (switch* _u87/43
+                  case int 0: *d/40
+                  case tag 0:
+                   (let
+                     (_u90/44 = (field 0 _u87/43)
+                      _u89/45 = (field 1 _u87/43))
+                     *_u90/44)))))
+         test_iter/29
+           (function n/34 iter/33
+             (if (== *iter/33 0) 0
+               (let
+                 (xs/35 = (apply rand_list/26 *n/34)
+                  sequences_res/36 = (apply sequences/15 *xs/35)
+                  ys/37 = (apply merge_all/19 *sequences_res/36)
+                  first_element_ys/38 = (apply second_element/28 *ys/37 0)
+                  pred_iter/39 = (- *iter/33 1))
+                 (+ 1 (apply test_iter/29 *n/34 *pred_iter/39)))))
+         test/30 (function n/32 iter/31 (apply test_iter/29 *n/32 *iter/31)))
+       (seq (setfield_ptr(root-init) 0 (global Fip!) main/205)
+         (setfield_ptr(root-init) 1 (global Fip!) _print_int/10)
+         (setfield_ptr(root-init) 2 (global Fip!) _string_of_int/4)
+         (setfield_ptr(root-init) 3 (global Fip!) _string_length/6)
+         (setfield_ptr(root-init) 4 (global Fip!) _print_string/8)
+         (setfield_ptr(root-init) 5 (global Fip!) reverse_go/13)
+         (setfield_ptr(root-init) 6 (global Fip!) reverse_sublist/14)
+         (setfield_ptr(root-init) 7 (global Fip!) sequences/15)
+         (setfield_ptr(root-init) 8 (global Fip!) descending/16)
+         (setfield_ptr(root-init) 9 (global Fip!) ascending/17)
+         (setfield_ptr(root-init) 10 (global Fip!) to_list/18)
+         (setfield_ptr(root-init) 11 (global Fip!) merge_all/19)
+         (setfield_ptr(root-init) 12 (global Fip!) merge_pairs/20)
+         (setfield_ptr(root-init) 13 (global Fip!) merge/21)
+         (setfield_ptr(root-init) 14 (global Fip!) merge_last_right/22)
+         (setfield_ptr(root-init) 15 (global Fip!) merge_last_left/23)
+         (setfield_ptr(root-init) 16 (global Fip!) merge_right/24)
+         (setfield_ptr(root-init) 17 (global Fip!) merge_left/25)
+         (setfield_ptr(root-init) 18 (global Fip!) rand_list/26)
+         (setfield_ptr(root-init) 19 (global Fip!) first_element/27)
+         (setfield_ptr(root-init) 20 (global Fip!) second_element/28)
+         (setfield_ptr(root-init) 21 (global Fip!) test_iter/29)
+         (setfield_ptr(root-init) 22 (global Fip!) test/30)))
+     (apply (field 0 (global Fip!)) (apply (field 1 (global Fip!)) 0)))
