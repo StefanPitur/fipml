@@ -43,6 +43,6 @@ fun fold_sum (t : tree<int32>) : int32
       res_l + res_r
 
 fun main()
-  val t = create_int_tree (30.int32)
+  val t = create_int_tree (27.int32)
   val t2 = tmap (t, fn(x) 0.int32 - x)
   fold_sum (t2).show

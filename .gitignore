@@ -1,5 +1,3 @@
 fipml.code-workspace
 _build/
 src/frontend/parsing/parser.conflicts
-*.trace
-*.DS_Store

@@ -293,8 +293,7 @@ fun test_iter (n : int @ shared) (iter : int @ shared) : int @ shared = {
     let ys = merge_all (sequences_res) in
     let first_element_ys = second_element (ys, 0) in
     let pred_iter = iter - 1 in
-    // first_element_ys + test_iter (n, pred_iter)
-    1 + test_iter (n, pred_iter)
+    first_element_ys + test_iter (n, pred_iter)
   }
   endif
 }
@@ -304,5 +303,5 @@ fun test (n : int @ shared) (iter : int @ shared): int @ 'u = {
 }
 
 {
-  test (10, 10)
+  test (2000000, 10)
 }

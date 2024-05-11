@@ -108,56 +108,39 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
           >>= fun lambda_expr ->
           Ok (Llet (Strict, Pgenval, var_ident, lambda_vars_expr, lambda_expr))
       | _ ->
+          let let_tuple_ident =
+            Ident.create_local (Var_name.to_string (fresh_var ()))
+          in
+          let let_tuple_size = List.length vars in
           target_expr vars_expr ident_context constructor_tag_map expr_kind
           >>= fun lambda_vars_expr ->
-          let extended_ident_context, vars_idents =
-            List.fold_right vars ~init:(ident_context, [])
-              ~f:(fun var (acc_ident_context, acc_vars_idents) ->
+          let extended_ident_context, letrecs, _ =
+            List.fold_right vars
+              ~init:(ident_context, [], let_tuple_size - 1)
+              ~f:(fun var (acc_ident_context, acc_letrecs, acc_field_index) ->
                 let var_ident = Ident.create_local (Var_name.to_string var) in
+                let letrec =
+                  ( var_ident,
+                    Lprim
+                      ( Pfield acc_field_index,
+                        [ Lvar let_tuple_ident ],
+                        Loc_unknown ) )
+                in
                 ( Or_error.ok_exn
                     (Type_context_env.extend_typing_context acc_ident_context
                        var var_ident),
-                  var_ident :: acc_vars_idents ))
+                  letrec :: acc_letrecs,
+                  acc_field_index - 1 ))
           in
           target_expr expr extended_ident_context constructor_tag_map expr_kind
           >>= fun lambda_expr ->
-          let tupled_param_ident = Ident.create_local "tupled_param" in
-          let letrec_vars_detupling, _ =
-            List.fold vars_idents ~init:([], 0)
-              ~f:(fun
-                  (acc_letrec_vars_detupling, detupling_field_index)
-                  var_ident
-                ->
-                ( ( var_ident,
-                    Lprim
-                      ( Pfield detupling_field_index,
-                        [ Lvar tupled_param_ident ],
-                        Loc_unknown ) )
-                  :: acc_letrec_vars_detupling,
-                  detupling_field_index + 1 ))
-          in
-          let let_tupled_function_lambda =
-            lfunction ~kind:Tupled
-              ~params:[ (tupled_param_ident, Pgenval) ]
-              ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown
-              ~body:(decompose_letrec_to_lets letrec_vars_detupling lambda_expr)
-          in
-          let let_tupled_function_ident = Ident.create_local "let_vars_fun" in
           Ok
             (Llet
                ( Strict,
                  Pgenval,
-                 let_tupled_function_ident,
-                 let_tupled_function_lambda,
-                 Lapply
-                   {
-                     ap_func = Lvar let_tupled_function_ident;
-                     ap_args = [ lambda_vars_expr ];
-                     ap_loc = Loc_unknown;
-                     ap_tailcall = Default_tailcall;
-                     ap_inlined = Default_inline;
-                     ap_specialised = Default_specialise;
-                   } )))
+                 let_tuple_ident,
+                 lambda_vars_expr,
+                 decompose_letrec_to_lets letrecs lambda_expr )))
   | FunApp (var_function, values) ->
       let lambda_values =
         List.map values ~f:(fun value ->
@@ -286,7 +269,10 @@ let rec target_expr (expr : expr) (ident_context : ident_context)
                     expr_kind
                   >>= fun expr_lambda ->
                   reuse_map := initial_reuse_map;
-                  Ok ((constructor_tag, decompose_letrec_to_lets letrec expr_lambda) :: acc_sw_nonatoms)
+                  Ok
+                    (( constructor_tag,
+                       decompose_letrec_to_lets letrec expr_lambda )
+                    :: acc_sw_nonatoms)
               | _ ->
                   Or_error.of_exn
                     (Invalid_argument "Non Atom matched expression expected")))

@@ -185,8 +185,7 @@ and test_iter (n : int) (iter : int) : int =
     first_element_ys + test_iter n pred_iter
 
 and test (n : int) (iter : int) : int = test_iter n iter
-and main () = test 10 10
+and main () = test 2000000 10
 ;;
 
 print_int (main ())
-(* print_int (test 2000000 100) *)
