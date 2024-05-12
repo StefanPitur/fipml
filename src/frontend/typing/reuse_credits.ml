@@ -35,23 +35,25 @@ let rec extend_reuse_map_k_times ~(reuse_size : int) ~(reuse_var : Var_name.t)
 
 let consume_reuse_map ~(reuse_size : int)
     ~(reuse_map : reuse_map_entry ReuseMap.t) :
-    reuse_map_entry ReuseMap.t Or_error.t =
-  if reuse_size = 0 then Ok reuse_map
+    (Var_name.t * reuse_map_entry ReuseMap.t) Or_error.t =
+  let reuse_var_ref = ref (Var_name.of_string "") in
+  if reuse_size = 0 then Ok (!reuse_var_ref, reuse_map)
   else
     let updated_map =
       Map.update reuse_map reuse_size ~f:(fun reuse_size_count_option ->
           Or_error.ok_exn
             (match reuse_size_count_option with
-            | Some (reuse_size_count, _ :: reuse_vars)
+            | Some (reuse_size_count, reuse_var :: reuse_vars)
               when reuse_size_count >= 1 ->
+                reuse_var_ref := reuse_var;
                 Ok (reuse_size_count - 1, reuse_vars)
             | _ ->
                 Or_error.of_exn
                   (ReuseCreditsNotAvailable (Int.to_string reuse_size))))
     in
     match Map.find updated_map reuse_size with
-    | Some (0, []) -> Ok (Map.remove updated_map reuse_size)
-    | _ -> Ok updated_map
+    | Some (0, []) -> Ok (!reuse_var_ref, Map.remove updated_map reuse_size)
+    | _ -> Ok (!reuse_var_ref, updated_map)
 
 let combine_reuse_maps ~(reuse_map1 : reuse_map_entry ReuseMap.t)
     ~(reuse_map2 : reuse_map_entry ReuseMap.t) : reuse_map_entry ReuseMap.t =

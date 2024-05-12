@@ -27,7 +27,7 @@ val extend_reuse_map_k_times :
 val consume_reuse_map :
   reuse_size:int ->
   reuse_map:reuse_map_entry ReuseMap.t ->
-  reuse_map_entry ReuseMap.t Or_error.t
+  (Var_name.t * reuse_map_entry ReuseMap.t) Or_error.t
 (** Consume one [reuse_size] credit by decreasing its availability by 1. *)
 
 val combine_reuse_maps :

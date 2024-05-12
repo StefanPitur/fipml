@@ -1,0 +1,307 @@
+type pad =
+| Pad
+
+type unit2 =
+| Unit2 of pad @ unique * pad @ unique
+
+type pair =
+| Pair of int @ shared * int @ shared
+
+type sublist =
+| SCons of int @ shared * sublist @ unique
+| STuple of int @ shared * int @ shared
+
+type partition =
+| Sublist of sublist @ unique * partition @ unique
+| Singleton of int @ shared * partition @ unique
+| End
+
+type int_list = 
+| Nil
+| Cons of int @ shared * int_list @ unique
+
+fun reverse_go (c : sublist @ unique) 
+    (acc : sublist @ unique)
+    (u : unit2 @ unique)
+  : sublist @ 'u = {
+  match c with
+  | SCons (a, cs) -> { reverse_go (cs, SCons (a, acc), u) }
+  | STuple (a, b) -> { 
+      match u with
+      | Unit2 (Pad, Pad) -> { SCons (b, SCons (a, acc)) }
+      endmatch
+    }
+  endmatch
+}
+
+fun reverse_sublist (sublst : sublist @ unique) : sublist @ 'u = {
+  match sublst with
+  | SCons (a, SCons (b, c)) -> { reverse_go (c, STuple (b, a), Unit2 (Pad, Pad)) }
+  | SCons (a, STuple (b, c)) -> { SCons (c, STuple (b, a)) }
+  | STuple (a, b) -> { STuple (b, a) }
+  endmatch
+}
+
+fun sequences (xs : int_list @ unique) : partition @ 'u = {
+  match xs with
+  | Cons (a, Cons (b, xs1)) -> {
+      if a > b then {
+        let (sublist, bs) = descending (b, STuple (b, a), xs1) in
+        let res_sequences = sequences (bs) in
+        Sublist (sublist, res_sequences)
+      } else {
+        let (sublist, bs) = ascending (b, STuple (b, a), xs1) in
+        let res_sequences = sequences (bs) in
+        Sublist (sublist, res_sequences)
+      }
+      endif
+    }
+  | Cons (a, Nil) -> {
+      Singleton (a, End)
+    }
+  | Nil -> { End }
+  endmatch
+}
+
+and fun descending (a : int @ shared) 
+    (sublist : sublist @ unique)
+    (bs : int_list @ unique)
+  : (sublist @ unique * int_list @ unique) @ 'u = {
+  match bs with
+  | Cons (b, bs1) -> {
+      if a > b then { descending (b, SCons (b, sublist), bs1) } else {
+        (sublist, Cons (b, bs1))
+      }
+      endif
+    }
+  | bs2 -> { (sublist, bs2) }
+  endmatch
+}
+
+and fun ascending (a : int @ shared) 
+  (sublist : sublist @ unique)
+  (bs : int_list @ unique) 
+: (sublist @ unique * int_list @ unique) @ 'u = {
+  match bs with
+  | Cons (b, bs1) -> {
+      if a <= b then { 
+        ascending (b, SCons (b, sublist), bs1) 
+      } else {
+        let reverse_sublist_res = reverse_sublist (sublist) in
+        (reverse_sublist_res, Cons (b, bs1))
+      }
+      endif
+    }
+  | bs2 -> { 
+      let reverse_sublist_res = reverse_sublist (sublist) in
+      (reverse_sublist_res, bs2) 
+    }
+  endmatch
+}
+
+fun to_list (c : sublist @ unique) (u : unit2 @ unique) : int_list @ 'u = {
+  match c with
+  | SCons (a, cs) -> {
+      let cs_to_list = to_list (cs, u) in
+      Cons (a, cs_to_list)
+    }
+  | STuple (a, b) -> {
+      match u with
+      | Unit2 (_, _) -> { Cons (a, Cons (b, Nil)) }
+      endmatch
+    }
+  endmatch
+}
+
+fun merge_all (xs : partition @ unique) : int_list @ 'u = {
+  match xs with
+  | Sublist (x, End) -> { to_list (x, Unit2 (Pad, Pad)) }
+  | Singleton (x, End) -> { Cons (x, Nil) }
+  | xs2 -> {
+      let merge_pairs_res = merge_pairs (xs2) in
+      merge_all (merge_pairs_res)
+    }
+  endmatch
+}
+
+and fun merge_pairs (xs : partition @ unique) : partition @ 'u = {
+  match xs with
+  | Sublist (a, Sublist (b, xs1)) -> {
+      let merge_res = merge (a, b, Unit2 (Pad, Pad)) in
+      let merge_pairs_res = merge_pairs (xs1) in
+      Sublist (merge_res, merge_pairs_res)
+    }
+  | Sublist (a, Singleton (b, xs1)) -> {
+      let merge_last_left_res = merge_last_left (a, b, Unit2 (Pad, Pad)) in
+      let merge_pairs_res = merge_pairs (xs1) in
+      Sublist (merge_last_left_res, merge_pairs_res)
+    }
+  | Singleton (a, Sublist (b, xs1)) -> {
+      let merge_last_right_res = merge_last_right (a, b, Unit2 (Pad, Pad)) in
+      let merge_pairs_res = merge_pairs (xs1) in
+      Sublist (merge_last_right_res, merge_pairs_res)
+    }
+  | Singleton (a, Singleton (b, xs1)) -> {
+      let sublist_arg1 = if a <= b then { STuple (a, b) } else { STuple (b, a) } endif in
+      let merge_pairs_res = merge_pairs (xs1) in
+      Sublist (sublist_arg1, merge_pairs_res)
+    }
+  | xs2 -> { xs2 }
+  endmatch
+}
+
+and fun merge (c1 : sublist @ unique) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+  match c1 with
+  | SCons (a, cs1) -> {
+      match c2 with
+      | SCons (b, cs2) -> {
+          if a <= b then {
+            let merge_res = merge (cs1, SCons (b, cs2), u) in
+            SCons (a, merge_res)
+          } else {
+            let merge_res = merge (SCons (a, cs1), cs2, u) in
+            SCons (b, merge_res)
+          } endif
+        }
+      | STuple (b, c) -> {
+          if a <= b then {
+            let merge_res = merge (cs1, STuple (b, c), u) in
+            SCons (a, merge_res)
+          } else {
+            let merge_last_left_res = merge_last_left (SCons (a, cs1), c, u) in
+            SCons (b, merge_last_left_res)
+          } endif
+        }
+      endmatch
+    }
+  | STuple (a, b) -> {
+      match c2 with
+      | SCons (c, cs2) -> {
+          if a <= c then {
+            let merge_last_right_res = merge_last_right (b, SCons (c, cs2), u) in
+            SCons (a, merge_last_right_res)
+          } else {
+            let merge_res = merge (STuple (a, b), cs2, u) in
+            SCons (c, merge_res)
+          } endif
+        }
+      | STuple (c, d) -> {
+          if a <= c then {
+            let merge_right_res = merge_right (b, Pair (c, d), u) in
+            SCons (a, merge_right_res)
+          } else {
+            let merge_left_res = merge_left (Pair (a, b), d, u) in
+            SCons (c, merge_left_res)
+          } endif
+        }
+      endmatch
+    }
+  endmatch
+}
+
+and fun merge_last_right (a : int @ shared) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+  match c2 with
+  | SCons (b, cs2) -> {
+      if a <= b then { 
+        match u with
+        | Unit2 (_, _) -> { SCons (a, SCons (b, cs2)) }
+        endmatch
+      } else {
+        let merge_last_right_res = merge_last_right (a, cs2, u) in
+        SCons (b, merge_last_right_res)
+      } endif
+    }
+  | STuple (b, c) -> { merge_right (a, Pair (b, c), u) }
+  endmatch
+}
+
+and fun merge_last_left (c2 : sublist @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
+  match c2 with
+  | SCons (a, cs2) -> {
+      if a <= d then { 
+        let merge_last_left_res = merge_last_left (cs2, d, u) in
+        SCons (a, merge_last_left_res)
+      } else {
+        match u with
+        | Unit2 (_, _) -> { SCons (d, SCons (a, cs2)) }
+        endmatch
+      } endif
+    }
+  | STuple (a, b) -> { merge_left (Pair (a, b), d, u) }
+  endmatch
+}
+
+and fun merge_right (a : int @ shared) (p : pair @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+  match u with
+  | Unit2 (_, _) -> {
+    match p with
+    | Pair (b, c) -> {
+        if a <= b then { SCons (a, STuple (b, c)) }
+        else {
+          let scons_arg2 = if a <= c then { STuple (a, c) } else { STuple (c, a) } endif in
+          SCons (b, scons_arg2)
+        } endif
+      }
+    endmatch
+  }
+  endmatch
+}
+
+and fun merge_left (p : pair @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
+  match u with
+  | Unit2 (_, _) -> {
+      match p with
+      | Pair (a, b) -> {
+          if a <= d then {
+            let scons_arg2 = if b <= d then { STuple (b, d) } else { STuple (d, b) } endif in
+            SCons (a, scons_arg2)
+          } else {
+            SCons (d, STuple (a, b))
+          } endif
+        }
+      endmatch
+    }
+  endmatch
+}
+
+fun rand_list (n : int @ shared) : int_list @ 'u = {
+  if n > 0 then {
+    let pred_n = n - 1 in
+    let rand_list_res = rand_list (pred_n) in
+    Cons (n, rand_list_res)
+  } else { Nil } endif
+}
+
+fun first_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
+  match xs with
+  | Nil -> { d }
+  | Cons (x, _) -> { x }
+  endmatch
+} 
+
+fun second_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
+  match xs with
+  | Cons (_, Cons (x, _)) -> { x }
+  | _ -> { d }
+  endmatch
+}
+
+fun test_iter (n : int @ shared) (iter : int @ shared) : int @ shared = {
+  if iter == 0 then { 0 } else {
+    let xs = rand_list (n) in
+    let sequences_res = sequences (xs) in
+    let ys = merge_all (sequences_res) in
+    let first_element_ys = second_element (ys, 0) in
+    let pred_iter = iter - 1 in
+    first_element_ys + test_iter (n, pred_iter)
+  }
+  endif
+}
+
+fun test (n : int @ shared) (iter : int @ shared): int @ 'u = {
+  test_iter (n, iter)
+}
+
+{
+  test (2000000, 10)
+}

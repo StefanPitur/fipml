@@ -979,7 +979,7 @@ let%expect_test "Constraints Generation Expr: If" =
       TyAttr - TyVar t19 <> TyVarUnique u52
       => Expr Constraints:
       (TyBool, TyBool)
-      (TyVar t19, TyTuple (TyAttr - TyBool <> TyShared, TyAttr - TyInt <> TyVarUnique u51))
+      (TyUnit, TyTuple (TyAttr - TyBool <> TyShared, TyAttr - TyInt <> TyVarUnique u51))
       => Expr Unique Constraints;
       (TyVarUnique u52, TyVarUnique u53)
       -------------------------

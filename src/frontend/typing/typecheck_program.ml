@@ -6,6 +6,8 @@ let typecheck_program
     (Parser_ast.TProg (loc, type_defns, function_defns, main_expr_option)) :
     (Typed_ast.program
     * Functions_env.functions_env
+    * Type_defns_env.types_env
+    * Type_defns_env.constructors_env
     * Fip_ast.function_defn list)
     Or_error.t =
   let open Result in
@@ -33,4 +35,6 @@ let typecheck_program
           typed_function_defns,
           typed_main_expr_option ),
       functions_env,
+      types_env,
+      constructors_env,
       fiped_function_defns )

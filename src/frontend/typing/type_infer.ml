@@ -485,7 +485,7 @@ and generate_constraints (types_env : types_env)
       Ok
         ( typing_context,
           (t, u),
-          [ (expr_cond_ty, TyBool); (t, expr_then_ty) ]
+          [ (expr_cond_ty, TyBool); (TyUnit, expr_then_ty) ]
           @ expr_cond_constrs @ expr_then_constrs,
           ((u, expr_then_ty_unique) :: extra_unique_constrs)
           @ expr_cond_unique_constrs @ expr_then_unique_constrs,

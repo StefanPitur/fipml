@@ -1,0 +1,175 @@
+type pad =
+| Pad
+
+type unit2 = 
+| Unit2 of pad @ unique * pad @ unique
+
+type maybe2 =
+| Nothing2
+| Just2 of int @ shared * pad @ unique
+
+type sublist =
+| SCons of int @ shared * sublist @ unique
+| STuple of int @ shared * int @ shared
+
+type partition =
+| Sublist of sublist @ unique * partition @ unique
+| Singleton of int @ shared * partition @ unique
+| End
+
+type int_list =
+| Nil
+| Cons of int @ shared * int_list @ unique
+
+type accum =
+| MkLo of int @ shared * accum @ unique
+| MkHi of int @ shared * accum @ unique
+| Done
+
+fip fun quicksort (xs : int_list @ unique) : int_list @ 'u = {
+  quicksort_go (xs, End)
+}
+
+and fip fun quicksort_go (xs : int_list @ unique) (b : partition @ unique) : int_list @ 'u = {
+  match xs with
+  | Cons (p, xx) -> {
+      let (lo, hi) = split_list (p, xx, Done, b, Unit2 (Pad, Pad)) in
+      quicksort_go (lo, hi)
+    }
+  | Nil -> { quicksort_app (b) }
+  endmatch
+}
+
+and fip fun quicksort_app (bdl : partition @ unique) : int_list @ 'u = {
+  match bdl with
+  | Singleton (p, b) -> { let quicksort_app_res = quicksort_app (b) in Cons (p, quicksort_app_res) }
+  | Sublist (xs, bdl2) -> {
+      match xs with
+      | SCons (p, xx) -> {
+          let (lo, hi) = split_sublist (p, xx, Done, bdl2, Unit2 (Pad, Pad), Unit2 (Pad, Pad)) in
+          quicksort_go (lo, hi)
+        }
+      | STuple (a, b) -> {
+          let quicksort_app_res = quicksort_app (bdl2) in
+          if a <= b then {
+            Cons (a, Cons (b, quicksort_app_res))
+          } else {
+            Cons (b, Cons (a, quicksort_app_res))
+          }
+          endif
+        }
+      endmatch
+    }
+  | End -> { Nil }
+  endmatch
+}
+
+and fip fun split_list (p : int @ shared) (xs : int_list @ unique) (k : accum @ unique)
+    (b : partition @ unique) (u : unit2 @ unique)
+  : (int_list @ unique * partition @ unique) @ 'u = {
+  match xs with
+  | Cons (x, xx) -> {
+      if x < p then {
+        split_list (p, xx, MkLo (x, k), b, u)
+      } else {
+        split_list (p, xx, MkHi (x, k), b, u)
+      }
+      endif
+    }
+  | Nil -> {
+      let (lo, hi) = split_app1 (k, Nil, Nothing2, b) in
+      match u with
+      | Unit2 (_, _) -> { (lo, Singleton (p, hi)) }
+      endmatch
+    }
+  endmatch
+}
+
+and fip fun split_sublist (p : int @ shared) (xs : sublist @ unique) (k : accum @ unique)
+    (b : partition @ unique) (u : unit2 @ unique) (u1 : unit2 @ unique)
+: (int_list @ 'u1 * partition @ 'u2) @ 'u = {
+  match xs with
+  | SCons (x, xx) -> {
+      if x < p then {
+        split_sublist (p, xx, MkLo (x, k), b, u, u1)
+      } else {
+        split_sublist (p, xx, MkHi (x, k), b, u, u1)
+      }
+      endif
+    }
+  | STuple (x, y) -> {
+      match u1 with
+      | Unit2 (_, _) -> {
+          split_list (p, Cons (x, Cons (y, Nil)), k, b, u)
+        }
+      endmatch
+    }
+  endmatch
+}
+
+and fip fun split_app1 (k : accum @ unique) (lo : int_list @ unique) (hi : maybe2 @ unique) (b : partition @ unique)
+: (int_list @ 'u1 * partition @ 'u2) @ 'u = {
+  match k with
+  | MkLo (x, k2) -> { split_app1 (k2, Cons (x, lo), hi, b) }
+  | MkHi (x, k2) -> {
+      match hi with
+      | Nothing2 -> { split_app1 (k2, lo, Just2 (x, Pad), b) }
+      | Just2 (y, _) -> { split_app2 (k2, lo, STuple (y, x), b, Unit2 (Pad, Pad)) }
+      endmatch
+    }
+  | Done -> {
+      match hi with
+      | Just2 (x, _) -> { (lo, Singleton (x, b)) }
+      | Nothing2 -> { (lo, b) }
+      endmatch
+    }
+  endmatch
+}
+
+and fip fun split_app2 (k : accum @ unique) (lo : int_list @ unique) (hi : sublist @ unique)
+    (b : partition @ unique) (u : unit2 @ unique) : (int_list @ 'u1 * partition @ 'u2) @ 'u = {
+  match k with
+  | MkLo (x, k2) -> { split_app2 (k2, Cons (x, lo), hi, b, u) }
+  | MkHi (x, k2) -> { split_app2 (k2, lo, SCons (x, hi), b, u) }
+  | Done -> { 
+      match u with
+      | Unit2 (_, _) -> { (lo, Sublist (hi, b)) }
+      endmatch
+    }
+  endmatch
+}
+
+fun rand_list (n : int @ shared) : int_list @ 'u = {
+  if n > 0 then {
+    let pred_n = n - 1 in
+    let rand_list_res = rand_list (pred_n) in
+    Cons (n, rand_list_res)
+  } else { Nil } endif
+}
+
+fip fun first_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
+  match xs with
+  | Nil -> { d }
+  | Cons (x, _) -> { x }
+  endmatch
+} 
+
+fun test_iter (n : int @ shared) (iter : int @ shared) : int @ shared = {
+  if iter == 0 then { 0 } else {
+    let xs = rand_list (n) in
+    let ys = quicksort! (xs) in
+    let first_element_ys = first_element! (ys, 0) in
+    let pred_iter = iter - 1 in
+    first_element_ys + test_iter (n, pred_iter)
+  }
+  endif
+}
+
+fun test (n : int @ shared) (rounds : int @ shared) : int @ 'u = {
+  test_iter (n, rounds)
+}
+
+{
+  test (10000, 100)
+}
+

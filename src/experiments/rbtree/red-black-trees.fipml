@@ -1,0 +1,123 @@
+type any =
+| Any
+
+type color =
+| Red
+| Black
+
+type tree =
+| Node of color @ unique * tree @ unique * int @ shared * bool @ shared * tree @ unique
+| Leaf
+
+type balance_node =
+| Balance of color @ unique * tree @ unique * int @ shared * bool @ shared * tree @ unique
+
+type accum =
+| Done
+| NodeL of color @ unique * accum @ unique * int @ shared * bool @ shared * tree @ unique
+| NodeR of color @ unique * tree @ unique * int @ shared * bool @ shared * accum @ unique
+
+fip fun rebuild (z : accum @ unique) (t : tree @ unique) : tree @ 'u = {
+  match z with
+  | NodeR (c, l, k, v, z1) -> { rebuild (z1, Node (c, l, k, v, t)) }
+  | NodeL (c, z1, k, v, r) -> { rebuild (z1, Node (c, t, k, v, r)) }
+  | Done -> { t }
+  endmatch
+}
+
+fip fun balance (z : accum @ unique) (t : balance_node @ unique) : tree @ 'u ={
+  match t with
+  | Balance(_,l,k,v,r) -> {
+      match z with
+      | NodeR(Black, l1, k1, v1, z1) -> { rebuild( z1, Node( Black, l1, k1, v1, Node(Red,l,k,v,r) ) ) }
+      | NodeL(Black, z1, k1, v1, r1) -> { rebuild( z1, Node( Black, Node(Red,l,k,v,r), k1, v1, r1 ) ) }
+      | NodeR(Red, l1, k1, v1, z1) -> {
+          match z1 with
+          | NodeR(_,l2,k2,v2,z2) -> { balance( z2, Balance(Black, Node(Black,l2,k2,v2,l1), k1, v1, Node(Black,l,k,v,r)) ) }
+          | NodeL(_,z2,k2,v2,r2) -> { balance( z2, Balance(Black, Node(Black,l1,k1,v1,l), k, v, Node(Black,r,k2,v2,r2)) ) }
+          | Done -> { Node(Black, l1, k1, v1, Node(Red,l,k,v,r)) }
+          endmatch
+        }
+      | NodeL(Red, z1, k1, v1, r1) -> {
+          match z1 with
+          | NodeR(_,l2,k2,v2,z2) -> { balance( z2, Balance(Black, Node(Black,l2,k2,v2,l), k, v, Node(Black,r,k1,v1,r1)) ) }
+          | NodeL(_,z2,k2,v2,r2) -> { balance( z2, Balance(Black, Node(Black,l,k,v,r), k1, v1, Node(Black,r1,k2,v2,r2)) ) }
+          | Done -> { Node(Black, Node(Red,l,k,v,r), k1, v1, r1) }
+          endmatch
+        }
+      | Done -> { Node(Black,l,k,v,r) }
+      endmatch
+    }
+  endmatch
+}
+
+fip(1) fun ins (t : tree @ unique) (k : int @ shared) (v : bool @ shared) (z : accum @ unique) : tree @ 'u = {
+  match t with
+  | Node (c, l, kx, vx, r) -> {
+      if k < kx then { ins (l, k, v, NodeL (c, z, kx, vx, r)) } else {
+        if k > kx then { ins (r, k, v, NodeR (c, l, kx, vx, z)) } else {
+          weak 1; rebuild (z, Node (c, l, kx, vx, r))
+        }
+        endif
+      }
+      endif
+    }
+  | Leaf -> {
+      inst 5; balance (z, Balance (Black, Leaf, k, v, Leaf))
+    }
+  endmatch
+}
+
+fip(1) fun insert (t : tree @ unique) (k : int @ shared) (v : bool @ shared) : tree @ 'u = {
+  ins (t, k, v, Done)
+}
+
+fun fold (t : tree @ 'u1) (b : 'a) (f : (int @ shared -> (bool @ shared -> ('a -> 'a) @ 'u2) @ 'u3) @ 'u4) : 'a = {
+  match t with
+  | Node (_, l, k, v, r) -> {
+      let l_fold = fold (l, b, f) in
+      let f_l_fold = ^f (k, v, l_fold) in
+      fold (r, f_l_fold, f)
+    }
+  | Leaf -> { b }
+  endmatch
+}
+
+fun make_tree_aux (n : int @ shared) (t : tree @ 'u1) : tree @ 'u2 = {
+  if n <= 0 then { t } else {
+    let n1 = n - 1 in
+    let n1_mod_10 = n1 % 10 in
+    let n1_mod_10_is_0 = n1_mod_10 == 0 in
+    let insert_res = insert! (t, n1, n1_mod_10_is_0) in
+    make_tree_aux (n1, insert_res)
+  }
+  endif
+}
+
+fun make_tree (n : int @ shared) : tree @ 'u = {
+  make_tree_aux (n, Leaf)
+}
+
+fun test_iter_fun (k : int @ shared) (v : bool @ shared) (r : int @ shared) : int @ 'u = {
+  if v then { r + 1 } else { r } endif
+}
+
+fun test_iter (n : int @ shared) (iter : int @ shared) : int @ 'u = {
+  if iter == 0 then { 0 } else {
+    let t = make_tree (n) in
+    let fold_res = fold (t, 0, test_iter_fun) in
+    let pred_iter = iter - 1 in
+    fold_res + test_iter (n, pred_iter)
+  }
+  endif
+}
+
+fun test (n : int @ shared) : int @ 'u = {
+  let div = if n <= 1 then { 1 } else { n } endif in
+  let steps = 10000000 / div in
+  test_iter (n, steps)
+}
+
+{
+  test (1000)
+}
