@@ -37,22 +37,25 @@ let write_fip_opt (program_lambda : lambda) (program_modname : Ident.t) : unit =
   let fip_program =
     {
       module_ident = program_modname;
-      main_module_block_size = 24;
+      main_module_block_size = 36;
       required_globals = Ident.Set.(add program_modname empty);
       code = program_lambda;
     }
   in
-  ignore (Env.read_signature "Fip" "src/experiments/msort/fip.cmi");
+  ignore (Env.read_signature "Fip" "src/experiments/rbtree/fip.cmi");
   Env.set_unit_name "Fip";
   let () = Compilenv.reset "Fip" in
-  Asmgen.compile_implementation ~backend ~prefixname:"src/experiments/msort/fip"
+  Asmgen.compile_implementation ~backend
+    ~prefixname:"src/experiments/rbtree/fip"
     ~middle_end:Closure_middle_end.lambda_to_clambda
     ~ppf_dump:Format.std_formatter fip_program;
-  Compilenv.save_unit_info "src/experiments/msort/fip.cmx"
+  Compilenv.save_unit_info "src/experiments/rbtree/fip.cmx"
 ;;
 
 (* "qualitative evaluation as a programming language - Chapter 4" *)
-let channel = In_channel.create "src/experiments/msort/msort.fipml" in
+let channel =
+  In_channel.create "src/experiments/rbtree/red-black-trees.fipml"
+in
 Parsing.Lex_and_parse.parse_source_code_with_error (Lexing.from_channel channel)
 >>= fun parsed_program ->
 Fmt.pf Fmt.stdout "1\n";

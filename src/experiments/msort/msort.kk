@@ -140,6 +140,6 @@ fun test(n : int32, iter : int32)
   test_iter (n, iter)
 
 fun main()
-  val n = get-args().head("").parse-int.default(200000).int32
-  val iter = get-args().head("").parse-int.default(10).int32
+  val n = get-args().head("").parse-int.default(500000).int32
+  val iter = get-args().head("").parse-int.default(10000).int32
   test(n, iter).show

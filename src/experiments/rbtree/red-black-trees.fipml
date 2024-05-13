@@ -114,10 +114,10 @@ fun test_iter (n : int @ shared) (iter : int @ shared) : int @ 'u = {
 
 fun test (n : int @ shared) : int @ 'u = {
   let div = if n <= 1 then { 1 } else { n } endif in
-  let steps = 10000000 / div in
+  let steps = 100000000 / div in
   test_iter (n, steps)
 }
 
 {
-  test (1000)
+  test (100000)
 }

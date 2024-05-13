@@ -93,4 +93,4 @@ let rec test_iter (n : int) (iter : int) : int =
     first_element_ys + test_iter n pred_iter
 
 let test (n : int) (rounds : int) : int = test_iter n rounds
-let _ = print_int (test 10000 100)
+let _ = print_int (test 100000 5)

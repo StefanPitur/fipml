@@ -20,7 +20,7 @@ type int_list =
 | Nil
 | Cons of int @ shared * int_list @ unique
 
-fun reverse_go (c : sublist @ unique) 
+fip fun reverse_go (c : sublist @ unique) 
     (acc : sublist @ unique)
     (u : unit2 @ unique)
   : sublist @ 'u = {
@@ -34,7 +34,7 @@ fun reverse_go (c : sublist @ unique)
   endmatch
 }
 
-fun reverse_sublist (sublst : sublist @ unique) : sublist @ 'u = {
+fip fun reverse_sublist (sublst : sublist @ unique) : sublist @ 'u = {
   match sublst with
   | SCons (a, SCons (b, c)) -> { reverse_go (c, STuple (b, a), Unit2 (Pad, Pad)) }
   | SCons (a, STuple (b, c)) -> { SCons (c, STuple (b, a)) }
@@ -42,7 +42,7 @@ fun reverse_sublist (sublst : sublist @ unique) : sublist @ 'u = {
   endmatch
 }
 
-fun sequences (xs : int_list @ unique) : partition @ 'u = {
+fip fun sequences (xs : int_list @ unique) : partition @ 'u = {
   match xs with
   | Cons (a, Cons (b, xs1)) -> {
       if a > b then {
@@ -63,7 +63,7 @@ fun sequences (xs : int_list @ unique) : partition @ 'u = {
   endmatch
 }
 
-and fun descending (a : int @ shared) 
+and fip fun descending (a : int @ shared) 
     (sublist : sublist @ unique)
     (bs : int_list @ unique)
   : (sublist @ unique * int_list @ unique) @ 'u = {
@@ -78,7 +78,7 @@ and fun descending (a : int @ shared)
   endmatch
 }
 
-and fun ascending (a : int @ shared) 
+and fip fun ascending (a : int @ shared) 
   (sublist : sublist @ unique)
   (bs : int_list @ unique) 
 : (sublist @ unique * int_list @ unique) @ 'u = {
@@ -99,7 +99,7 @@ and fun ascending (a : int @ shared)
   endmatch
 }
 
-fun to_list (c : sublist @ unique) (u : unit2 @ unique) : int_list @ 'u = {
+fip fun to_list (c : sublist @ unique) (u : unit2 @ unique) : int_list @ 'u = {
   match c with
   | SCons (a, cs) -> {
       let cs_to_list = to_list (cs, u) in
@@ -113,7 +113,7 @@ fun to_list (c : sublist @ unique) (u : unit2 @ unique) : int_list @ 'u = {
   endmatch
 }
 
-fun merge_all (xs : partition @ unique) : int_list @ 'u = {
+fip fun merge_all (xs : partition @ unique) : int_list @ 'u = {
   match xs with
   | Sublist (x, End) -> { to_list (x, Unit2 (Pad, Pad)) }
   | Singleton (x, End) -> { Cons (x, Nil) }
@@ -124,7 +124,7 @@ fun merge_all (xs : partition @ unique) : int_list @ 'u = {
   endmatch
 }
 
-and fun merge_pairs (xs : partition @ unique) : partition @ 'u = {
+and fip fun merge_pairs (xs : partition @ unique) : partition @ 'u = {
   match xs with
   | Sublist (a, Sublist (b, xs1)) -> {
       let merge_res = merge (a, b, Unit2 (Pad, Pad)) in
@@ -150,7 +150,7 @@ and fun merge_pairs (xs : partition @ unique) : partition @ 'u = {
   endmatch
 }
 
-and fun merge (c1 : sublist @ unique) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+and fip fun merge (c1 : sublist @ unique) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
   match c1 with
   | SCons (a, cs1) -> {
       match c2 with
@@ -199,7 +199,7 @@ and fun merge (c1 : sublist @ unique) (c2 : sublist @ unique) (u : unit2 @ uniqu
   endmatch
 }
 
-and fun merge_last_right (a : int @ shared) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+and fip fun merge_last_right (a : int @ shared) (c2 : sublist @ unique) (u : unit2 @ unique) : sublist @ 'u = {
   match c2 with
   | SCons (b, cs2) -> {
       if a <= b then { 
@@ -215,7 +215,7 @@ and fun merge_last_right (a : int @ shared) (c2 : sublist @ unique) (u : unit2 @
   endmatch
 }
 
-and fun merge_last_left (c2 : sublist @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
+and fip fun merge_last_left (c2 : sublist @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
   match c2 with
   | SCons (a, cs2) -> {
       if a <= d then { 
@@ -231,7 +231,7 @@ and fun merge_last_left (c2 : sublist @ unique) (d : int @ shared) (u : unit2 @ 
   endmatch
 }
 
-and fun merge_right (a : int @ shared) (p : pair @ unique) (u : unit2 @ unique) : sublist @ 'u = {
+and fip fun merge_right (a : int @ shared) (p : pair @ unique) (u : unit2 @ unique) : sublist @ 'u = {
   match u with
   | Unit2 (_, _) -> {
     match p with
@@ -247,7 +247,7 @@ and fun merge_right (a : int @ shared) (p : pair @ unique) (u : unit2 @ unique) 
   endmatch
 }
 
-and fun merge_left (p : pair @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
+and fip fun merge_left (p : pair @ unique) (d : int @ shared) (u : unit2 @ unique) : sublist @ 'u = {
   match u with
   | Unit2 (_, _) -> {
       match p with
@@ -272,14 +272,7 @@ fun rand_list (n : int @ shared) : int_list @ 'u = {
   } else { Nil } endif
 }
 
-fun first_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
-  match xs with
-  | Nil -> { d }
-  | Cons (x, _) -> { x }
-  endmatch
-} 
-
-fun second_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
+fbip fun second_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
   match xs with
   | Cons (_, Cons (x, _)) -> { x }
   | _ -> { d }
@@ -289,11 +282,11 @@ fun second_element ^(xs : int_list @ 'u) (d : int @ shared) : int @ shared = {
 fun test_iter (n : int @ shared) (iter : int @ shared) : int @ shared = {
   if iter == 0 then { 0 } else {
     let xs = rand_list (n) in
-    let sequences_res = sequences (xs) in
-    let ys = merge_all (sequences_res) in
-    let first_element_ys = second_element (ys, 0) in
+    let sequences_res = sequences! (xs) in
+    let ys = merge_all! (sequences_res) in
+    let second_element_ys = second_element (ys, 0) in
     let pred_iter = iter - 1 in
-    first_element_ys + test_iter (n, pred_iter)
+    second_element_ys + test_iter (n, pred_iter)
   }
   endif
 }
@@ -303,5 +296,5 @@ fun test (n : int @ shared) (iter : int @ shared): int @ 'u = {
 }
 
 {
-  test (2000000, 10)
+  test (500000, 10000)
 }

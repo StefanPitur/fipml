@@ -55,6 +55,6 @@ fbip fun fold_sum (t : (int ; ; ) tree @ unique) : int @ 'u = {
 
 {
   let t = create_int_tree (30) in
-  let t2 = tmap (t, negate) in
-  fold_sum (t2)
+  let t2 = tmap! (t, negate) in
+  fold_sum! (t2)
 }
